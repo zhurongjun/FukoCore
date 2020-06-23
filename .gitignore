@@ -32,3 +32,4 @@
 *.app
 temp/
 bin/
+.vs/

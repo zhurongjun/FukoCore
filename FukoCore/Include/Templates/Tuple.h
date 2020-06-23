@@ -9,6 +9,14 @@ namespace Fuko
 {
 	template<typename ...Types>
 	struct TTuple;
+
+	template<typename TKey,typename TValue>
+	struct TPair;
+}
+namespace std
+{
+	template<size_t Index, typename TKey, typename TValue>
+	FORCEINLINE decltype(auto) get(const Fuko::TPair<TKey, TValue>& Pair);
 }
 
 // support structure binding
@@ -65,7 +73,7 @@ namespace std
 namespace Fuko
 {
 	template <typename... Types>
-	FORCEINLINE TTuple<TDecay_t<Types>...> MakeTuple(Types&&... Args)
+	FORCEINLINE constexpr TTuple<TDecay_t<Types>...> MakeTuple(Types&&... Args)
 	{
 		return TTuple<TDecay_t<Types>...>(Forward<Types>(Args)...);
 	}
@@ -141,9 +149,9 @@ namespace Fuko
 		using ValueType = Type;
 
 		// construct
-		TTuple() = default;
-		TTuple(Type&& Arg, Types&&...Args) : BaseType(Forward<Types>(Args)...) , _Value(Forward<Type>(Arg)) {}
-		TTuple(const Type& Arg, const Types&... Args) : BaseType(Forward<Types>(Args)...), _Value(Forward<Type>(Arg)) {}
+		constexpr TTuple() = default;
+		constexpr TTuple(Type&& Arg, Types&&...Args) : BaseType(Forward<Types>(Args)...) , _Value(Forward<Type>(Arg)) {}
+		constexpr TTuple(const Type& Arg, const Types&... Args) : BaseType(Args...), _Value(Arg) {}
 
 		// copy & move
 		TTuple(TTuple&& Other) = default;

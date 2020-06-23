@@ -92,7 +92,7 @@ inline constexpr bool TAreTypesEqual_v = TAreTypesEqual<A, B>::value;
 
 // Move 
 template <typename T>
-FORCEINLINE TRemoveReference_t<T>&& MoveTemp(T&& Obj)
+FORCEINLINE constexpr TRemoveReference_t<T>&& MoveTemp(T&& Obj)
 {
 	typedef TRemoveReference_t<T> CastType;
 
@@ -103,19 +103,19 @@ FORCEINLINE TRemoveReference_t<T>&& MoveTemp(T&& Obj)
 	return (CastType&&)Obj;
 }
 template <typename T>
-FORCEINLINE TRemoveReference_t<T>&& MoveTempIfPossible(T&& Obj)
+FORCEINLINE constexpr TRemoveReference_t<T>&& MoveTempIfPossible(T&& Obj)
 {
 	typedef TRemoveReference_t<T> CastType;
 	return (CastType&&)Obj;
 }
 
 template <typename T>
-FORCEINLINE T&& Forward(typename TRemoveReference_t<T>& Obj)
+FORCEINLINE constexpr T&& Forward(typename TRemoveReference_t<T>& Obj)
 {
 	return static_cast<T&&>(Obj);
 }
 template <typename T>
-FORCEINLINE T&& Forward(typename TRemoveReference_t<T>&& Obj)
+FORCEINLINE constexpr T&& Forward(typename TRemoveReference_t<T>&& Obj)
 {
 	return static_cast<T&&>(Obj);
 }
