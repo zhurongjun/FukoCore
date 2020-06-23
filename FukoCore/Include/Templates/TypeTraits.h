@@ -208,7 +208,7 @@ template <typename DestElementType, typename SrcElementType>
 struct TCanBitwiseRelocate
 {
 	static constexpr bool value = (TIsBitwiseConstructible_v<DestElementType, SrcElementType> &&
-							  TIsTriviallyDestructible_v<DestElementType, SrcElementType>) ||
+							  TIsTriviallyDestructible_v<SrcElementType>) ||
 								std::is_same_v<DestElementType, SrcElementType>;
 };
 template <typename DestElementType, typename SrcElementType>

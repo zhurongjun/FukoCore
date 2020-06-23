@@ -539,5 +539,14 @@
     <ClInclude Include="Include\Templates\Pair.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Include\Containers\Set.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Containers\SparseArray.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Templates\Models.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

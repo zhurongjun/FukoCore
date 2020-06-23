@@ -536,14 +536,6 @@ namespace Fuko
 			return BitArrayHelper::CalculateNumWords(MaxBits) * sizeof(uint32);
 		}
 
-		void CountBytes(FArchive& Ar) const
-		{
-			Ar.CountBytes(
-				GetNumWords() * sizeof(uint32),
-				GetMaxWords() * sizeof(uint32)
-			);
-		}
-
 		int32 Find(bool bValue) const
 		{
 			const uint32 Test = bValue ? 0u : (uint32)-1;
@@ -879,7 +871,7 @@ namespace Fuko
 	};
 }
 
-// SetBit Iterator
+// SetBit Iterator，只访问被设为true的bit 
 namespace Fuko
 {
 	template<typename Allocator>
@@ -1098,5 +1090,4 @@ namespace Fuko
 			CurrentBitIndex = BaseBitIndex + NumBitsPerDWORD - 1 - FMath::CountLeadingZeros(this->Mask);
 		}
 	};
-
 }

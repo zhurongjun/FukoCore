@@ -179,7 +179,9 @@
     <ClInclude Include="Include\Containers\CircularQueue.h" />
     <ClInclude Include="Include\Containers\ContainerFwd.h" />
     <ClInclude Include="Include\Containers\HashTable.h" />
+    <ClInclude Include="Include\Containers\SparseArray.h" />
     <ClInclude Include="Include\Containers\String.h" />
+    <ClInclude Include="Include\Containers\Set.h" />
     <ClInclude Include="Include\CoreConfig.h" />
     <ClInclude Include="Include\CoreMinimal\Assert.h" />
     <ClInclude Include="Include\CoreMinimal\ByteSwap.h" />
@@ -196,6 +198,7 @@
     <ClInclude Include="Include\Containers\BitArray.h" />
     <ClInclude Include="Include\Templates\Atomic.h" />
     <ClInclude Include="Include\Templates\Functor.h" />
+    <ClInclude Include="Include\Templates\Models.h" />
     <ClInclude Include="Include\Templates\Pair.h" />
     <ClInclude Include="Include\Templates\Sorting.h" />
     <ClInclude Include="Include\Templates\Tuple.h" />

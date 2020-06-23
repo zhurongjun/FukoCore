@@ -888,7 +888,7 @@ namespace Fuko
 	};
 }
 
-// TFixedAllocator,上者的Fixed版本
+// TFixedSparseArrayAllocator,上者的Fixed版本
 namespace Fuko
 {
 	template <uint32 NumInlineElements>
