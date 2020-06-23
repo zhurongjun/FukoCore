@@ -1,0 +1,61 @@
+#pragma once
+#include <inttypes.h>
+#include "CoreConfig.h"
+#include "TypeTraits.h"
+
+// 向上对齐, Alignment必须是2的次方
+template <typename T>
+FORCEINLINE constexpr T Align(T Val, uint64_t Alignment)
+{
+	static_assert(TIsIntegral_v<T> || TIsPointer_v<T>, "Align expects an integer or pointer type");
+
+	return (T)(((uint64_t)Val + Alignment - 1) & ~(Alignment - 1));
+}
+
+// 向下对齐, Alignment必须是2的次方
+template <typename T>
+FORCEINLINE constexpr T AlignDown(T Val, uint64_t Alignment)
+{
+	static_assert(TIsIntegral_v<T> || TIsPointer_v<T>, "AlignDown expects an integer or pointer type");
+
+	return (T)(((uint64_t)Val) & ~(Alignment - 1));
+}
+
+// 是否是对齐的, Alignment必须是2的次方
+template <typename T>
+FORCEINLINE constexpr bool IsAligned(T Val, uint64_t Alignment)
+{
+	static_assert(TIsIntegral_v<T> || TIsPointer_v<T>, "IsAligned expects an integer or pointer type");
+
+	return !((uint64_t)Val & (Alignment - 1));
+}
+
+// 任意对齐, Alignment可以是任意值
+template <typename T>
+FORCEINLINE constexpr T AlignArbitrary(T Val, uint64_t Alignment)
+{
+	static_assert(TIsIntegral_v<T> || TIsPointer_v<T>, "AlignArbitrary expects an integer or pointer type");
+
+	return (T)((((uint64_t)Val + Alignment - 1) / Alignment) * Alignment);
+}
+
+// 对齐的空间占位符
+template<int32_t Size, int32_t Alignment>
+struct TAlignedBytes
+{
+	static_assert(Alignment == 1 || Alignment == 2 || Alignment == 4 || Alignment == 8 || Alignment == 16, "Don't use invalid Alignment");
+	struct __declspec(align(Alignment)) PlaceHolder
+	{
+		uint8_t Pad[Size];
+	};
+	PlaceHolder Data;
+};
+
+// Element占位符
+template<typename ElementType>
+struct TTypeCompatibleBytes :
+	public TAlignedBytes<
+	sizeof(ElementType),
+	alignof(ElementType)
+	>
+{};
