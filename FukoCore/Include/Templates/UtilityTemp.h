@@ -437,3 +437,7 @@ FORCEINLINE typename TEnableIf_t<TAreTypesEqual_v<T, uint32>, T> ReverseBits(T B
 	Bits = ((Bits & 0x55555555) << 1) | ((Bits & 0xaaaaaaaa) >> 1);
 	return Bits;
 }
+
+// 右值转换为左值 
+template <typename T> struct TRValueToLValueReference { typedef T  Type; };
+template <typename T> struct TRValueToLValueReference<T&&> { typedef T& Type; };

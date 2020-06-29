@@ -129,7 +129,7 @@ namespace Fuko
 		check(NumElements > 0);
 		if (bAllowQuantize)
 		{
-			Retval = QuantizeSize(size_t(Retval) * size_t(BytesPerElement), Alignment) / BytesPerElement;
+			Retval = (SizeType)QuantizeSize(size_t(Retval) * size_t(BytesPerElement), Alignment) / BytesPerElement;
 			// 处理溢出
 			if (NumElements > Retval)
 			{

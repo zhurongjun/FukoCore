@@ -300,3 +300,89 @@ template <> struct TUnsignedIntType<4> { using Type = uint32; };
 template <> struct TUnsignedIntType<8> { using Type = uint64; };
 template <int NumBytes>
 using TUnsignedIntType_T = typename TUnsignedIntType<NumBytes>::Type;
+
+// Type traits
+template <typename T, bool TypeIsSmall>
+struct TCallTraitsParamTypeHelper
+{
+	typedef const T& ParamType;
+	typedef const T& ConstParamType;
+};
+template <typename T>
+struct TCallTraitsParamTypeHelper<T, true>
+{
+	typedef const T ParamType;
+	typedef const T ConstParamType;
+};
+template <typename T>
+struct TCallTraitsParamTypeHelper<T*, true>
+{
+	typedef T* ParamType;
+	typedef const T* ConstParamType;
+};
+
+template <typename T>
+struct TCallTraitsBase
+{
+private:
+	static constexpr bool PassByValue = ((sizeof(T) <= sizeof(void*)) && TIsPODType_v<T>) || TIsArithmetic_v<T>;
+
+public:
+	typedef T ValueType;
+	typedef T& Reference;
+	typedef const T& ConstReference;
+	typedef typename TCallTraitsParamTypeHelper<T, PassByValue>::ParamType ParamType;
+	typedef typename TCallTraitsParamTypeHelper<T, PassByValue>::ConstParamType ConstPointerType;
+};
+
+template <typename T>
+struct TCallTraits : public TCallTraitsBase<T> {};
+
+template <typename T>
+struct TCallTraits<T&>
+{
+	typedef T& ValueType;
+	typedef T& Reference;
+	typedef const T& ConstReference;
+	typedef T& ParamType;
+	typedef T& ConstPointerType;
+};
+
+// Array types
+template <typename T, size_t N>
+struct TCallTraits<T[N]>
+{
+private:
+	typedef T ArrayType[N];
+public:
+	typedef const T* ValueType;
+	typedef ArrayType& Reference;
+	typedef const ArrayType& ConstReference;
+	typedef const T* const ParamType;
+	typedef const T* const ConstPointerType;
+};
+
+// const array types
+template <typename T, size_t N>
+struct TCallTraits<const T[N]>
+{
+private:
+	typedef const T ArrayType[N];
+public:
+	typedef const T* ValueType;
+	typedef ArrayType& Reference;
+	typedef const ArrayType& ConstReference;
+	typedef const T* const ParamType;
+	typedef const T* const ConstPointerType;
+};
+
+template<typename T>
+struct TTypeTraitsBase
+{
+	typedef typename TCallTraits<T>::ParamType ConstInitType;
+	typedef typename TCallTraits<T>::ConstPointerType ConstPointerType;
+
+	static constexpr bool IsBytewiseComparable = TIsEnum_v<T> || TIsArithmetic_v<T> || TIsPointer_v<T>;
+};
+
+template<typename T> struct TTypeTraits : public TTypeTraitsBase<T> {};

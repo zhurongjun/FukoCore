@@ -169,6 +169,8 @@
     <ClInclude Include="Include\Algo\Replace.h" />
     <ClInclude Include="Include\Algo\Reverse.h" />
     <ClInclude Include="Include\Algo\Rotate.h" />
+    <ClInclude Include="Include\Containers\Map.h" />
+    <ClInclude Include="Include\Containers\Set.h" />
     <ClInclude Include="Include\Algo\Sort.h" />
     <ClInclude Include="Include\Algo\StableSort.h" />
     <ClInclude Include="Include\Algo\Transform.h" />
@@ -181,7 +183,6 @@
     <ClInclude Include="Include\Containers\HashTable.h" />
     <ClInclude Include="Include\Containers\SparseArray.h" />
     <ClInclude Include="Include\Containers\String.h" />
-    <ClInclude Include="Include\Containers\Set.h" />
     <ClInclude Include="Include\CoreConfig.h" />
     <ClInclude Include="Include\CoreMinimal\Assert.h" />
     <ClInclude Include="Include\CoreMinimal\ByteSwap.h" />

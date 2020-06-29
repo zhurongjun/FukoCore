@@ -212,7 +212,7 @@ namespace Fuko
 						GetData(FirstFreeIndex).PrevFreeIndex = FreeIndex;
 					}
 					FirstFreeIndex = FreeIndex;
-					verify(AllocationFlags.Add(false) == FreeIndex);
+					always_check(AllocationFlags.Add(false) == FreeIndex);
 					++NumFreeIndices;
 				};
 			}
@@ -621,7 +621,7 @@ namespace Fuko
 				AllocationFlags = InCopy.AllocationFlags;
 
 				// Determine whether we need per element construction or bulk copy is fine
-				if (!TIsTriviallyCopyConstructible<ElementType>::Value)
+				if constexpr (!TIsTriviallyCopyConstructible_v<ElementType>)
 				{
 					FElementOrFreeListLink* DestData = (FElementOrFreeListLink*)Data.GetData();
 					const FElementOrFreeListLink* SrcData = (FElementOrFreeListLink*)InCopy.Data.GetData();
@@ -645,7 +645,7 @@ namespace Fuko
 				else
 				{
 					// Use the much faster path for types that allow it
-					FMemory::Memcpy(Data.GetData(), InCopy.Data.GetData(), sizeof(FElementOrFreeListLink) * SrcMax);
+					Memcpy(Data.GetData(), InCopy.Data.GetData(), sizeof(FElementOrFreeListLink) * SrcMax);
 				}
 			}
 			return *this;
@@ -816,7 +816,7 @@ namespace Fuko
 
 			friend FORCEINLINE bool operator!=(const TRangedForIterator& Lhs, const TRangedForIterator& Rhs)
 			{
-				ensureMsgf(Lhs.Array.Num() == Lhs.InitialNum, TEXT("Container has changed during ranged-for iteration!"));
+				ensuref(Lhs.Array.Num() == Lhs.InitialNum, TEXT("Container has changed during ranged-for iteration!"));
 				return *(TIterator*)&Lhs != *(TIterator*)&Rhs;
 			}
 		};
@@ -966,5 +966,26 @@ namespace Fuko
 		// FreeList中的元素数量 
 		int32 NumFreeIndices;
 	};
+}
+
+// Type traits
+namespace Fuko
+{
+	template<typename ElementType, typename Allocator>
+	struct TContainerTraits<TSparseArray<ElementType, Allocator> > : public TContainerTraitsBase<TSparseArray<ElementType, Allocator> >
+	{
+		enum {
+			MoveWillEmptyContainer =
+			TContainerTraits<typename TSparseArray<ElementType, Allocator>::DataType>::MoveWillEmptyContainer &&
+			TContainerTraits<typename TSparseArray<ElementType, Allocator>::AllocationBitArrayType>::MoveWillEmptyContainer
+		};
+	};
+}
+
+// operator new 
+inline void* operator new(size_t Size, const Fuko::FSparseArrayAllocationInfo& Allocation)
+{
+	check(Allocation.Pointer);
+	return Allocation.Pointer;
 }
 
