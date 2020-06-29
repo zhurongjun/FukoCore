@@ -12,7 +12,7 @@
 #define TSPARSEARRAY_RANGED_FOR_CHECKS 0 
 #endif // DEBUG
 
-// Forward
+// std::forward
 namespace Fuko
 {
 	template<typename ElementType, typename Allocator = FDefaultSparseArrayAllocator >
@@ -135,7 +135,7 @@ namespace Fuko
 		int32 Add(ElementType&& Element)
 		{
 			FSparseArrayAllocationInfo Allocation = AddUninitialized();
-			new(Allocation) ElementType(MoveTemp(Element));
+			new(Allocation) ElementType(std::move(Element));
 			return Allocation.Index;
 		}
 
@@ -251,7 +251,7 @@ namespace Fuko
 		/** Removes Count elements from the array, starting from Index. */
 		void RemoveAt(int32 Index, int32 Count = 1)
 		{
-			if (!TIsTriviallyDestructible<ElementType>::Value)
+			if (!std::is_trivially_destructible_v<ElementType>::Value)
 			{
 				for (int32 It = Index, ItCount = Count; ItCount; ++It, --ItCount)
 				{
@@ -292,7 +292,7 @@ namespace Fuko
 		void Empty(int32 ExpectedNumElements = 0)
 		{
 			// Destruct the allocated elements.
-			if constexpr (!TIsTriviallyDestructible_v<ElementType>)
+			if constexpr (!std::is_trivially_destructible_v<ElementType>)
 			{
 				for (TIterator It(*this); It; ++It)
 				{
@@ -312,7 +312,7 @@ namespace Fuko
 		void Reset()
 		{
 			// Destruct the allocated elements.
-			if (!TIsTriviallyDestructible<ElementType>::Value)
+			if (!std::is_trivially_destructible_v<ElementType>::Value)
 			{
 				for (TIterator It(*this); It; ++It)
 				{
@@ -621,7 +621,7 @@ namespace Fuko
 				AllocationFlags = InCopy.AllocationFlags;
 
 				// Determine whether we need per element construction or bulk copy is fine
-				if constexpr (!TIsTriviallyCopyConstructible_v<ElementType>)
+				if constexpr (!std::is_trivially_copy_constructible_v<ElementType>)
 				{
 					FElementOrFreeListLink* DestData = (FElementOrFreeListLink*)Data.GetData();
 					const FElementOrFreeListLink* SrcData = (FElementOrFreeListLink*)InCopy.Data.GetData();
@@ -658,7 +658,7 @@ namespace Fuko
 			if constexpr (TContainerTraits<SparseArrayType>::MoveWillEmptyContainer)
 			{
 				// Destruct the allocated elements.
-				if constexpr (!TIsTriviallyDestructible<ElementType>::Value)
+				if constexpr (!std::is_trivially_destructible_v<ElementType>::Value)
 				{
 					for (ElementType& Element : ToArray)
 					{
@@ -720,8 +720,8 @@ namespace Fuko
 			typedef TConstSetBitIterator<typename Allocator::BitArrayAllocator> BitArrayItType;
 
 		private:
-			typedef typename TChooseClass_t<bConst, const TSparseArray, TSparseArray> ArrayType;
-			typedef typename TChooseClass_t<bConst, const ElementType, ElementType> ItElementType;
+			typedef typename std::conditional_t<bConst, const TSparseArray, TSparseArray> ArrayType;
+			typedef typename std::conditional_t<bConst, const ElementType, ElementType> ItElementType;
 
 		public:
 			explicit TBaseIterator(ArrayType& InArray, const BitArrayItType& InBitArrayIt)

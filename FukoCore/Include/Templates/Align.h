@@ -7,7 +7,7 @@
 template <typename T>
 FORCEINLINE constexpr T Align(T Val, uint64_t Alignment)
 {
-	static_assert(TIsIntegral_v<T> || TIsPointer_v<T>, "Align expects an integer or pointer type");
+	static_assert(std::is_integral_v<T> || std::is_pointer_v<T>, "Align expects an integer or pointer type");
 
 	return (T)(((uint64_t)Val + Alignment - 1) & ~(Alignment - 1));
 }
@@ -16,7 +16,7 @@ FORCEINLINE constexpr T Align(T Val, uint64_t Alignment)
 template <typename T>
 FORCEINLINE constexpr T AlignDown(T Val, uint64_t Alignment)
 {
-	static_assert(TIsIntegral_v<T> || TIsPointer_v<T>, "AlignDown expects an integer or pointer type");
+	static_assert(std::is_integral_v<T> || std::is_pointer_v<T>, "AlignDown expects an integer or pointer type");
 
 	return (T)(((uint64_t)Val) & ~(Alignment - 1));
 }
@@ -25,7 +25,7 @@ FORCEINLINE constexpr T AlignDown(T Val, uint64_t Alignment)
 template <typename T>
 FORCEINLINE constexpr bool IsAligned(T Val, uint64_t Alignment)
 {
-	static_assert(TIsIntegral_v<T> || TIsPointer_v<T>, "IsAligned expects an integer or pointer type");
+	static_assert(std::is_integral_v<T> || std::is_pointer_v<T>, "IsAligned expects an integer or pointer type");
 
 	return !((uint64_t)Val & (Alignment - 1));
 }
@@ -34,7 +34,7 @@ FORCEINLINE constexpr bool IsAligned(T Val, uint64_t Alignment)
 template <typename T>
 FORCEINLINE constexpr T AlignArbitrary(T Val, uint64_t Alignment)
 {
-	static_assert(TIsIntegral_v<T> || TIsPointer_v<T>, "AlignArbitrary expects an integer or pointer type");
+	static_assert(std::is_integral_v<T> || std::is_pointer_v<T>, "AlignArbitrary expects an integer or pointer type");
 
 	return (T)((((uint64_t)Val + Alignment - 1) / Alignment) * Alignment);
 }

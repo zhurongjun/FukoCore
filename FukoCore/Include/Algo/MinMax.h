@@ -50,24 +50,24 @@ namespace Fuko::Algo
 
 	template <typename RangeType, typename ComparatorType>
 	FORCEINLINE auto MaxElement(RangeType& Range, ComparatorType Comp)
-		-> decltype(Impl::MaxElementBy(Range, FIdentityFunctor(), MoveTemp(Comp)))
+		-> decltype(Impl::MaxElementBy(Range, FIdentityFunctor(), std::move(Comp)))
 	{
-		return Impl::MaxElementBy(Range, FIdentityFunctor(), MoveTemp(Comp));
+		return Impl::MaxElementBy(Range, FIdentityFunctor(), std::move(Comp));
 	}
 
 	template <typename RangeType, typename ProjectionType>
 	FORCEINLINE auto MaxElementBy(RangeType& Range, ProjectionType Proj)
-		-> decltype(Impl::MaxElementBy(Range, MoveTemp(Proj), TLess<>()))
+		-> decltype(Impl::MaxElementBy(Range, std::move(Proj), TLess<>()))
 	{
-		return Impl::MaxElementBy(Range, MoveTemp(Proj), TLess<>());
+		return Impl::MaxElementBy(Range, std::move(Proj), TLess<>());
 	}
 
 	
 	template <typename RangeType, typename ProjectionType, typename ComparatorType>
 	FORCEINLINE auto MaxElementBy(RangeType& Range, ProjectionType Proj, ComparatorType Comp)
-		-> decltype(Impl::MaxElementBy(Range, MoveTemp(Proj), MoveTemp(Comp)))
+		-> decltype(Impl::MaxElementBy(Range, std::move(Proj), std::move(Comp)))
 	{
-		return Impl::MaxElementBy(Range, MoveTemp(Proj), MoveTemp(Comp));
+		return Impl::MaxElementBy(Range, std::move(Proj), std::move(Comp));
 	}
 
 	template <typename RangeType>
@@ -79,22 +79,22 @@ namespace Fuko::Algo
 
 	template <typename RangeType, typename ComparatorType>
 	FORCEINLINE auto MinElement(RangeType& Range, ComparatorType Comp)
-		-> decltype(Impl::MinElementBy(Range, FIdentityFunctor(), MoveTemp(Comp)))
+		-> decltype(Impl::MinElementBy(Range, FIdentityFunctor(), std::move(Comp)))
 	{
-		return Impl::MinElementBy(Range, FIdentityFunctor(), MoveTemp(Comp));
+		return Impl::MinElementBy(Range, FIdentityFunctor(), std::move(Comp));
 	}
 
 	template <typename RangeType, typename ProjectionType>
 	FORCEINLINE auto MinElementBy(RangeType& Range, ProjectionType Proj)
-		-> decltype(Impl::MinElementBy(Range, MoveTemp(Proj), TLess<>()))
+		-> decltype(Impl::MinElementBy(Range, std::move(Proj), TLess<>()))
 	{
-		return Impl::MinElementBy(Range, MoveTemp(Proj), TLess<>());
+		return Impl::MinElementBy(Range, std::move(Proj), TLess<>());
 	}
 
 	template <typename RangeType, typename ProjectionType, typename ComparatorType>
 	FORCEINLINE auto MinElementBy(RangeType& Range, ProjectionType Proj, ComparatorType Comp)
-		-> decltype(Impl::MinElementBy(Range, MoveTemp(Proj), MoveTemp(Comp)))
+		-> decltype(Impl::MinElementBy(Range, std::move(Proj), std::move(Comp)))
 	{
-		return Impl::MinElementBy(Range, MoveTemp(Proj), MoveTemp(Comp));
+		return Impl::MinElementBy(Range, std::move(Proj), std::move(Comp));
 	}
 }

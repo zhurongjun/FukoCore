@@ -4,7 +4,7 @@
 #include "Templates/TypeTraits.h"
 #include "CoreMinimal/Assert.h"
 
-// Forward 
+// std::forward 
 namespace Fuko
 {
 	class FDefaultSetAllocator;
@@ -137,8 +137,8 @@ namespace Fuko
 		typedef InElementType ElementType;
 
 		FORCEINLINE TSetElementBase() {}
-		template <typename InitType, typename = typename TEnableIf_t<!TAreTypesEqual_v<TSetElementBase, TDecay_t<InitType>>>> 
-		explicit FORCEINLINE TSetElementBase(InitType&& InValue) : Value(Forward<InitType>(InValue)) {}
+		template <typename InitType, typename = typename std::enable_if_t<!std::is_same_v<TSetElementBase, std::decay_t<InitType>>>>
+		explicit FORCEINLINE TSetElementBase(InitType&& InValue) : Value(std::forward<InitType>(InValue)) {}
 
 		TSetElementBase(TSetElementBase&&) = default;
 		TSetElementBase(const TSetElementBase&) = default;
@@ -157,8 +157,8 @@ namespace Fuko
 		using Super = TSetElementBase<InElementType>;
 	public:
 		FORCEINLINE TSetElement() = default;
-		template <typename InitType, typename = typename TEnableIf_t<!TAreTypesEqual_v<TSetElement, TDecay_t<InitType>>>> 
-		explicit FORCEINLINE TSetElement(InitType&& InValue) : Super(Forward<InitType>(InValue)) {}
+		template <typename InitType, typename = typename std::enable_if_t<!std::is_same_v<TSetElement, std::decay_t<InitType>>>>
+		explicit FORCEINLINE TSetElement(InitType&& InValue) : Super(std::forward<InitType>(InValue)) {}
 
 		TSetElement(TSetElement&&) = default;
 		TSetElement(const TSetElement&) = default;
@@ -196,7 +196,7 @@ namespace Fuko
 		FORCEINLINE TSet() : HashSize(0) {}
 		FORCEINLINE TSet(const TSet& Copy) : HashSize(0) { *this = Copy; }
 		FORCEINLINE explicit TSet(const TArray<ElementType>& InArray) : HashSize(0) { Append(InArray); }
-		FORCEINLINE explicit TSet(TArray<ElementType>&& InArray) : HashSize(0) { Append(MoveTemp(InArray)); }
+		FORCEINLINE explicit TSet(TArray<ElementType>&& InArray) : HashSize(0) { Append(std::move(InArray)); }
 
 		~TSet() = default;
 
@@ -253,7 +253,7 @@ namespace Fuko
 		}
 
 		template<typename OtherAllocator>
-		TSet(TSet<ElementType, KeyFuncs, OtherAllocator>&& Other) : HashSize(0) { Append(MoveTemp(Other)); }
+		TSet(TSet<ElementType, KeyFuncs, OtherAllocator>&& Other) : HashSize(0) { Append(std::move(Other)); }
 		template<typename OtherAllocator>
 		TSet(const TSet<ElementType, KeyFuncs, OtherAllocator>& Other) : HashSize(0) { Append(Other); }
 
@@ -262,7 +262,7 @@ namespace Fuko
 		TSet& operator=(TSet<ElementType, KeyFuncs, OtherAllocator>&& Other)
 		{
 			Reset();
-			Append(MoveTemp(Other));
+			Append(std::move(Other));
 			return *this;
 		}
 		template<typename OtherAllocator>
@@ -422,7 +422,7 @@ namespace Fuko
 		 * @return	A pointer to the element stored in the set.
 		 */
 		FORCEINLINE FSetElementId Add(const InElementType&  InElement, bool* bIsAlreadyInSetPtr = nullptr) { return Emplace(InElement, bIsAlreadyInSetPtr); }
-		FORCEINLINE FSetElementId Add(InElementType&& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return Emplace(MoveTempIfPossible(InElement), bIsAlreadyInSetPtr); }
+		FORCEINLINE FSetElementId Add(InElementType&& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return Emplace(std::moveIfPossible(InElement), bIsAlreadyInSetPtr); }
 
 		/**
 		 * Adds an element to the set.
@@ -438,7 +438,7 @@ namespace Fuko
 		}
 		FORCEINLINE FSetElementId AddByHash(uint32 KeyHash, InElementType&& InElement, bool* bIsAlreadyInSetPtr = nullptr)
 		{
-			return EmplaceByHash(KeyHash, MoveTempIfPossible(InElement), bIsAlreadyInSetPtr);
+			return EmplaceByHash(KeyHash, std::moveIfPossible(InElement), bIsAlreadyInSetPtr);
 		}
 
 	private:
@@ -489,7 +489,7 @@ namespace Fuko
 		/**
 		 * Adds an element to the set.
 		 *
-		 * @param	Args						The argument(s) to be forwarded to the set element's constructor.
+		 * @param	Args						The argument(s) to be std::forwarded to the set element's constructor.
 		 * @param	bIsAlreadyInSetPtr	[out]	Optional pointer to bool that will be set depending on whether element is already in set
 		 * @return	A handle to the element stored in the set.
 		 */
@@ -498,7 +498,7 @@ namespace Fuko
 		{
 			// Create a new element.
 			FSparseArrayAllocationInfo ElementAllocation = Elements.AddUninitialized();
-			SetElementType& Element = *new (ElementAllocation) SetElementType(Forward<ArgsType>(Args));
+			SetElementType& Element = *new (ElementAllocation) SetElementType(std::forward<ArgsType>(Args));
 
 			uint32 KeyHash = KeyFuncs::GetKeyHash(KeyFuncs::GetSetKey(Element.Value));
 			return EmplaceImpl(KeyHash, Element, ElementAllocation.Index, bIsAlreadyInSetPtr);
@@ -508,7 +508,7 @@ namespace Fuko
 		 * Adds an element to the set.
 		 *
 		 * @see		Class documentation section on ByHash() functions
-		 * @param	Args						The argument(s) to be forwarded to the set element's constructor.
+		 * @param	Args						The argument(s) to be std::forwarded to the set element's constructor.
 		 * @param	bIsAlreadyInSetPtr	[out]	Optional pointer to bool that will be set depending on whether element is already in set
 		 * @return	A handle to the element stored in the set.
 		 */
@@ -517,7 +517,7 @@ namespace Fuko
 		{
 			// Create a new element.
 			FSparseArrayAllocationInfo ElementAllocation = Elements.AddUninitialized();
-			SetElementType& Element = *new (ElementAllocation) SetElementType(Forward<ArgsType>(Args));
+			SetElementType& Element = *new (ElementAllocation) SetElementType(std::forward<ArgsType>(Args));
 
 			return EmplaceImpl(KeyHash, Element, ElementAllocation.Index, bIsAlreadyInSetPtr);
 		}
@@ -538,7 +538,7 @@ namespace Fuko
 			Reserve(Elements.Num() + InElements.Num());
 			for (ElementType& Element : InElements)
 			{
-				Add(MoveTempIfPossible(Element));
+				Add(std::moveIfPossible(Element));
 			}
 			InElements.Reset();
 		}
@@ -563,7 +563,7 @@ namespace Fuko
 			Reserve(Elements.Num() + OtherSet.Num());
 			for (ElementType& Element : OtherSet)
 			{
-				Add(MoveTempIfPossible(Element));
+				Add(std::moveIfPossible(Element));
 			}
 			OtherSet.Reset();
 		}
@@ -1087,13 +1087,13 @@ namespace Fuko
 		private:
 			friend class TSet;
 
-			typedef typename TChooseClass_t<bConst, const ElementType, ElementType> ItElementType;
+			typedef typename std::conditional_t<bConst, const ElementType, ElementType> ItElementType;
 
 		public:
-			typedef typename TChooseClass_t<
+			typedef typename std::conditional_t<
 				bConst,
-				typename TChooseClass_t<bRangedFor, typename ElementArrayType::TRangedForConstIterator, typename ElementArrayType::TConstIterator>,
-				typename TChooseClass_t<bRangedFor, typename ElementArrayType::TRangedForIterator, typename ElementArrayType::TIterator     >
+				typename std::conditional_t<bRangedFor, typename ElementArrayType::TRangedForConstIterator, typename ElementArrayType::TConstIterator>,
+				typename std::conditional_t<bRangedFor, typename ElementArrayType::TRangedForIterator, typename ElementArrayType::TIterator     >
 			> ElementItType;
 
 			FORCEINLINE TBaseIterator(const ElementItType& InElementIt)
@@ -1144,8 +1144,8 @@ namespace Fuko
 		class TBaseKeyIterator
 		{
 		private:
-			typedef typename TChooseClass<bConst, const TSet, TSet>::Result SetType;
-			typedef typename TChooseClass<bConst, const ElementType, ElementType>::Result ItElementType;
+			typedef typename std::conditional_t<bConst, const TSet, TSet> SetType;
+			typedef typename std::conditional_t<bConst, const ElementType, ElementType> ItElementType;
 
 		public:
 			/** Initialization constructor. */

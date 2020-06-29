@@ -126,7 +126,7 @@ public:
 
 		for (int32 Index = 0; Index < GCD; ++Index)
 		{
-			T BufferObject = MoveTemp(First[From + Index]);
+			T BufferObject = std::move(First[From + Index]);
 			int32 IndexToFill = Index;
 
 			for (int32 InCycleIndex = 0; InCycleIndex < CycleSize; ++InCycleIndex)

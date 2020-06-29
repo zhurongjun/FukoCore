@@ -4,7 +4,7 @@
 #include "Templates/Pair.h"
 #include "Set.h"
 
-// Forward
+// std::forward
 namespace Fuko
 {
 	class FDefaultSetAllocator;
@@ -90,7 +90,7 @@ namespace Fuko
 	template<typename KeyType, typename ValueType, bool bInAllowDuplicateKeys>
 	struct TDefaultMapHashableKeyFuncs : TDefaultMapKeyFuncs<KeyType, ValueType, bInAllowDuplicateKeys>
 	{
-		using HashabilityCheck = decltype(GetTypeHash(DeclVal<const KeyType>()));
+		using HashabilityCheck = decltype(GetTypeHash(std::declval<const KeyType>()));
 	};
 }
 
@@ -120,7 +120,7 @@ namespace Fuko
 		/** Constructor for moving elements from a TMap with a different SetAllocator */
 		template<typename OtherSetAllocator>
 		TMapBase(TMapBase<KeyType, ValueType, OtherSetAllocator, KeyFuncs>&& Other)
-			: Pairs(MoveTemp(Other.Pairs))
+			: Pairs(std::move(Other.Pairs))
 		{ }
 
 		/** Constructor for copying elements from a TMap with a different SetAllocator */
@@ -133,7 +133,7 @@ namespace Fuko
 		template<typename OtherSetAllocator>
 		TMapBase& operator=(TMapBase<KeyType, ValueType, OtherSetAllocator, KeyFuncs>&& Other)
 		{
-			Pairs = MoveTemp(Other.Pairs);
+			Pairs = std::move(Other.Pairs);
 			return *this;
 		}
 
@@ -279,15 +279,15 @@ namespace Fuko
 		 * @return A reference to the value as stored in the map. The reference is only valid until the next change to any key in the map.
 		 */
 		FORCEINLINE ValueType& Add(const KeyType&  InKey, const ValueType&  InValue) { return Emplace(InKey, InValue); }
-		FORCEINLINE ValueType& Add(const KeyType&  InKey, ValueType&& InValue) { return Emplace(InKey, MoveTempIfPossible(InValue)); }
-		FORCEINLINE ValueType& Add(KeyType&& InKey, const ValueType&  InValue) { return Emplace(MoveTempIfPossible(InKey), InValue); }
-		FORCEINLINE ValueType& Add(KeyType&& InKey, ValueType&& InValue) { return Emplace(MoveTempIfPossible(InKey), MoveTempIfPossible(InValue)); }
+		FORCEINLINE ValueType& Add(const KeyType&  InKey, ValueType&& InValue) { return Emplace(InKey, std::move(InValue)); }
+		FORCEINLINE ValueType& Add(KeyType&& InKey, const ValueType&  InValue) { return Emplace(std::move(InKey), InValue); }
+		FORCEINLINE ValueType& Add(KeyType&& InKey, ValueType&& InValue) { return Emplace(std::move(InKey), std::move(InValue)); }
 
 		/** See Add() and class documentation section on ByHash() functions */
 		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, const KeyType&  InKey, const ValueType&  InValue) { return EmplaceByHash(KeyHash, InKey, InValue); }
-		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, const KeyType&  InKey, ValueType&& InValue) { return EmplaceByHash(KeyHash, InKey, MoveTempIfPossible(InValue)); }
-		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, KeyType&& InKey, const ValueType&  InValue) { return EmplaceByHash(KeyHash, MoveTempIfPossible(InKey), InValue); }
-		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, KeyType&& InKey, ValueType&& InValue) { return EmplaceByHash(KeyHash, MoveTempIfPossible(InKey), MoveTempIfPossible(InValue)); }
+		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, const KeyType&  InKey, ValueType&& InValue) { return EmplaceByHash(KeyHash, InKey, std::move(InValue)); }
+		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, KeyType&& InKey, const ValueType&  InValue) { return EmplaceByHash(KeyHash, std::move(InKey), InValue); }
+		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, KeyType&& InKey, ValueType&& InValue) { return EmplaceByHash(KeyHash, std::move(InKey), std::move(InValue)); }
 
 		/**
 		 * Set a default value associated with a key.
@@ -296,11 +296,11 @@ namespace Fuko
 		 * @return A reference to the value as stored in the map. The reference is only valid until the next change to any key in the map.
 		 */
 		FORCEINLINE ValueType& Add(const KeyType&  InKey) { return Emplace(InKey); }
-		FORCEINLINE ValueType& Add(KeyType&& InKey) { return Emplace(MoveTempIfPossible(InKey)); }
+		FORCEINLINE ValueType& Add(KeyType&& InKey) { return Emplace(std::move(InKey)); }
 
 		/** See Add() and class documentation section on ByHash() functions */
 		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, const KeyType&  InKey) { return EmplaceByHash(KeyHash, InKey); }
-		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, KeyType&& InKey) { return EmplaceByHash(KeyHash, MoveTempIfPossible(InKey)); }
+		FORCEINLINE ValueType& AddByHash(uint32 KeyHash, KeyType&& InKey) { return EmplaceByHash(KeyHash, std::move(InKey)); }
 
 		/**
 		 * Set the value associated with a key.
@@ -309,7 +309,7 @@ namespace Fuko
 		 * @return A reference to the value as stored in the map. The reference is only valid until the next change to any key in the map.
 		 */
 		FORCEINLINE ValueType& Add(const TTuple<KeyType, ValueType>&  InKeyValue) { return Emplace(InKeyValue.Key, InKeyValue.Value); }
-		FORCEINLINE ValueType& Add(TTuple<KeyType, ValueType>&& InKeyValue) { return Emplace(MoveTempIfPossible(InKeyValue.Key), MoveTempIfPossible(InKeyValue.Value)); }
+		FORCEINLINE ValueType& Add(TTuple<KeyType, ValueType>&& InKeyValue) { return Emplace(std::move(InKeyValue.Key), std::move(InKeyValue.Value)); }
 
 		/**
 		 * Sets the value associated with a key.
@@ -320,7 +320,7 @@ namespace Fuko
 		template <typename InitKeyType, typename InitValueType>
 		ValueType& Emplace(InitKeyType&& InKey, InitValueType&& InValue)
 		{
-			const FSetElementId PairId = Pairs.Emplace(TPairInitializer<InitKeyType&&, InitValueType&&>(Forward<InitKeyType>(InKey), Forward<InitValueType>(InValue)));
+			const FSetElementId PairId = Pairs.Emplace(TPairInitializer<InitKeyType&&, InitValueType&&>(std::forward<InitKeyType>(InKey), std::forward<InitValueType>(InValue)));
 
 			return Pairs[PairId].Value;
 		}
@@ -329,7 +329,7 @@ namespace Fuko
 		template <typename InitKeyType, typename InitValueType>
 		ValueType& EmplaceByHash(uint32 KeyHash, InitKeyType&& InKey, InitValueType&& InValue)
 		{
-			const FSetElementId PairId = Pairs.EmplaceByHash(KeyHash, TPairInitializer<InitKeyType&&, InitValueType&&>(Forward<InitKeyType>(InKey), Forward<InitValueType>(InValue)));
+			const FSetElementId PairId = Pairs.EmplaceByHash(KeyHash, TPairInitializer<InitKeyType&&, InitValueType&&>(std::forward<InitKeyType>(InKey), std::forward<InitValueType>(InValue)));
 
 			return Pairs[PairId].Value;
 		}
@@ -343,7 +343,7 @@ namespace Fuko
 		template <typename InitKeyType>
 		ValueType& Emplace(InitKeyType&& InKey)
 		{
-			const FSetElementId PairId = Pairs.Emplace(TKeyInitializer<InitKeyType&&>(Forward<InitKeyType>(InKey)));
+			const FSetElementId PairId = Pairs.Emplace(TKeyInitializer<InitKeyType&&>(std::forward<InitKeyType>(InKey)));
 
 			return Pairs[PairId].Value;
 		}
@@ -352,7 +352,7 @@ namespace Fuko
 		template <typename InitKeyType>
 		ValueType& EmplaceByHash(uint32 KeyHash, InitKeyType&& InKey)
 		{
-			const FSetElementId PairId = Pairs.EmplaceByHash(KeyHash, TKeyInitializer<InitKeyType&&>(Forward<InitKeyType>(InKey)));
+			const FSetElementId PairId = Pairs.EmplaceByHash(KeyHash, TKeyInitializer<InitKeyType&&>(std::forward<InitKeyType>(InKey)));
 
 			return Pairs[PairId].Value;
 		}
@@ -458,7 +458,7 @@ namespace Fuko
 				return Pair->Value;
 			}
 
-			return AddByHash(KeyHash, Forward<InitKeyType>(Key));
+			return AddByHash(KeyHash, std::forward<InitKeyType>(Key));
 		}
 
 		/**
@@ -477,7 +477,7 @@ namespace Fuko
 				return Pair->Value;
 			}
 
-			return AddByHash(KeyHash, Forward<InitKeyType>(Key), Forward<InitValueType>(Value));
+			return AddByHash(KeyHash, std::forward<InitKeyType>(Key), std::forward<InitValueType>(Value));
 		}
 
 	public:
@@ -490,11 +490,11 @@ namespace Fuko
 		 * @return A reference to the value associated with the specified key.
 		 */
 		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key) { return FindOrAddImpl(HashKey(Key), Key); }
-		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key) { return FindOrAddImpl(HashKey(Key), MoveTempIfPossible(Key)); }
+		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key) { return FindOrAddImpl(HashKey(Key), std::moveIfPossible(Key)); }
 
 		/** See FindOrAdd() and class documentation section on ByHash() functions */
 		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key) { return FindOrAddImpl(KeyHash, Key); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key) { return FindOrAddImpl(KeyHash, MoveTempIfPossible(Key)); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key) { return FindOrAddImpl(KeyHash, std::moveIfPossible(Key)); }
 
 		/**
 		 * Find the value associated with a specified key, or if none exists,
@@ -505,15 +505,15 @@ namespace Fuko
 		 * @return A reference to the value associated with the specified key.
 		 */
 		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, const ValueType&  Value) { return FindOrAddImpl(HashKey(Key), Key, Value); }
-		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, ValueType&&       Value) { return FindOrAddImpl(HashKey(Key), Key, MoveTempIfPossible(Value)); }
-		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, const ValueType&  Value) { return FindOrAddImpl(HashKey(Key), MoveTempIfPossible(Key), Value); }
-		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, ValueType&&       Value) { return FindOrAddImpl(HashKey(Key), MoveTempIfPossible(Key), MoveTempIfPossible(Value)); }
+		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, ValueType&&       Value) { return FindOrAddImpl(HashKey(Key), Key, std::move(Value)); }
+		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, const ValueType&  Value) { return FindOrAddImpl(HashKey(Key), std::move(Key), Value); }
+		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, ValueType&&       Value) { return FindOrAddImpl(HashKey(Key), std::move(Key), std::move(Value)); }
 
 		/** See FindOrAdd() and class documentation section on ByHash() functions */
 		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key, const ValueType&  Value) { return FindOrAddImpl(KeyHash, Key, Value); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key, ValueType&& Value) { return FindOrAddImpl(KeyHash, Key, MoveTempIfPossible(Value)); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, const ValueType&  Value) { return FindOrAddImpl(KeyHash, MoveTempIfPossible(Key), Value); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, ValueType&& Value) { return FindOrAddImpl(KeyHash, MoveTempIfPossible(Key), MoveTempIfPossible(Value)); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key, ValueType&& Value) { return FindOrAddImpl(KeyHash, Key, std::move(Value)); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, const ValueType&  Value) { return FindOrAddImpl(KeyHash, std::move(Key), Value); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, ValueType&& Value) { return FindOrAddImpl(KeyHash, std::move(Key), std::move(Value)); }
 
 		/**
 		 * Find a reference to the value associated with a specified key.
@@ -611,16 +611,16 @@ namespace Fuko
 		class TBaseIterator
 		{
 		public:
-			typedef typename TChooseClass_t<
+			typedef typename std::conditional_t<
 				bConst,
-				typename TChooseClass_t<bRangedFor, typename ElementSetType::TRangedForConstIterator, typename ElementSetType::TConstIterator>,
-				typename TChooseClass_t<bRangedFor, typename ElementSetType::TRangedForIterator, typename ElementSetType::TIterator     >
+				typename std::conditional_t<bRangedFor, typename ElementSetType::TRangedForConstIterator, typename ElementSetType::TConstIterator>,
+				typename std::conditional_t<bRangedFor, typename ElementSetType::TRangedForIterator, typename ElementSetType::TIterator     >
 			> PairItType;
 		private:
-			typedef typename TChooseClass_t<bConst, const TMapBase, TMapBase> MapType;
-			typedef typename TChooseClass_t<bConst, const KeyType, KeyType> ItKeyType;
-			typedef typename TChooseClass_t<bConst, const ValueType, ValueType> ItValueType;
-			typedef typename TChooseClass_t<bConst, const typename ElementSetType::ElementType, typename ElementSetType::ElementType> PairType;
+			typedef typename std::conditional_t<bConst, const TMapBase, TMapBase> MapType;
+			typedef typename std::conditional_t<bConst, const KeyType, KeyType> ItKeyType;
+			typedef typename std::conditional_t<bConst, const ValueType, ValueType> ItValueType;
+			typedef typename std::conditional_t<bConst, const typename ElementSetType::ElementType, typename ElementSetType::ElementType> PairType;
 
 		public:
 			FORCEINLINE TBaseIterator(const PairItType& InElementIt)
@@ -663,9 +663,9 @@ namespace Fuko
 		class TBaseKeyIterator
 		{
 		private:
-			typedef typename TChooseClass_t<bConst, typename ElementSetType::TConstKeyIterator, typename ElementSetType::TKeyIterator> SetItType;
-			typedef typename TChooseClass_t<bConst, const KeyType, KeyType> ItKeyType;
-			typedef typename TChooseClass_t<bConst, const ValueType, ValueType> ItValueType;
+			typedef typename std::conditional_t<bConst, typename ElementSetType::TConstKeyIterator, typename ElementSetType::TKeyIterator> SetItType;
+			typedef typename std::conditional_t<bConst, const KeyType, KeyType> ItKeyType;
+			typedef typename std::conditional_t<bConst, const ValueType, ValueType> ItValueType;
 
 		public:
 			/** Initialization constructor. */
@@ -828,7 +828,7 @@ namespace Fuko
 		/** Constructor for moving elements from a TMap with a different SetAllocator */
 		template<typename OtherSetAllocator>
 		TSortableMapBase(TSortableMapBase<KeyType, ValueType, OtherSetAllocator, KeyFuncs>&& Other)
-			: Super(MoveTemp(Other))
+			: Super(std::move(Other))
 		{
 		}
 
@@ -843,7 +843,7 @@ namespace Fuko
 		template<typename OtherSetAllocator>
 		TSortableMapBase& operator=(TSortableMapBase<KeyType, ValueType, OtherSetAllocator, KeyFuncs>&& Other)
 		{
-			(Super&)*this = MoveTemp(Other);
+			(Super&)*this = std::move(Other);
 			return *this;
 		}
 
@@ -964,7 +964,7 @@ namespace Fuko
 		/** Constructor for moving elements from a TMap with a different SetAllocator */
 		template<typename OtherSetAllocator>
 		TMap(TMap<KeyType, ValueType, OtherSetAllocator, KeyFuncs>&& Other)
-			: Super(MoveTemp(Other))
+			: Super(std::move(Other))
 		{
 		}
 
@@ -989,7 +989,7 @@ namespace Fuko
 		template<typename OtherSetAllocator>
 		TMap& operator=(TMap<KeyType, ValueType, OtherSetAllocator, KeyFuncs>&& Other)
 		{
-			(Super&)*this = MoveTemp(Other);
+			(Super&)*this = std::move(Other);
 			return *this;
 		}
 
@@ -1026,7 +1026,7 @@ namespace Fuko
 			if (!PairId.IsValidId())
 				return false;
 
-			OutRemovedValue = MoveTempIfPossible(Super::Pairs[PairId].Value);
+			OutRemovedValue = std::moveIfPossible(Super::Pairs[PairId].Value);
 			Super::Pairs.Remove(PairId);
 			return true;
 		}
@@ -1043,7 +1043,7 @@ namespace Fuko
 		{
 			const FSetElementId PairId = Super::Pairs.FindId(Key);
 			check(PairId.IsValidId());
-			ValueType Result = MoveTempIfPossible(Super::Pairs[PairId].Value);
+			ValueType Result = std::moveIfPossible(Super::Pairs[PairId].Value);
 			Super::Pairs.Remove(PairId);
 			return Result;
 		}
@@ -1060,7 +1060,7 @@ namespace Fuko
 			this->Reserve(this->Num() + OtherMap.Num());
 			for (auto& Pair : OtherMap)
 			{
-				this->Add(MoveTempIfPossible(Pair.Key), MoveTempIfPossible(Pair.Value));
+				this->Add(std::moveIfPossible(Pair.Key), std::moveIfPossible(Pair.Value));
 			}
 
 			OtherMap.Reset();
@@ -1112,7 +1112,7 @@ namespace Fuko
 		/** Constructor for moving elements from a TMap with a different SetAllocator */
 		template<typename OtherSetAllocator>
 		TMultiMap(TMultiMap<KeyType, ValueType, OtherSetAllocator, KeyFuncs>&& Other)
-			: Super(MoveTemp(Other))
+			: Super(std::move(Other))
 		{
 		}
 
@@ -1137,7 +1137,7 @@ namespace Fuko
 		template<typename OtherSetAllocator>
 		TMultiMap& operator=(TMultiMap<KeyType, ValueType, OtherSetAllocator, KeyFuncs>&& Other)
 		{
-			(Super&)*this = MoveTemp(Other);
+			(Super&)*this = std::move(Other);
 			return *this;
 		}
 
@@ -1223,9 +1223,9 @@ namespace Fuko
 		 * @return A reference to the value as stored in the map; the reference is only valid until the next change to any key in the map.
 		 */
 		FORCEINLINE ValueType& AddUnique(const KeyType&  InKey, const ValueType&  InValue) { return EmplaceUnique(InKey, InValue); }
-		FORCEINLINE ValueType& AddUnique(const KeyType&  InKey, ValueType&& InValue) { return EmplaceUnique(InKey, MoveTempIfPossible(InValue)); }
-		FORCEINLINE ValueType& AddUnique(KeyType&& InKey, const ValueType&  InValue) { return EmplaceUnique(MoveTempIfPossible(InKey), InValue); }
-		FORCEINLINE ValueType& AddUnique(KeyType&& InKey, ValueType&& InValue) { return EmplaceUnique(MoveTempIfPossible(InKey), MoveTempIfPossible(InValue)); }
+		FORCEINLINE ValueType& AddUnique(const KeyType&  InKey, ValueType&& InValue) { return EmplaceUnique(InKey, std::moveIfPossible(InValue)); }
+		FORCEINLINE ValueType& AddUnique(KeyType&& InKey, const ValueType&  InValue) { return EmplaceUnique(std::moveIfPossible(InKey), InValue); }
+		FORCEINLINE ValueType& AddUnique(KeyType&& InKey, ValueType&& InValue) { return EmplaceUnique(std::moveIfPossible(InKey), std::moveIfPossible(InValue)); }
 
 		/**
 		 * Add a key-value association to the map.
@@ -1247,7 +1247,7 @@ namespace Fuko
 			}
 
 			// If there's no existing association with the same key and value, create one.
-			return Super::Add(Forward<InitKeyType>(InKey), Forward<InitValueType>(InValue));
+			return Super::Add(std::forward<InitKeyType>(InKey), std::forward<InitValueType>(InValue));
 		}
 
 		/**
@@ -1376,7 +1376,7 @@ namespace Fuko
 			this->Reserve(this->Num() + OtherMultiMap.Num());
 			for (auto& Pair : OtherMultiMap)
 			{
-				this->Add(MoveTempIfPossible(Pair.Key), MoveTempIfPossible(Pair.Value));
+				this->Add(std::moveIfPossible(Pair.Key), std::moveIfPossible(Pair.Value));
 			}
 
 			OtherMultiMap.Reset();

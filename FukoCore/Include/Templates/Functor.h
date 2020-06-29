@@ -27,7 +27,7 @@ struct TLess<void>
 	template <typename T, typename U>
 	FORCEINLINE constexpr bool operator()(T&& A, U&& B) const
 	{
-		return Forward<T>(A) < Forward<U>(B);
+		return std::forward<T>(A) < std::forward<U>(B);
 	}
 };
 
@@ -46,7 +46,7 @@ struct TGreater<void>
 	template <typename T, typename U>
 	FORCEINLINE constexpr bool operator()(T&& A, U&& B) const
 	{
-		return Forward<T>(A) > Forward<U>(B);
+		return std::forward<T>(A) > std::forward<U>(B);
 	}
 };
 
@@ -77,9 +77,9 @@ template <>
 struct TEqualTo<void>
 {
 	template <typename T, typename U>
-	constexpr auto operator()(T&& Lhs, U&& Rhs) const -> decltype(Forward<T>(Lhs) == Forward<U>(Rhs))
+	constexpr auto operator()(T&& Lhs, U&& Rhs) const -> decltype(std::forward<T>(Lhs) == std::forward<U>(Rhs))
 	{
-		return Forward<T>(Lhs) == Forward<U>(Rhs);
+		return std::forward<T>(Lhs) == std::forward<U>(Rhs);
 	}
 };
 

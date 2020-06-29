@@ -177,19 +177,19 @@ namespace Fuko
 	template<class T>
 	FORCEINLINE static void Memset(T& Src, uint8_t ValueToSet)
 	{
-		static_assert(!TIsPointer_v<T>, "For pointers use the three parameters function");
+		static_assert(!std::is_pointer_v<T>, "For pointers use the three parameters function");
 		Memset(&Src, ValueToSet, sizeof(T));
 	}
 	template<class T>
 	FORCEINLINE static void Memzero(T& Src)
 	{
-		static_assert(!TIsPointer_v<T>, "For pointers use the two parameters function");
+		static_assert(!std::is_pointer_v<T>, "For pointers use the two parameters function");
 		Memzero(&Src, sizeof(T));
 	}
 	template<class T>
 	FORCEINLINE static void Memcpy(T& Dest, const T& Src)
 	{
-		static_assert(!TIsPointer_v<T>, "For pointers use the three parameters function");
+		static_assert(!std::is_pointer_v<T>, "For pointers use the three parameters function");
 		Memcpy(&Dest, &Src, sizeof(T));
 	}
 
@@ -198,7 +198,7 @@ namespace Fuko
 	void* Realloc(void* Ptr, size_t Size);
 	void  Free(void* Ptr);
 
-	// 对齐的fenpei 
+	// 对齐的内存分配 
 	void* AlignedMalloc(size_t Size, uint32 Alignment = DEFAULT_ALIGNMENT);
 	void* AlignedRealloc(void* Ptr, size_t Size, uint32 Alignment = DEFAULT_ALIGNMENT);
 	void  AlignedFree(void* Ptr);
@@ -240,7 +240,7 @@ namespace Fuko
 		// 防止类型拥有成员ElementType的typedef
 		typedef ElementType DestructItemsElementTypeTypedef;
 
-		if constexpr (!TIsTriviallyDestructible_v<ElementType>)
+		if constexpr (!std::is_trivially_destructible_v<ElementType>)
 		{
 			Element->DestructItemsElementTypeTypedef::~DestructItemsElementTypeTypedef();
 		}
@@ -248,7 +248,7 @@ namespace Fuko
 	template <typename ElementType>
 	void DestructItems(ElementType* Element, int32_t Count)
 	{
-		if constexpr (!TIsTriviallyDestructible_v<ElementType>)
+		if constexpr (!std::is_trivially_destructible_v<ElementType>)
 		{
 			while (Count)
 			{
@@ -286,7 +286,7 @@ namespace Fuko
 	template <typename ElementType>
 	void CopyAssignItems(ElementType* Dest, const ElementType* Source, int32_t Count)
 	{
-		if constexpr (TIsTriviallyCopyAssignable_v<ElementType>)
+		if constexpr (std::is_trivially_copy_assignable_v<ElementType>)
 		{
 			Memcpy(Dest, Source, sizeof(ElementType) * Count);
 		}
@@ -329,7 +329,7 @@ namespace Fuko
 	template <typename ElementType>
 	void MoveConstructItems(void* Dest, const ElementType* Source, int32_t Count)
 	{
-		if constexpr (TIsTriviallyCopyConstructible_v<ElementType>)
+		if constexpr (std::is_trivially_copy_constructible_v<ElementType>)
 		{
 			Memmove(Dest, Source, sizeof(ElementType) * Count);
 		}
@@ -349,7 +349,7 @@ namespace Fuko
 	template <typename ElementType>
 	void MoveAssignItems(ElementType* Dest, const ElementType* Source, int32_t Count)
 	{
-		if constexpr (TIsTriviallyCopyAssignable_v<ElementType>)
+		if constexpr (std::is_trivially_copy_assignable_v<ElementType>)
 		{
 			Memmove(Dest, Source, sizeof(ElementType) * Count);
 		}

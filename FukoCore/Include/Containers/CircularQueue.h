@@ -31,7 +31,7 @@ namespace Fuko
 
 			if (CurrentHead != Tail.Load())
 			{
-				OutElement = MoveTemp(Buffer[CurrentHead]);
+				OutElement = std::move(Buffer[CurrentHead]);
 				Head.Store(Buffer.GetNextIndex(CurrentHead));
 
 				return true;
@@ -82,7 +82,7 @@ namespace Fuko
 
 			if (NewTail != Head.Load())
 			{
-				Buffer[CurrentTail] = MoveTemp(Element);
+				Buffer[CurrentTail] = std::move(Element);
 				Tail.Store(NewTail);
 
 				return true;

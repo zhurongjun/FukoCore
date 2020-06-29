@@ -57,7 +57,7 @@ namespace Fuko::Algo
 			}
 
 			// 把尾部无需移除的元素移动给首部需要移除的元素
-			*IterStart = MoveTemp(*(IterEnd - 1));
+			*IterStart = std::move(*(IterEnd - 1));
 
 			// 更新迭代器
 			++IterStart;
@@ -113,7 +113,7 @@ namespace Fuko::Algo
 
 			if (!Invoke(Pred, *IterKeep))
 			{
-				*IterStart++ = MoveTemp(*IterKeep);
+				*IterStart++ = std::move(*IterKeep);
 			}
 
 			++IterKeep;

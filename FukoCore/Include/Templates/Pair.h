@@ -11,7 +11,7 @@ namespace Fuko
 	{
 		// construct
 		TPair() = default;
-		TPair(KeyType&& InKey, ValueType&& InValue) :Key(Forward<KeyType>(InKey)), Value(Forward<ValueType>(InValue)) {}
+		TPair(KeyType&& InKey, ValueType&& InValue) :Key(std::forward<KeyType>(InKey)), Value(std::forward<ValueType>(InValue)) {}
 		TPair(const KeyType& InKey, const ValueType& InValue) :Key(InKey), Value(InValue) {}
 		
 		// copy & move
@@ -48,7 +48,7 @@ namespace Fuko
 	template<typename TKey,typename TValue>
 	FORCEINLINE TPair<TKey, TValue> MakePair(TKey&& Key, TValue&& Value)
 	{
-		return TPair<TKey, TValue>(Forward<TKey>(Key), Forward<TValue>(Value));
+		return TPair<TKey, TValue>(std::forward<TKey>(Key), std::forward<TValue>(Value));
 	}
 }
 
@@ -118,11 +118,11 @@ namespace std
 	{
 		if constexpr (Index == 0)
 		{
-			return MoveTemp(static_cast<TKey&>(Pair.Key));
+			return std::move(static_cast<TKey&>(Pair.Key));
 		}
 		else if constexpr (Index == 1)
 		{
-			return MoveTemp(static_cast<TValue&>(Pair.Value));
+			return std::move(static_cast<TValue&>(Pair.Value));
 		}
 		else
 		{

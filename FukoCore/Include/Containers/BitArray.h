@@ -24,7 +24,7 @@ namespace Fuko::BitArrayHelper
 	}
 }
 
-// Forward declaration
+// std::forward declaration
 namespace Fuko
 {
 	template<typename Allocator = FDefaultBitArrayAllocator>
@@ -894,7 +894,7 @@ namespace Fuko
 			}
 		}
 
-		/** Forwards iteration operator. */
+		/** std::forwards iteration operator. */
 		FORCEINLINE TConstSetBitIterator& operator++()
 		{
 			// Mark the current bit as visited.

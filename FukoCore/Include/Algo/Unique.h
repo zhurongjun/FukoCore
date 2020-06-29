@@ -21,7 +21,7 @@ namespace Fuko::Algo::Impl
 				++Result;
 				if (Result != Iter)
 				{
-					*Result = MoveTemp(*Iter);
+					*Result = std::move(*Iter);
 				}
 			}
 		}
@@ -48,7 +48,7 @@ namespace Fuko::Algo
 	}
 
 	/**
-	 * @fn template<typename RangeType, typename BinaryPredicate> auto Unique(RangeType&& Range, BinaryPredicate Predicate) -> decltype(Impl::Unique(GetData(Range), GetNum(Range), MoveTemp(Predicate)))
+	 * @fn template<typename RangeType, typename BinaryPredicate> auto Unique(RangeType&& Range, BinaryPredicate Predicate) -> decltype(Impl::Unique(GetData(Range), GetNum(Range), std::move(Predicate)))
 	 *
 	 * @brief 保证数组内所有元素都是唯一的
 	 *
@@ -58,9 +58,9 @@ namespace Fuko::Algo
 	 * @returns 唯一序列的末尾 + 1
 	 */
 	template<typename RangeType, typename BinaryPredicate>
-	auto Unique(RangeType&& Range, BinaryPredicate Predicate) -> decltype(Impl::Unique(GetData(Range), GetNum(Range), MoveTemp(Predicate)))
+	auto Unique(RangeType&& Range, BinaryPredicate Predicate) -> decltype(Impl::Unique(GetData(Range), GetNum(Range), std::move(Predicate)))
 	{
-		return Impl::Unique(GetData(Range), GetNum(Range), MoveTemp(Predicate));
+		return Impl::Unique(GetData(Range), GetNum(Range), std::move(Predicate));
 	}
 }
 

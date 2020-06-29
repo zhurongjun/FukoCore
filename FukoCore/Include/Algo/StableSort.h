@@ -164,7 +164,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename PredicateType>
 	FORCEINLINE void StableSort(RangeType& Range, PredicateType Pred)
 	{
-		Impl::StableSortInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), MoveTemp(Pred));
+		Impl::StableSortInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), std::move(Pred));
 	}
 
 	/**
@@ -178,7 +178,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename ProjectionType>
 	FORCEINLINE void StableSortBy(RangeType& Range, ProjectionType Proj)
 	{
-		Impl::StableSortInternal(GetData(Range), GetNum(Range), MoveTemp(Proj), TLess<>());
+		Impl::StableSortInternal(GetData(Range), GetNum(Range), std::move(Proj), TLess<>());
 	}
 
 	/**
@@ -193,6 +193,6 @@ namespace Fuko::Algo
 	template <typename RangeType, typename ProjectionType, typename PredicateType>
 	FORCEINLINE void StableSortBy(RangeType& Range, ProjectionType Proj, PredicateType Pred)
 	{
-		Impl::StableSortInternal(GetData(Range), GetNum(Range), MoveTemp(Proj), MoveTemp(Pred));
+		Impl::StableSortInternal(GetData(Range), GetNum(Range), std::move(Proj), std::move(Pred));
 	}
 }

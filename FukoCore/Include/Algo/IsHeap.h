@@ -52,7 +52,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename PredicateType>
 	FORCEINLINE bool IsHeap(RangeType& Range, PredicateType Predicate)
 	{
-		return Impl::IsHeapInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), MoveTemp(Predicate));
+		return Impl::IsHeapInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), std::move(Predicate));
 	}
 
 	/**
@@ -68,7 +68,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename ProjectionType>
 	FORCEINLINE bool IsHeapBy(RangeType& Range, ProjectionType Projection)
 	{
-		return Impl::IsHeapInternal(GetData(Range), GetNum(Range), MoveTemp(Projection), TLess<>());
+		return Impl::IsHeapInternal(GetData(Range), GetNum(Range), std::move(Projection), TLess<>());
 	}
 
 	/**
@@ -85,6 +85,6 @@ namespace Fuko::Algo
 	template <typename RangeType, typename ProjectionType, typename PredicateType>
 	FORCEINLINE bool IsHeapBy(RangeType& Range, ProjectionType Projection, PredicateType Predicate)
 	{
-		return Impl::IsHeapInternal(GetData(Range), GetNum(Range), MoveTemp(Projection), MoveTemp(Predicate));
+		return Impl::IsHeapInternal(GetData(Range), GetNum(Range), std::move(Projection), std::move(Predicate));
 	}
 }

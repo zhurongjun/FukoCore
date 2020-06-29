@@ -397,7 +397,7 @@ namespace Fuko
 	public:
 		using Allocator = InAllocator;
 
-		using ElementAllocatorType = TChooseClass_t<
+		using ElementAllocatorType = std::conditional_t<
 			Allocator::NeedsElementType,
 			typename Allocator::template ForElementType<uint32>,
 			typename Allocator::ForAnyElementType
@@ -405,11 +405,11 @@ namespace Fuko
 
 		explicit THashTable(uint32 InHashSize = 1024, uint32 InIndexSize = 0);
 		THashTable(const THashTable& Other) = delete;
-		THashTable(THashTable&& Other) { MoveAssign(MoveTemp(Other)); }
+		THashTable(THashTable&& Other) { MoveAssign(std::move(Other)); }
 		~THashTable();
 
 		THashTable& operator=(const THashTable& Other) = delete;
-		THashTable& operator=(THashTable&& Other) { return MoveAssign(MoveTemp(Other)); }
+		THashTable& operator=(THashTable&& Other) { return MoveAssign(std::move(Other)); }
 
 		THashTable&		MoveAssign(THashTable&& Other);
 		void			Clear();

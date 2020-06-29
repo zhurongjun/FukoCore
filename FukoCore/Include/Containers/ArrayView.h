@@ -16,13 +16,13 @@ namespace Fuko::ArrayViewPrivate
 	template <typename T>
 	FORCEINLINE decltype(auto) GetDataHelper(T&& Arg)
 	{
-		return GetData(Forward<T>(Arg));
+		return GetData(std::forward<T>(Arg));
 	}
 
 	template <typename RangeType, typename ElementType>
 	struct TIsCompatibleRangeType
 	{
-		static constexpr bool Value = TIsCompatibleElementType<typename TRemovePointer<decltype(GetData(DeclVal<RangeType&>()))>::Type, ElementType>::Value;
+		static constexpr bool Value = TIsCompatibleElementType<std::remove_pointer_t<decltype(GetData(std::declval<RangeType&>()))>, ElementType>::Type;
 	};
 }
 
@@ -46,22 +46,22 @@ namespace Fuko
 	public:
 		template <
 			typename OtherRangeType,
-			typename CVUnqualifiedOtherRangeType = typename TRemoveCV<typename TRemoveReference<OtherRangeType>::Type>::Type,
-			typename = typename TEnableIf_t<
+			typename CVUnqualifiedOtherRangeType = std::remove_cv_t<std::remove_reference_t<OtherRangeType>>,
+			typename = typename std::enable_if_t<
 			TIsContiguousContainer<CVUnqualifiedOtherRangeType>::Value &&
 			TIsCompatibleRangeType<OtherRangeType>::Value
 			>
 		>
 			FORCEINLINE TArrayView(OtherRangeType&& Other)
-			: DataPtr(ArrayViewPrivate::GetDataHelper(Forward<OtherRangeType>(Other)))
+			: DataPtr(ArrayViewPrivate::GetDataHelper(std::forward<OtherRangeType>(Other)))
 		{
-			const auto InCount = GetNum(Forward<OtherRangeType>(Other));
+			const auto InCount = GetNum(std::forward<OtherRangeType>(Other));
 			check((InCount >= 0) && ((sizeof(InCount) < sizeof(int32)) || (InCount <= static_cast<decltype(InCount)>(TNumericLimits<int32>::Max()))));
 			ArrayNum = (int32)InCount;
 		}
 
 		template <typename OtherElementType,
-			typename = typename TEnableIf_t<TIsCompatibleElementType<OtherElementType>::Value>>
+			typename = typename std::enable_if_t<TIsCompatibleElementType<OtherElementType>::Value>>
 			FORCEINLINE TArrayView(OtherElementType* InData, int32 InCount)
 			: DataPtr(InData)
 			, ArrayNum(InCount)
@@ -318,12 +318,12 @@ namespace Fuko
 {
 	template <
 		typename OtherRangeType,
-		typename CVUnqualifiedOtherRangeType = typename TRemoveCV_t<typename TRemoveReference<OtherRangeType>::Type>,
-		typename = typename TEnableIf_t<TIsContiguousContainer<CVUnqualifiedOtherRangeType>::Value>
+		typename CVUnqualifiedOtherRangeType = std::remove_cv_t<std::remove_reference_t<OtherRangeType>>,
+		typename = typename std::enable_if_t<TIsContiguousContainer<CVUnqualifiedOtherRangeType>::Value>
 	>
 		auto MakeArrayView(OtherRangeType&& Other)
 	{
-		return TArrayView<typename TRemovePointer<decltype(GetData(DeclVal<OtherRangeType&>()))>::Type>(Forward<OtherRangeType>(Other));
+		return TArrayView<std::remove_pointer_t<decltype(GetData(std::declval<OtherRangeType&>()))>>(std::forward<OtherRangeType>(Other));
 	}
 
 	template<typename ElementType>

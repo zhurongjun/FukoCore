@@ -105,7 +105,7 @@ namespace Fuko
 	}
 
 	template <typename EnumType>
-	FORCEINLINE  typename TEnableIf_t<TIsEnum_v<EnumType>, uint32> GetTypeHash(EnumType E)
+	FORCEINLINE  typename std::enable_if_t<std::is_enum_v<EnumType>, uint32> GetTypeHash(EnumType E)
 	{
 		return GetTypeHash((__underlying_type(EnumType))E);
 	}

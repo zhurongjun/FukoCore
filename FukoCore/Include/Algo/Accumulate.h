@@ -18,10 +18,10 @@ namespace Fuko::Algo
 	template <typename T, typename A, typename OpT>
 	FORCEINLINE T Accumulate(const A& Input, T Init, OpT Op)
 	{
-		T Result = MoveTemp(Init);
+		T Result = std::move(Init);
 		for (const auto& InputElem : Input)
 		{
-			Result = Invoke(Op, MoveTemp(Result), InputElem);
+			Result = Invoke(Op, std::move(Result), InputElem);
 		}
 		return Result;
 	}
@@ -39,7 +39,7 @@ namespace Fuko::Algo
 	template <typename T, typename A>
 	FORCEINLINE T Accumulate(const A& Input, T Init)
 	{
-		return Accumulate(Input, MoveTemp(Init), TPlus<>());
+		return Accumulate(Input, std::move(Init), TPlus<>());
 	}
 
 	/**
@@ -57,10 +57,10 @@ namespace Fuko::Algo
 	template <typename T, typename A, typename MapT, typename OpT>
 	FORCEINLINE T TransformAccumulate(const A& Input, MapT MapOp, T Init, OpT Op)
 	{
-		T Result = MoveTemp(Init);
+		T Result = std::move(Init);
 		for (const auto& InputElem : Input)
 		{
-			Result = Invoke(Op, MoveTemp(Result), Invoke(MapOp, InputElem));
+			Result = Invoke(Op, std::move(Result), Invoke(MapOp, InputElem));
 		}
 		return Result;
 	}
@@ -79,6 +79,6 @@ namespace Fuko::Algo
 	template <typename T, typename A, typename MapT>
 	FORCEINLINE T TransformAccumulate(const A& Input, MapT MapOp, T Init)
 	{
-		return TransformAccumulate(Input, MapOp, MoveTemp(Init), TPlus<>());
+		return TransformAccumulate(Input, MapOp, std::move(Init), TPlus<>());
 	}
 }

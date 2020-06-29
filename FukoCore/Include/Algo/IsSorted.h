@@ -66,7 +66,7 @@ namespace Fuko::Alog
 	template <typename RangeType, typename PredType>
 	FORCEINLINE bool IsSorted(const RangeType& Range, PredType Pred)
 	{
-		return Impl::IsSortedBy(GetData(Range), GetNum(Range), FIdentityFunctor(), MoveTemp(Pred));
+		return Impl::IsSortedBy(GetData(Range), GetNum(Range), FIdentityFunctor(), std::move(Pred));
 	}
 
 	/**
@@ -82,7 +82,7 @@ namespace Fuko::Alog
 	template <typename RangeType, typename ProjectionType>
 	FORCEINLINE bool IsSortedBy(const RangeType& Range, ProjectionType Projection)
 	{
-		return Impl::IsSortedBy(GetData(Range), GetNum(Range), MoveTemp(Projection), TLess<>());
+		return Impl::IsSortedBy(GetData(Range), GetNum(Range), std::move(Projection), TLess<>());
 	}
 
 	/**
@@ -99,7 +99,7 @@ namespace Fuko::Alog
 	template <typename RangeType, typename ProjectionType, typename PredType>
 	FORCEINLINE bool IsSortedBy(const RangeType& Range, ProjectionType Projection, PredType Pred)
 	{
-		return Impl::IsSortedBy(GetData(Range), GetNum(Range), MoveTemp(Projection), MoveTemp(Pred));
+		return Impl::IsSortedBy(GetData(Range), GetNum(Range), std::move(Projection), std::move(Pred));
 	}
 }
 

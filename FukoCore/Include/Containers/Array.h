@@ -213,11 +213,11 @@ namespace Fuko
 		enum
 		{
 			Value =
-			TAreTypesEqual_v<FromAllocatorType, ToAllocatorType> || 
+			std::is_same_v<FromAllocatorType, ToAllocatorType> || 
 			TCanMoveBetweenAllocators<FromAllocatorType, ToAllocatorType>::Value &&
 			TContainerTraits<FromArrayType>::MoveWillEmptyContainer &&
 			(
-				TAreTypesEqual_v       <ToElementType, FromElementType> ||
+				std::is_same_v       <ToElementType, FromElementType> ||
 				TIsBitwiseConstructible<ToElementType, FromElementType>
 			)
 		};
@@ -234,13 +234,13 @@ namespace Fuko
 		typedef InAllocator		Allocator;
 
 		// 优先使用无类型的Allocator 
-		typedef TChooseClass_t<
+		typedef std::conditional_t<
 			Allocator::NeedsElementType,
 			typename Allocator::template ForElementType<ElementType>,
 			typename Allocator::ForAnyElementType
 		> ElementAllocatorType;
 
-		static_assert(TIsSigned_v<SizeType>, "TArray only supports signed index types");
+		static_assert(std::is_signed_v<SizeType>, "TArray only supports signed index types");
 	
 		//-------------------------------------------构造，拷贝，赋值-------------------------------------------
 	public:
@@ -693,7 +693,7 @@ namespace Fuko
 		FORCEINLINE ElementType Pop(bool bAllowShrinking = true)
 		{
 			RangeCheck(0);
-			ElementType Result = MoveTempIfPossible(GetData()[ArrayNum - 1]);
+			ElementType Result = std::moveIfPossible(GetData()[ArrayNum - 1]);
 			RemoveAt(ArrayNum - 1, 1, bAllowShrinking);
 			return Result;
 		}
@@ -707,7 +707,7 @@ namespace Fuko
 		 */
 		FORCEINLINE void Push(ElementType&& Item)
 		{
-			Add(MoveTempIfPossible(Item));
+			Add(std::moveIfPossible(Item));
 		}
 
 		/**
@@ -1111,7 +1111,7 @@ namespace Fuko
 		{
 			CheckAddress(&Item);
 			InsertUninitializedImpl(Index, 1);
-			new(GetData() + Index) ElementType(MoveTempIfPossible(Item));
+			new(GetData() + Index) ElementType(std::moveIfPossible(Item));
 			return Index;
 		}
 		SizeType Insert(const ElementType& Item, SizeType Index)
@@ -1130,7 +1130,7 @@ namespace Fuko
 			// Index, then construct that memory with Item)
 			InsertUninitializedImpl(Index, 1);
 			ElementType* Ptr = GetData() + Index;
-			new(Ptr) ElementType(MoveTempIfPossible(Item));
+			new(Ptr) ElementType(std::moveIfPossible(Item));
 			return *Ptr;
 		}
 		ElementType& Insert_GetRef(const ElementType& Item, SizeType Index)
@@ -1182,7 +1182,7 @@ namespace Fuko
 		template <typename CountType>
 		FORCEINLINE void RemoveAt(SizeType Index, CountType Count, bool bAllowShrinking = true)
 		{
-			static_assert(!TAreTypesEqual_v<CountType, bool>, "TArray::RemoveAt: unexpected bool passed as the Count argument");
+			static_assert(!std::is_same_v<CountType, bool>, "TArray::RemoveAt: unexpected bool passed as the Count argument");
 			RemoveAtImpl(Index, (SizeType)Count, bAllowShrinking);
 		}
 
@@ -1226,7 +1226,7 @@ namespace Fuko
 		template <typename CountType>
 		FORCEINLINE void RemoveAtSwap(SizeType Index, CountType Count, bool bAllowShrinking = true)
 		{
-			static_assert(!TAreTypesEqual<CountType, bool>::Value, "TArray::RemoveAtSwap: unexpected bool passed as the Count argument");
+			static_assert(!std::is_same_v<CountType, bool>::Value, "TArray::RemoveAtSwap: unexpected bool passed as the Count argument");
 			RemoveAtSwapImpl(Index, Count, bAllowShrinking);
 		}
 
@@ -1359,7 +1359,7 @@ namespace Fuko
 
 		TArray& operator+=(TArray&& Other)
 		{
-			Append(MoveTemp(Other));
+			Append(std::move(Other));
 			return *this;
 		}
 
@@ -1379,7 +1379,7 @@ namespace Fuko
 		FORCEINLINE SizeType Emplace(ArgsType&&... Args)
 		{
 			const SizeType Index = AddUninitialized(1);
-			new(GetData() + Index) ElementType(Forward<ArgsType>(Args)...);
+			new(GetData() + Index) ElementType(std::forward<ArgsType>(Args)...);
 			return Index;
 		}
 
@@ -1388,7 +1388,7 @@ namespace Fuko
 		{
 			const SizeType Index = AddUninitialized(1);
 			ElementType* Ptr = GetData() + Index;
-			new(Ptr) ElementType(Forward<ArgsType>(Args)...);
+			new(Ptr) ElementType(std::forward<ArgsType>(Args)...);
 			return *Ptr;
 		}
 
@@ -1396,7 +1396,7 @@ namespace Fuko
 		FORCEINLINE void EmplaceAt(SizeType Index, ArgsType&&... Args)
 		{
 			InsertUninitializedImpl(Index, 1);
-			new(GetData() + Index) ElementType(Forward<ArgsType>(Args)...);
+			new(GetData() + Index) ElementType(std::forward<ArgsType>(Args)...);
 		}
 
 		template <typename... ArgsType>
@@ -1404,14 +1404,14 @@ namespace Fuko
 		{
 			InsertUninitializedImpl(Index, 1);
 			ElementType* Ptr = GetData() + Index;
-			new(Ptr) ElementType(Forward<ArgsType>(Args)...);
+			new(Ptr) ElementType(std::forward<ArgsType>(Args)...);
 			return *Ptr;
 		}
 
 		FORCEINLINE SizeType Add(ElementType&& Item)
 		{
 			CheckAddress(&Item);
-			return Emplace(MoveTempIfPossible(Item));
+			return Emplace(std::moveIfPossible(Item));
 		}
 
 		FORCEINLINE SizeType Add(const ElementType& Item)
@@ -1423,7 +1423,7 @@ namespace Fuko
 		FORCEINLINE ElementType& Add_GetRef(ElementType&& Item)
 		{
 			CheckAddress(&Item);
-			return Emplace_GetRef(MoveTempIfPossible(Item));
+			return Emplace_GetRef(std::moveIfPossible(Item));
 		}
 
 		FORCEINLINE ElementType& Add_GetRef(const ElementType& Item)
@@ -1473,12 +1473,12 @@ namespace Fuko
 				return Index;
 			}
 
-			return Add(Forward<ArgsType>(Args));
+			return Add(std::forward<ArgsType>(Args));
 		}
 
 	public:
 
-		FORCEINLINE SizeType AddUnique(ElementType&& Item) { return AddUniqueImpl(MoveTempIfPossible(Item)); }
+		FORCEINLINE SizeType AddUnique(ElementType&& Item) { return AddUniqueImpl(std::moveIfPossible(Item)); }
 
 		FORCEINLINE SizeType AddUnique(const ElementType& Item) { return AddUniqueImpl(Item); }
 
@@ -1803,7 +1803,7 @@ namespace Fuko
 		SizeType HeapPush(ElementType&& InItem, const PREDICATE_CLASS& Predicate)
 		{
 			// 在尾部添加元素，然后向上检索堆
-			Add(MoveTempIfPossible(InItem));
+			Add(std::moveIfPossible(InItem));
 			TDereferenceWrapper<ElementType, PREDICATE_CLASS> PredicateWrapper(Predicate);
 			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
 
@@ -1823,7 +1823,7 @@ namespace Fuko
 
 		SizeType HeapPush(ElementType&& InItem)
 		{
-			return HeapPush(MoveTempIfPossible(InItem), TLess<ElementType>());
+			return HeapPush(std::moveIfPossible(InItem), TLess<ElementType>());
 		}
 
 		SizeType HeapPush(const ElementType& InItem)
@@ -1834,7 +1834,7 @@ namespace Fuko
 		template <class PREDICATE_CLASS>
 		void HeapPop(ElementType& OutItem, const PREDICATE_CLASS& Predicate, bool bAllowShrinking = true)
 		{
-			OutItem = MoveTemp((*this)[0]);
+			OutItem = std::move((*this)[0]);
 			RemoveAtSwap(0, 1, bAllowShrinking);
 
 			TDereferenceWrapper< ElementType, PREDICATE_CLASS> PredicateWrapper(Predicate);

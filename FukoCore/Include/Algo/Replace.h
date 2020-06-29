@@ -16,7 +16,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename ValueType>
 	FORCEINLINE void Replace(RangeType&& Range, const ValueType& InOld, const ValueType& InNew)
 	{
-		for (auto& Elem : Forward<RangeType>(Range))
+		for (auto& Elem : std::forward<RangeType>(Range))
 		{
 			if (Elem == InOld)
 			{
@@ -37,7 +37,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename ValueType, typename PredicateType>
 	FORCEINLINE void ReplaceIf(RangeType&& Range, PredicateType InPred, const ValueType& InNew)
 	{
-		for (auto& Elem : Forward<RangeType>(Range))
+		for (auto& Elem : std::forward<RangeType>(Range))
 		{
 			if (Invoke(InPred, Elem))
 			{

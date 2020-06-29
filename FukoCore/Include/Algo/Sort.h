@@ -335,7 +335,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename PredicateType>
 	FORCEINLINE void IntroSort(RangeType& Range, PredicateType Predicate)
 	{
-		::Fuko::Algo::Impl::IntroSortInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), MoveTemp(Predicate));
+		::Fuko::Algo::Impl::IntroSortInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), std::move(Predicate));
 	}
 
 	/**
@@ -349,7 +349,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename ProjectionType>
 	FORCEINLINE void IntroSortBy(RangeType& Range, ProjectionType Projection)
 	{
-		::Fuko::Algo::Impl::IntroSortInternal(GetData(Range), GetNum(Range), MoveTemp(Projection), TLess<>());
+		::Fuko::Algo::Impl::IntroSortInternal(GetData(Range), GetNum(Range), std::move(Projection), TLess<>());
 	}
 
 	/**
@@ -364,7 +364,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename ProjectionType, typename PredicateType>
 	FORCEINLINE void IntroSortBy(RangeType& Range, ProjectionType Projection, PredicateType Predicate)
 	{
-		::Fuko::Algo::Impl::IntroSortInternal(GetData(Range), GetNum(Range), MoveTemp(Projection), MoveTemp(Predicate));
+		::Fuko::Algo::Impl::IntroSortInternal(GetData(Range), GetNum(Range), std::move(Projection), std::move(Predicate));
 	}
 }
 
@@ -380,7 +380,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename PredicateType>
 	FORCEINLINE void HeapSort(RangeType& Range, PredicateType Predicate)
 	{
-		::Fuko::Algo::Impl::HeapSortInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), MoveTemp(Predicate));
+		::Fuko::Algo::Impl::HeapSortInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), std::move(Predicate));
 	}
 
 	template <typename RangeType, typename ProjectionType>
@@ -392,7 +392,7 @@ namespace Fuko::Algo
 	template <typename RangeType, typename ProjectionType, typename PredicateType>
 	FORCEINLINE void HeapSortBy(RangeType& Range, ProjectionType Projection, PredicateType Predicate)
 	{
-		::Fuko::Algo::Impl::HeapSortInternal(GetData(Range), GetNum(Range), MoveTemp(Projection), MoveTemp(Predicate));
+		::Fuko::Algo::Impl::HeapSortInternal(GetData(Range), GetNum(Range), std::move(Projection), std::move(Predicate));
 	}
 }
 

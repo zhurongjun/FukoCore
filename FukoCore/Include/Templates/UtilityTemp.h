@@ -10,56 +10,6 @@ template <typename T> struct TUnwrapType					{ typedef T Type; };
 template <typename T> struct TUnwrapType<TTypeWrapper<T>>	{ typedef T Type; };
 template <typename T> using  TUnwrapType_t = typename TUnwrapType<T>::Type;
 
-// Remove CV 
-template<typename T> struct TRemoveCV					{ typedef T Type; };
-template<typename T> struct TRemoveCV<const T>			{ typedef T Type; };
-template<typename T> struct TRemoveCV<volatile T>		{ typedef T Type; };
-template<typename T> struct TRemoveCV<const volatile T> { typedef T Type; };
-template<typename T> struct TRemoveC					{ typedef T Type; };
-template<typename T> struct TRemoveC<const T>			{ typedef T Type; };
-template<typename T> struct TRemoveV					{ typedef T Type; };
-template<typename T> struct TRemoveV<volatile T>		{ typedef T Type; };
-template<typename T> using  TRemoveCV_t = typename TRemoveCV<T>::Type;
-template<typename T> using  TRemoveC_t = typename TRemoveC<T>::Type;
-template<typename T> using  TRemoveV_t = typename TRemoveV<T>::Type;
-
-// Remove pointer
-template<typename T> struct TRemovePointer                    { typedef T Type; };
-template<typename T> struct TRemovePointer<T*>                { typedef T Type; };
-template<typename T> struct TRemovePointer<T* const>          { typedef T Type; };
-template<typename T> struct TRemovePointer<T* volatile>       { typedef T Type; };
-template<typename T> struct TRemovePointer<T* const volatile> { typedef T Type; };
-template<typename T> using  TRemovePointer_t = typename TRemovePointer<T>::Type;
-
-// Remove reference 
-template<typename T> struct TRemoveReference	  { typedef T Type; };
-template<typename T> struct TRemoveReference<T&>  { typedef T Type; };
-template<typename T> struct TRemoveReference<T&&> { typedef T Type; };
-template<typename T> using  TRemoveReference_t = typename TRemoveReference<T>::Type;
-
-// Conditional 
-template<bool B, typename T, typename F>
-struct TConditional { typedef T Type; };
-template<typename T, typename F>
-struct TConditional<false, T, F> { typedef F Type; };
-template<bool B, typename T, typename F>
-using TConditional_t = typename TConditional<B, T, F>::Type;
-
-// Remove extent
-template<typename T>			struct TRemoveExtent		{ typedef T Type; };
-template<typename T>			struct TRemoveExtent<T[]>	{ typedef T Type; };
-template<typename T, size_t N>	struct TRemoveExtent<T[N]>	{ typedef T Type; };
-template<typename T>			using  TRemoveExtent_t = typename TRemoveExtent<T>::Type;
-
-// Decay
-template<typename T>
-struct TDecay 
-{
-	using Type = std::decay_t<T>;
-};
-template<typename T>
-using TDecay_t = std::decay_t<T>;
-
 // Maxsize of 
 template <typename...>
 struct TMaxSizeof;
@@ -76,58 +26,6 @@ struct TMaxSizeof<T, TRest...>
 template<typename T, typename... TRest>
 inline constexpr uint32 TMaxSizeof_v = TMaxSizeof<T, TRest...>::value;
 
-// Are type equal
-template<typename A, typename B>
-struct TAreTypesEqual
-{
-	static constexpr bool value = false;
-};
-template<typename A>
-struct TAreTypesEqual<A, A>
-{
-	static constexpr bool value = true;
-};
-template<typename A, typename B>
-inline constexpr bool TAreTypesEqual_v = TAreTypesEqual<A, B>::value;
-
-// Move 
-template <typename T>
-FORCEINLINE constexpr TRemoveReference_t<T>&& MoveTemp(T&& Obj)
-{
-	typedef TRemoveReference_t<T> CastType;
-
-	// 对右值使用是多余的，对const值使用几乎都是错误的情况
-	static_assert(TIsLValueReferenceType_v<T>, "MoveTemp called on an rvalue");
-	static_assert(!TAreTypesEqual_v<CastType&, const CastType&>, "MoveTemp called on a const object");
-
-	return (CastType&&)Obj;
-}
-template <typename T>
-FORCEINLINE constexpr TRemoveReference_t<T>&& MoveTempIfPossible(T&& Obj)
-{
-	typedef TRemoveReference_t<T> CastType;
-	return (CastType&&)Obj;
-}
-
-template <typename T>
-FORCEINLINE constexpr T&& Forward(typename TRemoveReference_t<T>& Obj)
-{
-	return static_cast<T&&>(Obj);
-}
-template <typename T>
-FORCEINLINE constexpr T&& Forward(typename TRemoveReference_t<T>&& Obj)
-{
-	return static_cast<T&&>(Obj);
-}
-
-// Enable if 
-template <bool Predicate, typename T = void> struct TEnableIf;
-template <typename T> struct TEnableIf<true, T> { typedef T Type; };
-template <typename T> struct TEnableIf<false, T> {};
-
-template<bool Predicate, typename T = void>
-using TEnableIf_t = typename TEnableIf<Predicate, T>::Type;
-
 // 上面的一个特化版本
 template <bool Predicate, typename Func> struct TLazyEnableIf;
 template <typename Func> struct TLazyEnableIf<true, Func> { typedef typename Func::Type Type; };
@@ -135,28 +33,6 @@ template <typename Func>struct TLazyEnableIf<false, Func> { };
 
 template<bool Predicate, typename Func>
 using TLazyEnableIf_t = typename TLazyEnableIf<Predicate, Func>::Type;
-
-
-// Choose class
-template<bool Predicate, typename TrueClass, typename FalseClass>
-class TChooseClass;
-
-template<typename TrueClass, typename FalseClass>
-class TChooseClass<true, TrueClass, FalseClass>
-{
-public:
-	typedef TrueClass Type;
-};
-
-template<typename TrueClass, typename FalseClass>
-class TChooseClass<false, TrueClass, FalseClass>
-{
-public:
-	typedef FalseClass Type;
-};
-
-template<bool Predicate, typename TrueClass, typename FalseClass>
-using TChooseClass_t = typename TChooseClass<Predicate, TrueClass, FalseClass>::Type;
 
 // 是否是顺序容器
 template <typename T>
@@ -201,9 +77,9 @@ inline typename void Swap(T& A, T& B)
 	}
 	else
 	{
-		T Temp = MoveTemp(A);
-		A = MoveTemp(B);
-		B = MoveTemp(Temp);
+		T Temp = std::move(A);
+		A = std::move(B);
+		B = std::move(Temp);
 	}
 }
 
@@ -219,7 +95,7 @@ using TCopyQualifiersFromTo_t = typename TCopyQualifiersFromTo<From, To>::Type;
 template <typename From, typename To>
 struct TLosesQualifiersFromTo
 {
-	static constexpr bool Value = !TAreTypesEqual_v<TCopyQualifiersFromTo_t<From, To>, To>;
+	static constexpr bool Value = !std::is_same_v<TCopyQualifiersFromTo_t<From, To>, To>;
 };
 template <typename From, typename To>
 inline constexpr bool TLosesQualifiersFromTo_v = TLosesQualifiersFromTo<From,To>::Value;
@@ -227,7 +103,7 @@ inline constexpr bool TLosesQualifiersFromTo_v = TLosesQualifiersFromTo<From,To>
 // 指针转换是否合法 
 namespace PointerIsConvertibleFromTo_Private
 {
-	template <typename From, typename To, typename NoCVFrom = typename TRemoveCV_t<From>, typename NoCVTo = typename TRemoveCV_t<To>>
+	template <typename From, typename To, typename NoCVFrom = std::remove_cv_t<From>, typename NoCVTo = std::remove_cv_t<To>>
 	struct TImpl
 	{
 	private:
@@ -332,12 +208,12 @@ public:
 	template <typename T>
 	FORCEINLINE bool operator()(T&& A, T&& B) const
 	{
-		return Invoke(Predicate, Forward<T>(B), Forward<T>(A));
+		return Invoke(Predicate, std::forward<T>(B), std::forward<T>(A));
 	}
 };
 
 // 得到数据
-template<typename T, typename = typename TEnableIf_t<TIsContiguousContainer_v<T>>>
+template<typename T, typename = typename std::enable_if_t<TIsContiguousContainer_v<T>>>
 auto GetData(T&& Container) -> decltype(Container.GetData())
 {
 	return Container.GetData();
@@ -355,7 +231,7 @@ CONSTEXPR const T* GetData(std::initializer_list<T> List)
 }
 
 // 得到长度
-template<typename T, typename = typename TEnableIf_t<TIsContiguousContainer_v<T>>>
+template<typename T, typename = typename std::enable_if_t<TIsContiguousContainer_v<T>>>
 auto GetNum(T&& Container) -> decltype(Container.Num())
 {
 	return Container.Num();
@@ -372,15 +248,11 @@ CONSTEXPR size_t GetNum(std::initializer_list<T> List)
 	return List.size();
 }
 
-// 声明一个值用于一些测试 
-template <typename T>
-T&& DeclVal();
-
 // 得到元素指针类型 
 template <typename RangeType>
 struct TRangePointerType
 {
-	using Type = decltype(&*DeclVal<RangeType&>().begin());
+	using Type = decltype(&*std::declval<RangeType&>().begin());
 };
 
 template <typename T, unsigned int N>
@@ -416,7 +288,7 @@ struct TNthTypeFromParameterPack<0, OtherTypes...>
 template <typename T, T... Indices>
 struct TIntegerSequence
 {
-	static_assert(TIsIntegral_v<T>);
+	static_assert(std::is_integral_v<T>);
 	constexpr size_t Num()
 	{
 		return sizeof...(Indices);
@@ -428,7 +300,7 @@ using TMakeIntegerSequence = __make_integer_seq<TIntegerSequence, T, N>;
 
 // 置反位 
 template <typename T>
-FORCEINLINE typename TEnableIf_t<TAreTypesEqual_v<T, uint32>, T> ReverseBits(T Bits)
+FORCEINLINE typename std::enable_if_t<std::is_same_v<T, uint32>, T> ReverseBits(T Bits)
 {
 	Bits = (Bits << 16) | (Bits >> 16);
 	Bits = ((Bits & 0x00ff00ff) << 8) | ((Bits & 0xff00ff00) >> 8);

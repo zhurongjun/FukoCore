@@ -4,7 +4,7 @@
 #include "UtilityTemp.h"
 #include "Templates/TypeHash.h"
 
-// Forward
+// std::forward
 namespace Fuko
 {
 	template<typename ...Types>
@@ -65,7 +65,7 @@ namespace std
 	FORCEINLINE decltype(auto) get(Fuko::TTuple<Types...>&& Tuple)
 	{
 		using TupleType = typename std::tuple_element<Index, Fuko::TTuple<Types...>>::_Ttype;
-		return MoveTemp(static_cast<TupleType&>(Tuple).Head());
+		return std::move(static_cast<TupleType&>(Tuple).Head());
 	}
 }
 
@@ -73,9 +73,9 @@ namespace std
 namespace Fuko
 {
 	template <typename... Types>
-	FORCEINLINE constexpr TTuple<TDecay_t<Types>...> MakeTuple(Types&&... Args)
+	FORCEINLINE constexpr TTuple<std::decay_t<Types>...> MakeTuple(Types&&... Args)
 	{
-		return TTuple<TDecay_t<Types>...>(Forward<Types>(Args)...);
+		return TTuple<std::decay_t<Types>...>(std::forward<Types>(Args)...);
 	}
 }
 
@@ -91,7 +91,7 @@ namespace Fuko::Tuple_Private
 		template <typename TupleType, typename FuncType>
 		static decltype(auto) Do(TupleType&& Tuple, FuncType Func)
 		{
-			return MakeTuple(Func(std::get<Indices>(Forward<TupleType>(Tuple)))...);
+			return MakeTuple(Func(std::get<Indices>(std::forward<TupleType>(Tuple)))...);
 		}
 	};
 }
@@ -108,24 +108,24 @@ namespace Fuko::Tuple_Private
 		template<uint32 Index,typename FuncType,typename...TupleTypes>
 		FORCEINLINE static void CallFunc(FuncType&& Func, TupleTypes&&...Tuples)
 		{
-			Invoke(Forward<FuncType>(Func), std::get<Index>(Forward<TupleTypes>(Tuples))...);
+			Invoke(std::forward<FuncType>(Func), std::get<Index>(std::forward<TupleTypes>(Tuples))...);
 		}
 		template<uint32 Index, typename FuncType, typename...TupleTypes>
 		FORCEINLINE static void CallFunc(FuncType&& Func, const TupleTypes&...Tuples)
 		{
-			Invoke(Forward<FuncType>(Func), std::get<Index>(Tuples)...);
+			Invoke(std::forward<FuncType>(Func), std::get<Index>(Tuples)...);
 		}
 
 		template<typename FuncType,typename...TupleTypes>
 		FORCEINLINE static void Do(FuncType&& Func, TupleTypes&&...Tuples)
 		{
-			int Temp[] = { 0,(CallFunc<Indices>(Forward<FuncType>(Func),Forward<TupleTypes>(Tuples)...),0)... };
+			int Temp[] = { 0,(CallFunc<Indices>(std::forward<FuncType>(Func),std::forward<TupleTypes>(Tuples)...),0)... };
 			(void)Temp;
 		}
 		template<typename FuncType, typename...TupleTypes>
 		FORCEINLINE static void Do(FuncType&& Func, const TupleTypes&...Tuples)
 		{
-			int Temp[] = { 0,(CallFunc<Indices>(Forward<FuncType>(Func),Tuples...),0)... };
+			int Temp[] = { 0,(CallFunc<Indices>(std::forward<FuncType>(Func),Tuples...),0)... };
 			(void)Temp;
 		}
 	};
@@ -150,7 +150,7 @@ namespace Fuko
 
 		// construct
 		constexpr TTuple() = default;
-		constexpr TTuple(Type&& Arg, Types&&...Args) : BaseType(Forward<Types>(Args)...) , _Value(Forward<Type>(Arg)) {}
+		constexpr TTuple(Type&& Arg, Types&&...Args) : BaseType(std::forward<Types>(Args)...) , _Value(std::forward<Type>(Arg)) {}
 		constexpr TTuple(const Type& Arg, const Types&... Args) : BaseType(Args...), _Value(Arg) {}
 
 		// copy & move
@@ -203,12 +203,12 @@ namespace Fuko
 		template<typename FuncType>
 		void Each(FuncType&& Func)
 		{
-			VisitTupleElements(Forward<FuncType>(Func), *this);
+			VisitTupleElements(std::forward<FuncType>(Func), *this);
 		}
 		template<typename FuncType>
 		void Each(FuncType&& Func) const
 		{
-			VisitTupleElements(Forward<FuncType>(Func), *this);
+			VisitTupleElements(std::forward<FuncType>(Func), *this);
 		}
 
 	protected:
@@ -223,15 +223,15 @@ namespace Fuko
 	FORCEINLINE void VisitTupleElements(FuncType&& Func, FirstTupleType&& FirstTuple, TupleTypes&&...Tuples)
 	{
 		Tuple_Private::TVisitTupleHelper <
-			TMakeIntegerSequence<uint32, std::tuple_size_v<TDecay_t<FirstTupleType>>>
-			>::Do(Forward<FuncType>(Func), Forward<FirstTupleType>(FirstTuple), Forward<TupleTypes>(Tuples)...);
+			TMakeIntegerSequence<uint32, std::tuple_size_v<std::decay_t<FirstTupleType>>>
+			>::Do(std::forward<FuncType>(Func), std::forward<FirstTupleType>(FirstTuple), std::forward<TupleTypes>(Tuples)...);
 	}
 	template <typename FuncType, typename FirstTupleType, typename... TupleTypes>
 	FORCEINLINE void VisitTupleElements(FuncType&& Func, const FirstTupleType& FirstTuple, const TupleTypes&...Tuples)
 	{
 		Tuple_Private::TVisitTupleHelper <
-			TMakeIntegerSequence<uint32, std::tuple_size_v<TDecay_t<FirstTupleType>>>
-		>::Do(Forward<FuncType>(Func), FirstTuple, Tuples...);
+			TMakeIntegerSequence<uint32, std::tuple_size_v<std::decay_t<FirstTupleType>>>
+		>::Do(std::forward<FuncType>(Func), FirstTuple, Tuples...);
 	}
 }
 
@@ -244,7 +244,7 @@ namespace Fuko
 		return Tuple_Private::TTransformTupleHelper<
 			TMakeIntegerSequence<uint32, sizeof...(Types)>
 		>
-			::Do(MoveTemp(Tuple), Forward<FuncType>(Func));
+			::Do(std::move(Tuple), std::forward<FuncType>(Func));
 	}
 }
 

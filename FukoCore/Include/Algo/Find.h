@@ -7,9 +7,9 @@
 namespace Fuko::Algo::Impl
 {
 	template <typename RangeType, typename ValueType, typename ProjectionType>
-	typename TRangePointerType<TRemoveReference_t<RangeType>>::Type FindBy(RangeType&& Range, const ValueType& Value, ProjectionType Proj)
+	typename TRangePointerType<std::remove_reference_t<RangeType>> FindBy(RangeType&& Range, const ValueType& Value, ProjectionType Proj)
 	{
-		for (auto&& Elem : Forward<RangeType>(Range))
+		for (auto&& Elem : std::forward<RangeType>(Range))
 		{
 			if (Invoke(Proj, Elem) == Value)
 			{
@@ -21,9 +21,9 @@ namespace Fuko::Algo::Impl
 	}
 
 	template <typename RangeType, typename PredicateType>
-	typename TRangePointerType<typename TRemoveReference<RangeType>::Type>::Type FindByPredicate(RangeType&& Range, PredicateType Pred)
+	typename TRangePointerType<std::remove_reference_t<RangeType>>::Type FindByPredicate(RangeType&& Range, PredicateType Pred)
 	{
-		for (auto&& Elem : Forward<RangeType>(Range))
+		for (auto&& Elem : std::forward<RangeType>(Range))
 		{
 			if (Invoke(Pred, Elem))
 			{
@@ -90,7 +90,7 @@ namespace Fuko::Algo::Impl
 namespace Fuko::Algo
 {
 	/**
-	 * @fn template <typename RangeType, typename ValueType> FORCEINLINE auto Find(RangeType&& Range, const ValueType& Value) -> decltype(Impl::FindBy(Forward<RangeType>(Range), Value, FIdentityFunctor()))
+	 * @fn template <typename RangeType, typename ValueType> FORCEINLINE auto Find(RangeType&& Range, const ValueType& Value) -> decltype(Impl::FindBy(std::forward<RangeType>(Range), Value, FIdentityFunctor()))
 	 *
 	 * @brief 遍历查找
 	 *
@@ -101,13 +101,13 @@ namespace Fuko::Algo
 	 */
 	template <typename RangeType, typename ValueType>
 	FORCEINLINE auto Find(RangeType&& Range, const ValueType& Value)
-		-> decltype(Impl::FindBy(Forward<RangeType>(Range), Value, FIdentityFunctor()))
+		-> decltype(Impl::FindBy(std::forward<RangeType>(Range), Value, FIdentityFunctor()))
 	{
-		return Impl::FindBy(Forward<RangeType>(Range), Value, FIdentityFunctor());
+		return Impl::FindBy(std::forward<RangeType>(Range), Value, FIdentityFunctor());
 	}
 
 	/**
-	 * @fn template <typename RangeType, typename ValueType, typename ProjectionType> FORCEINLINE auto FindBy(RangeType&& Range, const ValueType& Value, ProjectionType Proj) -> decltype(Impl::FindBy(Forward<RangeType>(Range), Value, MoveTemp(Proj)))
+	 * @fn template <typename RangeType, typename ValueType, typename ProjectionType> FORCEINLINE auto FindBy(RangeType&& Range, const ValueType& Value, ProjectionType Proj) -> decltype(Impl::FindBy(std::forward<RangeType>(Range), Value, std::move(Proj)))
 	 *
 	 * @brief 查找的值
 	 *
@@ -119,13 +119,13 @@ namespace Fuko::Algo
 	 */
 	template <typename RangeType, typename ValueType, typename ProjectionType>
 	FORCEINLINE auto FindBy(RangeType&& Range, const ValueType& Value, ProjectionType Proj)
-		-> decltype(Impl::FindBy(Forward<RangeType>(Range), Value, MoveTemp(Proj)))
+		-> decltype(Impl::FindBy(std::forward<RangeType>(Range), Value, std::move(Proj)))
 	{
-		return Impl::FindBy(Forward<RangeType>(Range), Value, MoveTemp(Proj));
+		return Impl::FindBy(std::forward<RangeType>(Range), Value, std::move(Proj));
 	}
 
 	/**
-	 * @fn template <typename RangeType, typename PredicateType> FORCEINLINE auto FindByPredicate(RangeType&& Range, PredicateType Pred) -> decltype(Impl::FindByPredicate(Forward<RangeType>(Range), MoveTemp(Pred)))
+	 * @fn template <typename RangeType, typename PredicateType> FORCEINLINE auto FindByPredicate(RangeType&& Range, PredicateType Pred) -> decltype(Impl::FindByPredicate(std::forward<RangeType>(Range), std::move(Pred)))
 	 *
 	 * @brief 遍历查找
 	 *
@@ -136,9 +136,9 @@ namespace Fuko::Algo
 	 */
 	template <typename RangeType, typename PredicateType>
 	FORCEINLINE auto FindByPredicate(RangeType&& Range, PredicateType Pred)
-		-> decltype(Impl::FindByPredicate(Forward<RangeType>(Range), MoveTemp(Pred)))
+		-> decltype(Impl::FindByPredicate(std::forward<RangeType>(Range), std::move(Pred)))
 	{
-		return Impl::FindByPredicate(Forward<RangeType>(Range), MoveTemp(Pred));
+		return Impl::FindByPredicate(std::forward<RangeType>(Range), std::move(Pred));
 	}
 
 	/**
@@ -159,7 +159,7 @@ namespace Fuko::Algo
 	}
 
 	/**
-	 * @fn template <typename RangeType, typename ValueType, typename ProjectionType> FORCEINLINE auto FindLastBy(RangeType&& Range, const ValueType& Value, ProjectionType Proj) -> decltype(Impl::FindLastBy(GetData(Range), GetNum(Range), Value, MoveTemp(Proj)))
+	 * @fn template <typename RangeType, typename ValueType, typename ProjectionType> FORCEINLINE auto FindLastBy(RangeType&& Range, const ValueType& Value, ProjectionType Proj) -> decltype(Impl::FindLastBy(GetData(Range), GetNum(Range), Value, std::move(Proj)))
 	 *
 	 * @brief 从尾部查找
 	 *
@@ -171,13 +171,13 @@ namespace Fuko::Algo
 	 */
 	template <typename RangeType, typename ValueType, typename ProjectionType>
 	FORCEINLINE auto FindLastBy(RangeType&& Range, const ValueType& Value, ProjectionType Proj)
-		-> decltype(Impl::FindLastBy(GetData(Range), GetNum(Range), Value, MoveTemp(Proj)))
+		-> decltype(Impl::FindLastBy(GetData(Range), GetNum(Range), Value, std::move(Proj)))
 	{
-		return Impl::FindLastBy(GetData(Range), GetNum(Range), Value, MoveTemp(Proj));
+		return Impl::FindLastBy(GetData(Range), GetNum(Range), Value, std::move(Proj));
 	}
 
 	/**
-	 * @fn template <typename RangeType, typename PredicateType> FORCEINLINE auto FindLastByPredicate(RangeType&& Range, PredicateType Pred) -> decltype(Impl::FindLastByPredicate(GetData(Range), GetNum(Range), MoveTemp(Pred)))
+	 * @fn template <typename RangeType, typename PredicateType> FORCEINLINE auto FindLastByPredicate(RangeType&& Range, PredicateType Pred) -> decltype(Impl::FindLastByPredicate(GetData(Range), GetNum(Range), std::move(Pred)))
 	 *
 	 * @brief 从尾部查找
 	 *
@@ -188,9 +188,9 @@ namespace Fuko::Algo
 	 */
 	template <typename RangeType, typename PredicateType>
 	FORCEINLINE auto FindLastByPredicate(RangeType&& Range, PredicateType Pred)
-		-> decltype(Impl::FindLastByPredicate(GetData(Range), GetNum(Range), MoveTemp(Pred)))
+		-> decltype(Impl::FindLastByPredicate(GetData(Range), GetNum(Range), std::move(Pred)))
 	{
-		return Impl::FindLastByPredicate(GetData(Range), GetNum(Range), MoveTemp(Pred));
+		return Impl::FindLastByPredicate(GetData(Range), GetNum(Range), std::move(Pred));
 	}
 
 	/**
