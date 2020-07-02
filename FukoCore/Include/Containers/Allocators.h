@@ -125,8 +125,9 @@ namespace Fuko
 	template<typename SizeType>
 	FORCEINLINE SizeType DefaultCalculateSlackReserve(SizeType NumElements, size_t BytesPerElement, bool bAllowQuantize, uint32 Alignment = DEFAULT_ALIGNMENT)
 	{
-		SizeType Retval = NumElements;
 		check(NumElements > 0);
+
+		SizeType Retval = NumElements;
 		if (bAllowQuantize)
 		{
 			Retval = (SizeType)QuantizeSize(size_t(Retval) * size_t(BytesPerElement), Alignment) / BytesPerElement;
@@ -153,9 +154,7 @@ namespace Fuko
 	template <typename AllocatorType>
 	struct TAllocatorTraitsBase
 	{
-		enum { SupportsMove = false };		// 支持移动语义 
 		enum { IsZeroConstruct = false };	// 支持置0初始化
-		enum { SupportsFreezeMemoryImage = false };	// 支持冻结内存快照
 	};
 	template <typename AllocatorType>
 	struct TAllocatorTraits : TAllocatorTraitsBase<AllocatorType>
@@ -189,9 +188,6 @@ namespace Fuko
 
 		// 是否需要Element类型，如果为true则ForAnyElementType被禁用 
 		enum { NeedsElementType = true };
-
-		// Allocator的使用者是否需要
-		enum { RequireRangeCheck = true };
 
 		// 有类型的Allocator，会使用类型信息
 		template<typename ElementType>
@@ -303,7 +299,6 @@ namespace Fuko
 		using SizeType = int32;
 
 		enum { NeedsElementType = false };
-		enum { RequireRangeCheck = true };
 
 		class ForAnyElementType
 		{
@@ -397,7 +392,6 @@ namespace Fuko
 	template <uint32 Alignment>
 	struct TAllocatorTraits<TAlignedHeapAllocator<Alignment>> : TAllocatorTraitsBase<TAlignedHeapAllocator<Alignment>>
 	{
-		enum { SupportsMove = true };
 		enum { IsZeroConstruct = true };
 	};
 }
@@ -412,7 +406,6 @@ namespace Fuko
 		using SizeType = typename TBitsToSizeType<IndexSize>::Type;
 
 		enum { NeedsElementType = false };
-		enum { RequireRangeCheck = true };
 
 		class ForAnyElementType
 		{
@@ -513,7 +506,6 @@ namespace Fuko
 	template <uint8 IndexSize>
 	struct TAllocatorTraits<TSizedHeapAllocator<IndexSize>> : TAllocatorTraitsBase<TSizedHeapAllocator<IndexSize>>
 	{
-		enum { SupportsMove = true };
 		enum { IsZeroConstruct = true };
 	};
 
@@ -536,7 +528,6 @@ namespace Fuko
 		using SizeType = int32;
 
 		enum { NeedsElementType = true };
-		enum { RequireRangeCheck = true };
 
 		template<typename ElementType>
 		class ForElementType
@@ -637,13 +628,6 @@ namespace Fuko
 		};
 		typedef void ForAnyElementType;
 	};
-
-	template <uint32 NumInlineElements, typename SecondaryAllocator>
-	struct TAllocatorTraits<TInlineAllocator<NumInlineElements, SecondaryAllocator>> : TAllocatorTraitsBase<TInlineAllocator<NumInlineElements, SecondaryAllocator>>
-	{
-		enum { SupportsMove = TAllocatorTraits<SecondaryAllocator>::SupportsMove };
-	};
-
 }
 
 // TNonRelocatableInlineAllocator,TInlineAllocator的特化版，空间不够的时候直接开堆 
@@ -656,7 +640,6 @@ namespace Fuko
 		using SizeType = int32;
 
 		enum { NeedsElementType = true };
-		enum { RequireRangeCheck = true };
 
 		template<typename ElementType>
 		class ForElementType
@@ -708,11 +691,11 @@ namespace Fuko
 				{
 					if (HasAllocation())
 					{
-						Data = (ElementType*)FMemory::Realloc(Data, NumElements*NumBytesPerElement);
+						Data = (ElementType*)Realloc(Data, NumElements*NumBytesPerElement);
 					}
 					else
 					{
-						Data = (ElementType*)FMemory::Realloc(nullptr, NumElements*NumBytesPerElement);
+						Data = (ElementType*)Realloc(nullptr, NumElements*NumBytesPerElement);
 						RelocateConstructItems<ElementType>(Data, GetInlineElements(), PreviousNumElements);
 					}
 				}
@@ -761,12 +744,6 @@ namespace Fuko
 
 		typedef void ForAnyElementType;
 	};
-
-	template <uint32 NumInlineElements>
-	struct TAllocatorTraits<TNonRelocatableInlineAllocator<NumInlineElements>> : TAllocatorTraitsBase<TNonRelocatableInlineAllocator<NumInlineElements>>
-	{
-		enum { SupportsMove = true };
-	};
 }
 
 // TFixedAllocator,固定大小的Allocator，空间不够也不会开堆
@@ -779,7 +756,6 @@ namespace Fuko
 		using SizeType = int32;
 
 		enum { NeedsElementType = true };
-		enum { RequireRangeCheck = true };
 
 		template<typename ElementType>
 		class ForElementType
@@ -845,12 +821,6 @@ namespace Fuko
 		};
 
 		typedef void ForAnyElementType;
-	};
-
-	template <uint32 NumInlineElements>
-	struct TAllocatorTraits<TFixedAllocator<NumInlineElements>> : TAllocatorTraitsBase<TFixedAllocator<NumInlineElements>>
-	{
-		enum { SupportsMove = true };
 	};
 }
 
@@ -935,22 +905,6 @@ namespace Fuko
 
 		typedef InSparseArrayAllocator SparseArrayAllocator;
 		typedef InHashAllocator        HashAllocator;
-	};
-
-	template<
-		typename InSparseArrayAllocator,
-		typename InHashAllocator,
-		uint32   AverageNumberOfElementsPerHashBucket,
-		uint32   BaseNumberOfHashBuckets,
-		uint32   MinNumberOfHashedElements
-	>
-		struct TAllocatorTraits<TSetAllocator<InSparseArrayAllocator, InHashAllocator, AverageNumberOfElementsPerHashBucket, BaseNumberOfHashBuckets, MinNumberOfHashedElements>> :
-		TAllocatorTraitsBase<TSetAllocator<InSparseArrayAllocator, InHashAllocator, AverageNumberOfElementsPerHashBucket, BaseNumberOfHashBuckets, MinNumberOfHashedElements>>
-	{
-		enum
-		{
-			SupportsFreezeMemoryImage = TAllocatorTraits<InSparseArrayAllocator>::SupportsFreezeMemoryImage && TAllocatorTraits<InHashAllocator>::SupportsFreezeMemoryImage,
-		};
 	};
 }
 

@@ -1,30 +1,8 @@
 #pragma once
 #include "CoreConfig.h"
 #include "CoreType.h"
-#include "Sorting.h"
+#include "Templates/Sorting.h"
 #include "Containers/Array.h"
-
-// Helper
-namespace Fuko::ArrayViewPrivate
-{
-	template <typename T, typename ElementType>
-	struct TIsCompatibleElementType
-	{
-		enum { Value = TPointerIsConvertibleFromTo<T*, ElementType* const>::Value };
-	};
-
-	template <typename T>
-	FORCEINLINE decltype(auto) GetDataHelper(T&& Arg)
-	{
-		return GetData(std::forward<T>(Arg));
-	}
-
-	template <typename RangeType, typename ElementType>
-	struct TIsCompatibleRangeType
-	{
-		static constexpr bool Value = TIsCompatibleElementType<std::remove_pointer_t<decltype(GetData(std::declval<RangeType&>()))>, ElementType>::Type;
-	};
-}
 
 // ArrayView
 namespace Fuko
@@ -34,46 +12,36 @@ namespace Fuko
 	{
 	public:
 		using ElementType = InElementType;
-		TArrayView() = default;
-
-	private:
-		template <typename T>
-		using TIsCompatibleElementType = ArrayViewPrivate::TIsCompatibleElementType<T, ElementType>;
-
-		template <typename T>
-		using TIsCompatibleRangeType = ArrayViewPrivate::TIsCompatibleRangeType<T, ElementType>;
 
 	public:
-		template <
-			typename OtherRangeType,
-			typename CVUnqualifiedOtherRangeType = std::remove_cv_t<std::remove_reference_t<OtherRangeType>>,
-			typename = typename std::enable_if_t<
-			TIsContiguousContainer<CVUnqualifiedOtherRangeType>::Value &&
-			TIsCompatibleRangeType<OtherRangeType>::Value
-			>
-		>
-			FORCEINLINE TArrayView(OtherRangeType&& Other)
-			: DataPtr(ArrayViewPrivate::GetDataHelper(std::forward<OtherRangeType>(Other)))
+		TArrayView() = default;
+		template <typename OtherRangeType>
+		FORCEINLINE TArrayView(OtherRangeType&& Other)
+			: DataPtr(::GetData(std::forward<OtherRangeType>(Other)))
+			, ArrayNum(::GetNum(std::forward<OtherRangeType>(Other)))
 		{
-			const auto InCount = GetNum(std::forward<OtherRangeType>(Other));
-			check((InCount >= 0) && ((sizeof(InCount) < sizeof(int32)) || (InCount <= static_cast<decltype(InCount)>(TNumericLimits<int32>::Max()))));
-			ArrayNum = (int32)InCount;
+			using OtherElementType = decltype(::GetData(std::forward<OtherRangeType>(Other)));
+			using OtherCountType = decltype(GetNum(std::forward<OtherRangeType>(Other)));
+
+			static_assert(std::is_convertible_v<OtherElementType, ElementType >> , "OtherElementType must convertible to OwnElementType");
+			static_assert(TIsContiguousContainer_v<OtherRangeType>, "OtherRangeType must a ContiguousContainer");
+			check((ArrayNum >= 0) && ((sizeof(OtherCountType) < sizeof(int32))
+				|| (InCount <= static_cast<decltype(InCount)>(std::numeric_limits<int32>::max()))));
 		}
 
-		template <typename OtherElementType,
-			typename = typename std::enable_if_t<TIsCompatibleElementType<OtherElementType>::Value>>
-			FORCEINLINE TArrayView(OtherElementType* InData, int32 InCount)
+		template <typename OtherElementType>
+		FORCEINLINE TArrayView(OtherElementType* InData, int32 InCount)
 			: DataPtr(InData)
 			, ArrayNum(InCount)
 		{
+			static_assert(std::is_convertible_v<OtherElementType, ElementType >>, "OtherElementType must convertible to OwnElementType");
 			check(ArrayNum >= 0);
 		}
 
 		FORCEINLINE TArrayView(std::initializer_list<ElementType> List)
-			: DataPtr(ArrayViewPrivate::GetDataHelper(List))
-			, ArrayNum(GetNum(List))
-		{
-		}
+			: DataPtr(::GetData(List))
+			, ArrayNum(::GetNum(List))
+		{ }
 
 	public:
 
@@ -232,9 +200,9 @@ namespace Fuko
 		}
 
 		template <typename Predicate>
-		TArray<typename TRemoveC_t<ElementType>> FilterByPredicate(Predicate Pred) const
+		TArray<std::remove_const_t<ElementType>> FilterByPredicate(Predicate Pred) const
 		{
-			TArray<typename TRemoveC_t<ElementType>> FilterResults;
+			TArray<std::remove_const_t<ElementType>> FilterResults;
 			for (const ElementType* RESTRICT Data = GetData(), *RESTRICT DataEnd = Data + ArrayNum; Data != DataEnd; ++Data)
 			{
 				if (Pred(*Data))
@@ -316,12 +284,8 @@ namespace Fuko
 // HelpFunctions
 namespace Fuko
 {
-	template <
-		typename OtherRangeType,
-		typename CVUnqualifiedOtherRangeType = std::remove_cv_t<std::remove_reference_t<OtherRangeType>>,
-		typename = typename std::enable_if_t<TIsContiguousContainer<CVUnqualifiedOtherRangeType>::Value>
-	>
-		auto MakeArrayView(OtherRangeType&& Other)
+	template <typename OtherRangeType>
+	auto MakeArrayView(OtherRangeType&& Other)
 	{
 		return TArrayView<std::remove_pointer_t<decltype(GetData(std::declval<OtherRangeType&>()))>>(std::forward<OtherRangeType>(Other));
 	}
@@ -338,19 +302,19 @@ namespace Fuko
 		return TArrayView<const T>(List);
 	}
 
-// 	template<typename InElementType, typename InAllocatorType>
-// 	template<typename OtherElementType>
-// 	FORCEINLINE TArray<InElementType, InAllocatorType>::TArray(const TArrayView<OtherElementType>& Other)
-// 	{
-// 		CopyToEmpty(Other.GetData(), Other.Num(), 0, 0);
-// 	}
-// 
-// 	template<typename InElementType, typename InAllocatorType>
-// 	template<typename OtherElementType>
-// 	FORCEINLINE TArray<InElementType, InAllocatorType>& TArray<InElementType, InAllocatorType>::operator=(const TArrayView<OtherElementType>& Other)
-// 	{
-// 		DestructItems(GetData(), ArrayNum);
-// 		CopyToEmpty(Other.GetData(), Other.Num(), ArrayMax, 0);
-// 		return *this;
-// 	}
+	template<typename InElementType, typename InAllocatorType>
+	template<typename OtherElementType>
+	FORCEINLINE TArray<InElementType, InAllocatorType>::TArray(const TArrayView<OtherElementType>& Other)
+	{
+		CopyToEmpty(Other.GetData(), Other.Num(), 0, 0);
+	}
+
+	template<typename InElementType, typename InAllocatorType>
+	template<typename OtherElementType>
+	FORCEINLINE TArray<InElementType, InAllocatorType>& TArray<InElementType, InAllocatorType>::operator=(const TArrayView<OtherElementType>& Other)
+	{
+		DestructItems(GetData(), ArrayNum);
+		CopyToEmpty(Other.GetData(), Other.Num(), ArrayMax, 0);
+		return *this;
+	}
 }

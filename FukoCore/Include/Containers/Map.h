@@ -102,8 +102,6 @@ namespace Fuko
 	{
 		template <typename OtherKeyType, typename OtherValueType, typename OtherSetAllocator, typename OtherKeyFuncs>
 		friend class TMapBase;
-
-		friend struct TContainerTraits<TMapBase>;
 	public:
 		typedef typename TTypeTraits<KeyType  >::ConstPointerType KeyConstPointerType;
 		typedef typename TTypeTraits<KeyType  >::ConstInitType    KeyInitType;
@@ -814,8 +812,6 @@ namespace Fuko
 	template <typename KeyType, typename ValueType, typename SetAllocator, typename KeyFuncs>
 	class TSortableMapBase : public TMapBase<KeyType, ValueType, SetAllocator, KeyFuncs>
 	{
-		friend struct TContainerTraits<TSortableMapBase>;
-
 	protected:
 		typedef TMapBase<KeyType, ValueType, SetAllocator, KeyFuncs> Super;
 
@@ -943,8 +939,6 @@ namespace Fuko
 	template<typename KeyType, typename ValueType, typename SetAllocator, typename KeyFuncs>
 	class TMap : public TSortableMapBase<KeyType, ValueType, SetAllocator, KeyFuncs>
 	{
-		friend struct TContainerTraits<TMap>;
-
 		template <typename, typename>
 		friend class TScriptMap;
 
@@ -1093,8 +1087,6 @@ namespace Fuko
 	template<typename KeyType, typename ValueType, typename SetAllocator /* = FDefaultSetAllocator */, typename KeyFuncs /*= TDefaultMapHashableKeyFuncs<KeyType,ValueType,true>*/>
 	class TMultiMap : public TSortableMapBase<KeyType, ValueType, SetAllocator, KeyFuncs>
 	{
-		friend struct TContainerTraits<TMultiMap>;
-
 		static_assert(KeyFuncs::bAllowDuplicateKeys, "TMultiMap cannot be instantiated with a KeyFuncs which disallows duplicate keys");
 
 	public:
@@ -1397,24 +1389,6 @@ namespace Fuko
 				this->Add(Pair.Key, Pair.Value);
 			}
 		}
-	};
-
-}
-
-// ContainerTraits 
-namespace Fuko
-{
-	template <typename KeyType, typename ValueType, typename SetAllocator, typename KeyFuncs>
-	struct TContainerTraits<TMap<KeyType, ValueType, SetAllocator, KeyFuncs>> : public TContainerTraitsBase<TMap<KeyType, ValueType, SetAllocator, KeyFuncs>>
-	{
-		enum { MoveWillEmptyContainer = TContainerTraits<typename TMap<KeyType, ValueType, SetAllocator, KeyFuncs>::ElementSetType>::MoveWillEmptyContainer };
-	};
-
-
-	template <typename KeyType, typename ValueType, typename SetAllocator, typename KeyFuncs>
-	struct TContainerTraits<TMultiMap<KeyType, ValueType, SetAllocator, KeyFuncs>> : public TContainerTraitsBase<TMultiMap<KeyType, ValueType, SetAllocator, KeyFuncs>>
-	{
-		enum { MoveWillEmptyContainer = TContainerTraits<typename TMultiMap<KeyType, ValueType, SetAllocator, KeyFuncs>::ElementSetType>::MoveWillEmptyContainer };
 	};
 
 }

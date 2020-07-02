@@ -112,13 +112,6 @@ struct TCanBitwiseCompare
 template<typename T>
 inline constexpr bool TCanBitwiseCompare_v = TCanBitwiseCompare<T>::value;
 
-// Array的一些特性萃取  
-template<typename T> struct TContainerTraitsBase
-{
-	enum { MoveWillEmptyContainer = false };
-};
-template<typename T> struct TContainerTraits : public TContainerTraitsBase<T> {};
-
 // 是否是数组或者引用 
 template <typename T, typename ArrType>
 struct TIsArrayOrRefOfType

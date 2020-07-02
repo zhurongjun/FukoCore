@@ -11,7 +11,7 @@ namespace Fuko::Algo::Impl
 	{
 		for (auto&& Elem : std::forward<RangeType>(Range))
 		{
-			if (Invoke(Proj, Elem) == Value)
+			if (std::invoke(Proj, Elem) == Value)
 			{
 				return &Elem;
 			}
@@ -25,7 +25,7 @@ namespace Fuko::Algo::Impl
 	{
 		for (auto&& Elem : std::forward<RangeType>(Range))
 		{
-			if (Invoke(Pred, Elem))
+			if (std::invoke(Pred, Elem))
 			{
 				return &Elem;
 			}
@@ -39,7 +39,7 @@ namespace Fuko::Algo::Impl
 	{
 		for (T* Last = First + Num; First != Last;)
 		{
-			if (Invoke(Proj, *--Last) == Value)
+			if (std::invoke(Proj, *--Last) == Value)
 			{
 				return Last;
 			}
@@ -53,7 +53,7 @@ namespace Fuko::Algo::Impl
 	{
 		for (T* Last = First + Num; First != Last;)
 		{
-			if (Invoke(Pred, *--Last))
+			if (std::invoke(Pred, *--Last))
 			{
 				return Last;
 			}

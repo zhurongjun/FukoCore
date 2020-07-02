@@ -19,9 +19,9 @@ namespace Fuko::Algo
 	{
 		for (const auto& Value : Input)
 		{
-			if (Invoke(Predicate, Value))
+			if (std::invoke(Predicate, Value))
 			{
-				Output.Add(Invoke(Trans, Value));
+				Output.Add(std::invoke(Trans, Value));
 			}
 		}
 	}
@@ -40,7 +40,7 @@ namespace Fuko::Algo
 	{
 		for (const auto& Value : Input)
 		{
-			Output.Add(Invoke(Trans, Value));
+			Output.Add(std::invoke(Trans, Value));
 		}
 	}
 }

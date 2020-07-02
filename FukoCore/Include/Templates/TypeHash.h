@@ -7,7 +7,7 @@
 
 namespace Fuko
 {
-	inline uint32 HashCombine(uint32 A, uint32 C)
+	FORCEINLINE uint32 HashCombine(uint32 A, uint32 C)
 	{
 		uint32 B = 0x9e3779b9;
 		A += B;
@@ -25,7 +25,7 @@ namespace Fuko
 		return C;
 	}
 
-	inline uint32 PointerHash(const void* Key, uint32 C = 0)
+	FORCEINLINE uint32 PointerHash(const void* Key, uint32 C = 0)
 	{
 		if constexpr (sizeof(void*) == 4)
 		{
@@ -39,74 +39,74 @@ namespace Fuko
 		}
 	}
 
-	inline uint32 GetTypeHash(const uint8 A)
+	FORCEINLINE uint32 GetTypeHash(const uint8 A)
 	{
 		return A;
 	}
 
-	inline uint32 GetTypeHash(const int8 A)
+	FORCEINLINE uint32 GetTypeHash(const int8 A)
 	{
 		return A;
 	}
 
-	inline uint32 GetTypeHash(const uint16 A)
+	FORCEINLINE uint32 GetTypeHash(const uint16 A)
 	{
 		return A;
 	}
 
-	inline uint32 GetTypeHash(const int16 A)
+	FORCEINLINE uint32 GetTypeHash(const int16 A)
 	{
 		return A;
 	}
 
-	inline uint32 GetTypeHash(const int32 A)
+	FORCEINLINE uint32 GetTypeHash(const int32 A)
 	{
 		return A;
 	}
 
-	inline uint32 GetTypeHash(const uint32 A)
+	FORCEINLINE uint32 GetTypeHash(const uint32 A)
 	{
 		return A;
 	}
 
-	inline uint32 GetTypeHash(const uint64 A)
+	FORCEINLINE uint32 GetTypeHash(const uint64 A)
 	{
 		return (uint32)A + ((uint32)(A >> 32) * 23);
 	}
 
-	inline uint32 GetTypeHash(const int64 A)
+	FORCEINLINE uint32 GetTypeHash(const int64 A)
 	{
 		return (uint32)A + ((uint32)(A >> 32) * 23);
 	}
 
-	inline uint32 GetTypeHash(float Value)
+	FORCEINLINE uint32 GetTypeHash(float Value)
 	{
 		return *(uint32*)&Value;
 	}
 
-	inline uint32 GetTypeHash(double Value)
+	FORCEINLINE uint32 GetTypeHash(double Value)
 	{
 		return GetTypeHash(*(uint64*)&Value);
 	}
 
-	inline uint32 GetTypeHash(const TCHAR* S)
+	FORCEINLINE uint32 GetTypeHash(const TCHAR* S)
 	{
 		return Fuko::Crc::StrCrc32(S);
 	}
 
-	inline uint32 GetTypeHash(const void* A)
+	FORCEINLINE uint32 GetTypeHash(const void* A)
 	{
 		return PointerHash(A);
 	}
 
-	inline uint32 GetTypeHash(void* A)
+	FORCEINLINE uint32 GetTypeHash(void* A)
 	{
 		return PointerHash(A);
 	}
 
 	template <typename EnumType>
-	FORCEINLINE  typename std::enable_if_t<std::is_enum_v<EnumType>, uint32> GetTypeHash(EnumType E)
+	FORCEINLINE uint32 GetTypeHash(EnumType E)
 	{
-		return GetTypeHash((__underlying_type(EnumType))E);
+		return GetTypeHash((std::underlying_type_t<EnumType>)E);
 	}
 }

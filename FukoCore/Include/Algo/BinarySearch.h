@@ -35,7 +35,7 @@ namespace Fuko::Algo::Impl
 			const SizeType CheckIndex = Start + Size;	// 中位 
 			const SizeType StartIfLess = CheckIndex + LeftoverSize;	// 如果谓语成立的下一个起始点 
 			
-			auto&& CheckValue = Invoke(Projection, First[CheckIndex]);	// 经过映射后的比较中值 
+			auto&& CheckValue = std::invoke(Projection, First[CheckIndex]);	// 经过映射后的比较中值 
 			Start = SortPredicate(CheckValue, Value) ? StartIfLess : Start;	// 更新起点 
 		}
 		return Start;
@@ -68,7 +68,7 @@ namespace Fuko::Algo::Impl
 			const SizeType CheckIndex = Start + Size;
 			const SizeType StartIfLess = CheckIndex + LeftoverSize;
 
-			auto&& CheckValue = Invoke(Projection, First[CheckIndex]);
+			auto&& CheckValue = std::invoke(Projection, First[CheckIndex]);
 			Start = !SortPredicate(Value, CheckValue) ? StartIfLess : Start;
 		}
 
@@ -280,7 +280,7 @@ namespace Fuko::Algo
 		auto CheckIndex = LowerBoundBy(Range, Value, Projection, SortPredicate);
 		if (CheckIndex < GetNum(Range))
 		{
-			auto&& CheckValue = Invoke(Projection, GetData(Range)[CheckIndex]);
+			auto&& CheckValue = std::invoke(Projection, GetData(Range)[CheckIndex]);
 			if (!SortPredicate(Value, CheckValue))
 			{
 				return CheckIndex;

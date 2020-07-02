@@ -13,7 +13,7 @@ namespace Fuko::Algo::Impl
 
 		for (auto& Elem : Range)
 		{
-			if (!Result || Invoke(Pred, Invoke(Proj, Elem), Invoke(Proj, *Result)))
+			if (!Result || std::invoke(Pred, std::invoke(Proj, Elem), std::invoke(Proj, *Result)))
 			{
 				Result = &Elem;
 			}
@@ -29,7 +29,7 @@ namespace Fuko::Algo::Impl
 
 		for (auto& Elem : Range)
 		{
-			if (!Result || Invoke(Pred, Invoke(Proj, *Result), Invoke(Proj, Elem)))
+			if (!Result || std::invoke(Pred, std::invoke(Proj, *Result), std::invoke(Proj, Elem)))
 			{
 				Result = &Elem;
 			}

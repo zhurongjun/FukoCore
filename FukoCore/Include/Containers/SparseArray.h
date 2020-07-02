@@ -57,23 +57,19 @@ namespace Fuko
 // TSparseArray
 namespace Fuko
 {
-	template<typename InElementType, typename Allocator /*= FDefaultSparseArrayAllocator */>
+	template<typename InElementType, typename Allocator>
 	class TSparseArray
 	{
 		using ElementType = InElementType;
-
-		friend struct TContainerTraits<TSparseArray>;
 
 		template <typename, typename>
 		friend class TScriptSparseArray;
 
 	public:
-		static const bool SupportsFreezeMemoryImage = false;
 
-		/** Destructor. */
+		// Destructor
 		~TSparseArray()
 		{
-			// Destruct the elements in the array.
 			Empty();
 		}
 
@@ -655,29 +651,22 @@ namespace Fuko
 		template <typename SparseArrayType>
 		FORCEINLINE static typename void MoveOrCopy(SparseArrayType& ToArray, SparseArrayType& FromArray)
 		{
-			if constexpr (TContainerTraits<SparseArrayType>::MoveWillEmptyContainer)
+			// Destruct the allocated elements.
+			if constexpr (!std::is_trivially_destructible_v<ElementType>::Value)
 			{
-				// Destruct the allocated elements.
-				if constexpr (!std::is_trivially_destructible_v<ElementType>::Value)
+				for (ElementType& Element : ToArray)
 				{
-					for (ElementType& Element : ToArray)
-					{
-						DestructItem(&Element);
-					}
+					DestructItem(&Element);
 				}
-
-				ToArray.Data = (DataType&&)FromArray.Data;
-				ToArray.AllocationFlags = (AllocationBitArrayType&&)FromArray.AllocationFlags;
-
-				ToArray.FirstFreeIndex = FromArray.FirstFreeIndex;
-				ToArray.NumFreeIndices = FromArray.NumFreeIndices;
-				FromArray.FirstFreeIndex = -1;
-				FromArray.NumFreeIndices = 0;
 			}
-			else
-			{
-				ToArray = FromArray;
-			}
+
+			ToArray.Data = (DataType&&)FromArray.Data;
+			ToArray.AllocationFlags = (AllocationBitArrayType&&)FromArray.AllocationFlags;
+
+			ToArray.FirstFreeIndex = FromArray.FirstFreeIndex;
+			ToArray.NumFreeIndices = FromArray.NumFreeIndices;
+			FromArray.FirstFreeIndex = -1;
+			FromArray.NumFreeIndices = 0;
 		}
 
 	public:
@@ -965,20 +954,6 @@ namespace Fuko
 		
 		// FreeList中的元素数量 
 		int32 NumFreeIndices;
-	};
-}
-
-// Type traits
-namespace Fuko
-{
-	template<typename ElementType, typename Allocator>
-	struct TContainerTraits<TSparseArray<ElementType, Allocator> > : public TContainerTraitsBase<TSparseArray<ElementType, Allocator> >
-	{
-		enum {
-			MoveWillEmptyContainer =
-			TContainerTraits<typename TSparseArray<ElementType, Allocator>::DataType>::MoveWillEmptyContainer &&
-			TContainerTraits<typename TSparseArray<ElementType, Allocator>::AllocationBitArrayType>::MoveWillEmptyContainer
-		};
 	};
 }
 

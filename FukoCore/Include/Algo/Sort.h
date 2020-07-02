@@ -85,10 +85,10 @@ namespace Fuko::Algo::Impl
 			int32 MinChildIndex = LeftChildIndex;
 			if (RightChildIndex < Count)
 			{
-				MinChildIndex = Predicate(Invoke(Projection, Heap[LeftChildIndex]), Invoke(Projection, Heap[RightChildIndex])) ? LeftChildIndex : RightChildIndex;
+				MinChildIndex = Predicate(std::invoke(Projection, Heap[LeftChildIndex]), std::invoke(Projection, Heap[RightChildIndex])) ? LeftChildIndex : RightChildIndex;
 			}
 
-			if (!Predicate(Invoke(Projection, Heap[MinChildIndex]), Invoke(Projection, Heap[Index])))
+			if (!Predicate(std::invoke(Projection, Heap[MinChildIndex]), std::invoke(Projection, Heap[Index])))
 			{
 				break;
 			}
@@ -117,7 +117,7 @@ namespace Fuko::Algo::Impl
 		while (NodeIndex > RootIndex)
 		{
 			int32 ParentIndex = HeapGetParentIndex(NodeIndex);
-			if (!Predicate(Invoke(Projection, Heap[NodeIndex]), Invoke(Projection, Heap[ParentIndex])))
+			if (!Predicate(std::invoke(Projection, Heap[NodeIndex]), std::invoke(Projection, Heap[ParentIndex])))
 			{
 				break;
 			}
@@ -233,7 +233,7 @@ namespace Fuko::Algo::Impl
 					T *Max, *Item;
 					for (Max = Current.Min, Item = Current.Min + 1; Item <= Current.Max; Item++)
 					{
-						if (Invoke(Predicate, Invoke(Projection, *Max), Invoke(Projection, *Item)))
+						if (std::invoke(Predicate, std::invoke(Projection, *Max), std::invoke(Projection, *Item)))
 						{
 							Max = Item;
 						}
@@ -252,9 +252,9 @@ namespace Fuko::Algo::Impl
 				for (; ; )
 				{
 					// 从左向右迭代寻找 大/小 于基准的元素
-					while (++Inner.Min <= Current.Max && !Invoke(Predicate, Invoke(Projection, *Current.Min), Invoke(Projection, *Inner.Min)));
+					while (++Inner.Min <= Current.Max && !std::invoke(Predicate, std::invoke(Projection, *Current.Min), std::invoke(Projection, *Inner.Min)));
 					// 从右向左迭代寻找 小/大 于基准的元素
-					while (--Inner.Max > Current.Min && !Invoke(Predicate, Invoke(Projection, *Inner.Max), Invoke(Projection, *Current.Min)));
+					while (--Inner.Max > Current.Min && !std::invoke(Predicate, std::invoke(Projection, *Inner.Max), std::invoke(Projection, *Current.Min)));
 					// 此次迭代完毕，退出
 					if (Inner.Min > Inner.Max)
 					{

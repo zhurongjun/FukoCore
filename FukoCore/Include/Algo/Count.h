@@ -44,7 +44,7 @@ namespace Fuko::Algo
 		size_t Result = 0;
 		for (const auto& Value : Input)
 		{
-			if (Invoke(Predicate, Value))
+			if (std::invoke(Predicate, Value))
 			{
 				++Result;
 			}

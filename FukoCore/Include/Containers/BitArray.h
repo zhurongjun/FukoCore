@@ -296,19 +296,12 @@ namespace Fuko
 		template <typename BitArrayType>
 		static FORCEINLINE void MoveOrCopy(BitArrayType& ToArray, BitArrayType& FromArray)
 		{
-			if constexpr (TContainerTraits<BitArrayType>::MoveWillEmptyContainer)
-			{
-				ToArray.AllocatorInstance.MoveToEmpty(FromArray.AllocatorInstance);
+			ToArray.AllocatorInstance.MoveToEmpty(FromArray.AllocatorInstance);
 
-				ToArray.NumBits = FromArray.NumBits;
-				ToArray.MaxBits = FromArray.MaxBits;
-				FromArray.NumBits = 0;
-				FromArray.MaxBits = 0;
-			}
-			else
-			{
-				ToArray = FromArray;
-			}
+			ToArray.NumBits = FromArray.NumBits;
+			ToArray.MaxBits = FromArray.MaxBits;
+			FromArray.NumBits = 0;
+			FromArray.MaxBits = 0;
 		}
 
 	public:
@@ -858,17 +851,6 @@ namespace Fuko
 		}
 	};
 
-}
-
-// TypeTraits
-namespace Fuko
-{
-	template<typename Allocator>
-	struct TContainerTraits<TBitArray<Allocator> > : public TContainerTraitsBase<TBitArray<Allocator> >
-	{
-		static_assert(TAllocatorTraits<Allocator>::SupportsMove, "TBitArray no longer supports move-unaware allocators");
-		enum { MoveWillEmptyContainer = TAllocatorTraits<Allocator>::SupportsMove };
-	};
 }
 
 // SetBit Iterator，只访问被设为true的bit 

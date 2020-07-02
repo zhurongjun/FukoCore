@@ -15,6 +15,13 @@
 #define TARRAY_RANGED_FOR_CHECKS 0
 #endif
 
+// forward
+namespace Fuko
+{
+	template<typename T, typename Allocator = FDefaultAllocator> 
+	class TArray;
+}
+
 // 迭代器
 namespace Fuko
 {
@@ -215,7 +222,6 @@ namespace Fuko
 			Value =
 			std::is_same_v<FromAllocatorType, ToAllocatorType> || 
 			TCanMoveBetweenAllocators<FromAllocatorType, ToAllocatorType>::Value &&
-			TContainerTraits<FromArrayType>::MoveWillEmptyContainer &&
 			(
 				std::is_same_v       <ToElementType, FromElementType> ||
 				TIsBitwiseConstructible<ToElementType, FromElementType>
@@ -241,113 +247,45 @@ namespace Fuko
 		> ElementAllocatorType;
 
 		static_assert(std::is_signed_v<SizeType>, "TArray only supports signed index types");
-	
-		//-------------------------------------------构造，拷贝，赋值-------------------------------------------
 	public:
-		/**
-		 * @fn FORCEINLINE TArray::TArray() : ArrayNum(0) , ArrayMax(AllocatorInstance.GetInitialCapacity())
-		 *
-		 * @brief 默认构造
-		 *
-		 */
+		// construct 
 		FORCEINLINE TArray()
 			: ArrayNum(0)
 			, ArrayMax(AllocatorInstance.GetInitialCapacity())
 		{}
-
-		/**
-		 * @fn FORCEINLINE TArray::TArray(const ElementType* Ptr, SizeType Count)
-		 *
-		 * @brief 从一个原始数组构造
-		 *
-		 * @param  Ptr   数组首地址
-		 * @param  Count 数组长度
-		 *
-		 */
 		FORCEINLINE TArray(const ElementType* Ptr, SizeType Count)
 		{
 			check(Ptr != nullptr || Count == 0);
 
 			CopyToEmpty(Ptr, Count, 0, 0);
 		}
-
-		/**
-		 * @fn TArray::TArray(std::initializer_list<InElementType> InitList)
-		 *
-		 * @brief 从initializer_list构造 
-		 *
-		 * @param  initializer_list
-		 */
-		TArray(std::initializer_list<InElementType> InitList)
+		FORCEINLINE TArray(std::initializer_list<InElementType> InitList)
 		{
 			CopyToEmpty(InitList.begin(), (SizeType)InitList.size(), 0, 0);
 		}
 
-		/**
-		 * @fn template <typename OtherElementType, typename OtherAllocator> FORCEINLINE explicit TArray::TArray(const TArray<OtherElementType, OtherAllocator>& Other)
-		 *
-		 * @brief 拷贝构造
-		 *
-		 * @tparam OtherElementType 拷贝源的元素类型
-		 * @tparam OtherAllocator   拷贝源的内存分配器
-		 * @param  Other 拷贝源
-		 */
+		// copy construct 
 		template <typename OtherElementType, typename OtherAllocator>
 		FORCEINLINE explicit TArray(const TArray<OtherElementType, OtherAllocator>& Other)
 		{
 			CopyToEmpty(Other.GetData(), Other.Num(), 0, 0);
 		}
-
-		/**
-		 * @fn FORCEINLINE TArray::TArray(const TArray& Other)
-		 *
-		 * @brief 拷贝构造
-		 *
-		 * @param  拷贝源
-		 */
 		FORCEINLINE TArray(const TArray& Other)
 		{
 			CopyToEmpty(Other.GetData(), Other.Num(), 0, 0);
 		}
-
-		/**
-		 * @fn FORCEINLINE TArray::TArray(const TArray& Other, SizeType ExtraSlack)
-		 *
-		 * @brief 拷贝构造
-		 *
-		 * @param  Other	  拷贝源
-		 * @param  ExtraSlack 预留的额外空间
-		 */
 		FORCEINLINE TArray(const TArray& Other, SizeType ExtraSlack)
 		{
 			CopyToEmpty(Other.GetData(), Other.Num(), 0, ExtraSlack);
 		}
 
-		/**
-		 * @fn TArray& TArray::operator=(std::initializer_list<InElementType> InitList)
-		 *
-		 * @brief 赋值运算符重载，从initializer_list拷贝
-		 *
-		 * @param  InitList The initializer_list to copy from.
-		 *
-		 * @returns 自己的引用
-		 */
+		// assign operator 
 		TArray& operator=(std::initializer_list<InElementType> InitList)
 		{
 			DestructItems(GetData(), ArrayNum);
 			CopyToEmpty(InitList.begin(), (SizeType)InitList.size(), ArrayMax, 0);
 			return *this;
 		}
-
-		/**
-		 * @fn template<typename OtherAllocator> TArray& TArray::operator=(const TArray<ElementType, OtherAllocator>& Other)
-		 *
-		 * @brief 使用其它类型的Array赋值
-		 *
-		 * @param  源数组
-		 *
-		 * @returns 自己的引用
-		 */
 		template<typename OtherAllocator>
 		TArray& operator=(const TArray<ElementType, OtherAllocator>& Other)
 		{
@@ -355,16 +293,6 @@ namespace Fuko
 			CopyToEmpty(Other.GetData(), Other.Num(), ArrayMax, 0);
 			return *this;
 		}
-
-		/**
-		 * @fn TArray& TArray::operator=(const TArray& Other)
-		 *
-		 * @brief 赋值运算
-		 *
-		 * @param  源数组
-		 *
-		 * @returns 自己的引用
-		 */
 		TArray& operator=(const TArray& Other)
 		{
 			if (this != &Other)
@@ -374,19 +302,46 @@ namespace Fuko
 			}
 			return *this;
 		}
+		
+		// move construct 
+		FORCEINLINE TArray(TArray&& Other)
+		{
+			MoveOrCopy(*this, Other, 0);
+		}
+		template <typename OtherElementType, typename OtherAllocator>
+		FORCEINLINE explicit TArray(TArray<OtherElementType, OtherAllocator>&& Other)
+		{
+			MoveOrCopy(*this, Other, 0);
+		}
+		template <typename OtherElementType>
+		FORCEINLINE TArray(TArray<OtherElementType, Allocator>&& Other, SizeType ExtraSlack)
+		{
+			MoveOrCopyWithSlack(*this, Other, 0, ExtraSlack);
+		}
+	
+		// move assign operator 
+		TArray& operator=(TArray&& Other)
+		{
+			if (this != &Other)
+			{
+				DestructItems(GetData(), ArrayNum);
+				MoveOrCopy(*this, Other, ArrayMax);
+			}
+			return *this;
+		}
+		
+		// destruct 
+		~TArray()
+		{
+			DestructItems(GetData(), ArrayNum);
 
-		//-------------------------------------------移动构造辅助函数-------------------------------------------
+			// 保证DebugGet实例化
+#if defined(_MSC_VER) && !defined(__clang__)
+			volatile const ElementType* Dummy = &DebugGet(0);
+#endif
+		}
+
 	private:
-
-		/**
-		 * @fn template <typename FromArrayType, typename ToArrayType> static FORCEINLINE void TArray::MoveOrCopy(ToArrayType& ToArray, FromArrayType& FromArray, SizeType PrevMax)
-		 *
-		 * @brief 根据情况判断调用移动还是拷贝
-		 *
-		 * @param [in,out] ToArray   目标数组
-		 * @param [in,out] FromArray 源数组
-		 * @param 		   PrevMax   目标数组当前分配的大小
-		 */
 		template <typename FromArrayType, typename ToArrayType>
 		static FORCEINLINE void MoveOrCopy(ToArrayType& ToArray, FromArrayType& FromArray, SizeType PrevMax)
 		{
@@ -418,17 +373,6 @@ namespace Fuko
 				ToArray.CopyToEmpty(FromArray.GetData(), FromArray.Num(), PrevMax, 0);
 			}
 		}
-
-		/**
-		 * @fn template <typename FromArrayType, typename ToArrayType> static FORCEINLINE void TArray::MoveOrCopyWithSlack(ToArrayType& ToArray, FromArrayType& FromArray, SizeType PrevMax, SizeType ExtraSlack)
-		 *
-		 * @brief 根据情况判断调用移动还是拷贝
-		 * 
-		 * @param [in,out] ToArray    目标数组
-		 * @param [in,out] FromArray  源数组
-		 * @param 		   PrevMax    目标数组当前分配的大小
-		 * @param 		   ExtraSlack 预留的闲余空间
-		 */
 		template <typename FromArrayType, typename ToArrayType>
 		static FORCEINLINE void MoveOrCopyWithSlack(ToArrayType& ToArray, FromArrayType& FromArray, SizeType PrevMax, SizeType ExtraSlack)
 		{
@@ -442,345 +386,103 @@ namespace Fuko
 				ToArray.CopyToEmpty(FromArray.GetData(), FromArray.Num(), PrevMax, ExtraSlack);
 			}
 		}
-
-		//-------------------------------------------移动构造-------------------------------------------
 	public:
-		/**
-		 * @fn FORCEINLINE TArray::TArray(TArray&& Other)
-		 *
-		 * @brief 移动构造
-		 *
-		 * @param [in] 源数组
-		 */
-		FORCEINLINE TArray(TArray&& Other)
-		{
-			MoveOrCopy(*this, Other, 0);
-		}
-
-		/**
-		 * @fn template <typename OtherElementType, typename OtherAllocator> FORCEINLINE explicit TArray::TArray(TArray<OtherElementType, OtherAllocator>&& Other)
-		 *
-		 * @brief 移动构造
-		 *
-		 * @param [in] (不同类型的)源数组
-		 */
-		template <typename OtherElementType, typename OtherAllocator>
-		FORCEINLINE explicit TArray(TArray<OtherElementType, OtherAllocator>&& Other)
-		{
-			MoveOrCopy(*this, Other, 0);
-		}
-
-		/**
-		 * @fn template <typename OtherElementType> TArray::TArray(TArray<OtherElementType, Allocator>&& Other, SizeType ExtraSlack)
-		 *
-		 * @brief 移动构造
-		 *
-		 * @param [in]	Other		源数组
-		 * @param 		ExtraSlack	预留的空间
-		 */
-		template <typename OtherElementType>
-		TArray(TArray<OtherElementType, Allocator>&& Other, SizeType ExtraSlack)
-		{
-			MoveOrCopyWithSlack(*this, Other, 0, ExtraSlack);
-		}
-
-		/**
-		 * @fn TArray& TArray::operator=(TArray&& Other)
-		 *
-		 * @brief 移动赋值
-		 *
-		 * @param [in] 源数组
-		 *
-		 * @returns 自己的引用
-		 */
-		TArray& operator=(TArray&& Other)
-		{
-			if (this != &Other)
-			{
-				DestructItems(GetData(), ArrayNum);
-				MoveOrCopy(*this, Other, ArrayMax);
-			}
-			return *this;
-		}
-
-		/** 析构函数 */
-		~TArray()
-		{
-			DestructItems(GetData(), ArrayNum);
-
-			// 保证DebugGet实例化
-#if defined(_MSC_VER) && !defined(__clang__)
-			volatile const ElementType* Dummy = &DebugGet(0);
-#endif
-		}
-
-		/**
-		 * @fn FORCEINLINE ElementType* TArray::GetData()
-		 *
-		 * @brief 得到真实的数据指针
-		 *
-		 * @returns 指向数组的首地址，如果ArrayMax为0则为nullptr
-		 */
 		FORCEINLINE ElementType* GetData()
 		{
 			return (ElementType*)AllocatorInstance.GetAllocation();
 		}
-
-		/**
-		 * @fn FORCEINLINE const ElementType* TArray::GetData() const
-		 *
-		 * @brief 得到真实的数据指针
-		 *
-		 * @returns 指向数组的首地址，如果ArrayMax为0则为nullptr
-		 */
 		FORCEINLINE const ElementType* GetData() const
 		{
 			return (const ElementType*)AllocatorInstance.GetAllocation();
 		}
-
-		/**
-		 * @fn FORCEINLINE uint32 TArray::GetTypeSize() const
-		 *
-		 * @brief 得到类型的字节数大小
-		 *
-		 * @returns 类型的字节数
-		 */
 		FORCEINLINE uint32 GetTypeSize() const
 		{
 			return sizeof(ElementType);
 		}
-
-		/**
-		 * @fn FORCEINLINE SIZE_T TArray::GetAllocatedSize(void) const
-		 *
-		 * @brief 得到分配器分配的实体堆内存大小
-		 *
-		 * @returns 分配器分配的实体堆内存大小
-		 */
-		FORCEINLINE SIZE_T GetAllocatedSize(void) const
+		FORCEINLINE size_t GetAllocatedSize(void) const
 		{
 			return AllocatorInstance.GetAllocatedSize(ArrayMax, sizeof(ElementType));
 		}
-
-		/**
-		 * @fn FORCEINLINE SizeType TArray::GetSlack() const
-		 *
-		 * @brief 得到剩余能够容纳的元素数量
-		 *
-		 * @returns 剩余能够容纳的元素数量
-		 */
 		FORCEINLINE SizeType GetSlack() const
 		{
 			return ArrayMax - ArrayNum;
 		}
-
-		/**
-		 * @fn FORCEINLINE void TArray::CheckInvariants() const
-		 *
-		 * @brief 检查数组的有效性
-		 */
+		
 		FORCEINLINE void CheckInvariants() const
 		{
 			check((ArrayNum >= 0) & (ArrayMax >= ArrayNum));
 		}
-
-		/**
-		 * @fn FORCEINLINE void TArray::CheckAddress(const ElementType* Addr) const
-		 *
-		 * @brief 检查某个地址是否在范围内
-		 *
-		 * @param  地址
-		 */
 		FORCEINLINE void CheckAddress(const ElementType* Addr) const
 		{
 			checkf(Addr < GetData() || Addr >= (GetData() + ArrayMax), TEXT("Attempting to use a container element (%p) which already comes from the container being modified (%p, ArrayMax: %d, ArrayNum: %d, SizeofElement: %d)!"), Addr, GetData(), ArrayMax, ArrayNum, sizeof(ElementType));
 		}
-		
-		/**
-		 * @fn FORCEINLINE void TArray::RangeCheck(SizeType Index) const
-		 *
-		 * @brief 检查数组索引的有效性
-		 *
-		 * @param  数组索引
-		 */
 		FORCEINLINE void RangeCheck(SizeType Index) const
 		{
 			CheckInvariants();
-
-			if constexpr (Allocator::RequireRangeCheck)
-			{
-				checkf((Index >= 0) & (Index < ArrayNum), TEXT("Array index out of bounds: %i from an array of size %i"), Index, ArrayNum); // & for one branch
-			}
+			checkf((Index >= 0) & (Index < ArrayNum), TEXT("Array index out of bounds: %i from an array of size %i"), Index, ArrayNum); // & for one branch
 		}
-
-		/**
-		 * @fn FORCEINLINE bool TArray::IsValidIndex(SizeType Index) const
-		 *
-		 * @brief 查询Index是否是一个有效的索引
-		 *
-		 * @param  索引
-		 *
-		 * @returns 是否是一个有效的索引
-		 */
+		
 		FORCEINLINE bool IsValidIndex(SizeType Index) const
 		{
 			return Index >= 0 && Index < ArrayNum;
 		}
 
-		/**
-		 * @fn FORCEINLINE SizeType TArray::Num() const
-		 *
-		 * @brief 得到数组中元素的个数
-		 *
-		 * @returns 数组元素的个数
-		 */
 		FORCEINLINE SizeType Num() const
 		{
 			return ArrayNum;
 		}
-
-		/**
-		 * @fn FORCEINLINE SizeType TArray::Max() const
-		 *
-		 * @brief 得到数组容量的上限
-		 *
-		 * @returns 数组容量上限
-		 */
 		FORCEINLINE SizeType Max() const
 		{
 			return ArrayMax;
 		}
 
-		/**
-		 * @fn FORCEINLINE ElementType& TArray::operator[](SizeType Index)
-		 *
-		 * @brief Array indexer operator
-		 *
-		 * @param  索引
-		 *
-		 * @returns 对应Index的数据
-		 */
 		FORCEINLINE ElementType& operator[](SizeType Index)
 		{
 			RangeCheck(Index);
 			return GetData()[Index];
 		}
-
-		/**
-		 * @fn FORCEINLINE const ElementType& TArray::operator[](SizeType Index) const
-		 *
-		 * @brief Array indexer operator
-		 *
-		 * @param  索引
-		 *
-		 * @returns 对应Index的数据
-		 */
 		FORCEINLINE const ElementType& operator[](SizeType Index) const
 		{
 			RangeCheck(Index);
 			return GetData()[Index];
 		}
 
-		/**
-		 * @fn FORCEINLINE ElementType TArray::Pop(bool bAllowShrinking = true)
-		 *
-		 * @brief 从数组尾部弹出一个元素
-		 *
-		 * @param  是否允许收缩数组占用的空间
-		 *
-		 * @returns 弹出的元素
-		 */
+
 		FORCEINLINE ElementType Pop(bool bAllowShrinking = true)
 		{
 			RangeCheck(0);
-			ElementType Result = std::moveIfPossible(GetData()[ArrayNum - 1]);
+			ElementType Result = std::move(GetData()[ArrayNum - 1]);
 			RemoveAt(ArrayNum - 1, 1, bAllowShrinking);
 			return Result;
 		}
-
-		/**
-		 * @fn FORCEINLINE void TArray::Push(ElementType&& Item)
-		 *
-		 * @brief 向数组末尾入栈
-		 *
-		 * @param [in] Item 入栈的元素
-		 */
 		FORCEINLINE void Push(ElementType&& Item)
 		{
-			Add(std::moveIfPossible(Item));
+			Add(std::move(Item));
 		}
-
-		/**
-		 * @fn FORCEINLINE void TArray::Push(const ElementType& Item)
-		 *
-		 * @brief 向数组末尾入栈
-		 *
-		 * @param  Item 入栈的元素
-		 */
 		FORCEINLINE void Push(const ElementType& Item)
 		{
 			Add(Item);
 		}
 
-		/**
-		 * @fn FORCEINLINE ElementType& TArray::Top()
-		 *
-		 * @brief 得到数组顶部元素
-		 *
-		 * @returns 数组顶部的元素
-		 */
 		FORCEINLINE ElementType& Top()
 		{
 			return Last();
 		}
-
-		/**
-		 * @fn FORCEINLINE const ElementType& TArray::Top() const
-		 *
-		 * @brief 得到数组顶部元素
-		 *
-		 * @returns 数组顶部的元素
-		 */
 		FORCEINLINE const ElementType& Top() const
 		{
 			return Last();
 		}
-
-		/**
-		 * @fn FORCEINLINE ElementType& TArray::Last(SizeType IndexFromTheEnd = 0)
-		 *
-		 * @brief 得到数组底部第N个元素
-		 *
-		 * @param  N
-		 *
-		 * @returns 距离数组底部N的元素
-		 */
 		FORCEINLINE ElementType& Last(SizeType IndexFromTheEnd = 0)
 		{
 			RangeCheck(ArrayNum - IndexFromTheEnd - 1);
 			return GetData()[ArrayNum - IndexFromTheEnd - 1];
 		}
-
-		/**
-		 * @fn FORCEINLINE const ElementType& TArray::Last(SizeType IndexFromTheEnd = 0) const
-		 *
-		 * @brief 得到距离数组底部第N个元素
-		 *
-		 * @param  IndexFromTheEnd N
-		 *
-		 * @returns 距离数组底部N的元素
-		 */
 		FORCEINLINE const ElementType& Last(SizeType IndexFromTheEnd = 0) const
 		{
 			RangeCheck(ArrayNum - IndexFromTheEnd - 1);
 			return GetData()[ArrayNum - IndexFromTheEnd - 1];
 		}
 
-		/**
-		 * @fn FORCEINLINE void TArray::Shrink()
-		 *
-		 * @brief 将数组收缩到当前的元素量
-		 */
 		FORCEINLINE void Shrink()
 		{
 			CheckInvariants();
@@ -790,31 +492,11 @@ namespace Fuko
 			}
 		}
 
-		/**
-		 * @fn FORCEINLINE bool TArray::Find(const ElementType& Item, SizeType& Index) const
-		 *
-		 * @brief 查找指定元素
-		 *
-		 * @param 		   Item  指定的元素
-		 * @param [in]	   Index 元素的索引，如果没找到为INDEX_NONE
-		 *
-		 * @returns 是否找到指定元素
-		 */
 		FORCEINLINE bool Find(const ElementType& Item, SizeType& Index) const
 		{
 			Index = this->Find(Item);
 			return Index != INDEX_NONE;
 		}
-
-		/**
-		 * @fn SizeType TArray::Find(const ElementType& Item) const
-		 *
-		 * @brief 查找指定元素
-		 *
-		 * @param  Item 指定的元素
-		 *
-		 * @returns 元素的索引，如果没找到为INDEX_NONE
-		 */
 		SizeType Find(const ElementType& Item) const
 		{
 			const ElementType* RESTRICT Start = GetData();
@@ -827,32 +509,30 @@ namespace Fuko
 			}
 			return INDEX_NONE;
 		}
+		template <typename Predicate>
+		FORCEINLINE const ElementType* FindByPredicate(Predicate Pred) const
+		{
+			return const_cast<TArray*>(this)->FindByPredicate(Pred);
+		}
+		template <typename Predicate>
+		ElementType* FindByPredicate(Predicate Pred)
+		{
+			for (ElementType* RESTRICT Data = GetData(), *RESTRICT DataEnd = Data + ArrayNum; Data != DataEnd; ++Data)
+			{
+				if (Pred(*Data))
+				{
+					return Data;
+				}
+			}
 
-		/**
-		 * @fn FORCEINLINE bool TArray::FindLast(const ElementType& Item, SizeType& Index) const
-		 *
-		 * @brief 从尾部开始查找指定元素
-		 *
-		 * @param 		   Item  指定的元素
-		 * @param [in,out] Index 元素的索引，如果没找到为INDEX_NONE
-		 *
-		 * @returns 是否找到指定元素
-		 */
+			return nullptr;
+		}
+	
 		FORCEINLINE bool FindLast(const ElementType& Item, SizeType& Index) const
 		{
 			Index = this->FindLast(Item);
 			return Index != INDEX_NONE;
 		}
-
-		/**
-		 * @fn SizeType TArray::FindLast(const ElementType& Item) const
-		 *
-		 * @brief 从尾部开始查找指定元素
-		 *
-		 * @param  Item 指定的元素
-		 *
-		 * @returns 元素的索引，如果没找到为INDEX_NONE
-		 */
 		SizeType FindLast(const ElementType& Item) const
 		{
 			for (const ElementType* RESTRICT Start = GetData(), *RESTRICT Data = Start + ArrayNum; Data != Start; )
@@ -865,7 +545,6 @@ namespace Fuko
 			}
 			return INDEX_NONE;
 		}
-
 		template <typename Predicate>
 		SizeType FindLastByPredicate(Predicate Pred, SizeType Count) const
 		{
@@ -880,7 +559,6 @@ namespace Fuko
 			}
 			return INDEX_NONE;
 		}
-		
 		template <typename Predicate>
 		FORCEINLINE SizeType FindLastByPredicate(Predicate Pred) const
 		{
@@ -888,39 +566,10 @@ namespace Fuko
 		}
 		
 		template <typename KeyType>
-		SizeType IndexOfByKey(const KeyType& Key) const
-		{
-			const ElementType* RESTRICT Start = GetData();
-			for (const ElementType* RESTRICT Data = Start, *RESTRICT DataEnd = Start + ArrayNum; Data != DataEnd; ++Data)
-			{
-				if (*Data == Key)
-				{
-					return static_cast<SizeType>(Data - Start);
-				}
-			}
-			return INDEX_NONE;
-		}
-		
-		template <typename Predicate>
-		SizeType IndexOfByPredicate(Predicate Pred) const
-		{
-			const ElementType* RESTRICT Start = GetData();
-			for (const ElementType* RESTRICT Data = Start, *RESTRICT DataEnd = Start + ArrayNum; Data != DataEnd; ++Data)
-			{
-				if (Pred(*Data))
-				{
-					return static_cast<SizeType>(Data - Start);
-				}
-			}
-			return INDEX_NONE;
-		}
-
-		template <typename KeyType>
 		FORCEINLINE const ElementType* FindByKey(const KeyType& Key) const
 		{
 			return const_cast<TArray*>(this)->FindByKey(Key);
 		}
-
 		template <typename KeyType>
 		ElementType* FindByKey(const KeyType& Key)
 		{
@@ -934,25 +583,31 @@ namespace Fuko
 
 			return nullptr;
 		}
-
-		template <typename Predicate>
-		FORCEINLINE const ElementType* FindByPredicate(Predicate Pred) const
+		template <typename KeyType>
+		SizeType IndexOfByKey(const KeyType& Key) const
 		{
-			return const_cast<TArray*>(this)->FindByPredicate(Pred);
+			const ElementType* RESTRICT Start = GetData();
+			for (const ElementType* RESTRICT Data = Start, *RESTRICT DataEnd = Start + ArrayNum; Data != DataEnd; ++Data)
+			{
+				if (*Data == Key)
+				{
+					return static_cast<SizeType>(Data - Start);
+				}
+			}
+			return INDEX_NONE;
 		}
-
 		template <typename Predicate>
-		ElementType* FindByPredicate(Predicate Pred)
+		SizeType IndexOfByPredicate(Predicate Pred) const
 		{
-			for (ElementType* RESTRICT Data = GetData(), *RESTRICT DataEnd = Data + ArrayNum; Data != DataEnd; ++Data)
+			const ElementType* RESTRICT Start = GetData();
+			for (const ElementType* RESTRICT Data = Start, *RESTRICT DataEnd = Start + ArrayNum; Data != DataEnd; ++Data)
 			{
 				if (Pred(*Data))
 				{
-					return Data;
+					return static_cast<SizeType>(Data - Start);
 				}
 			}
-
-			return nullptr;
+			return INDEX_NONE;
 		}
 
 		template <typename Predicate>
@@ -969,6 +624,7 @@ namespace Fuko
 			return FilterResults;
 		}
 
+
 		template <typename ComparisonType>
 		bool Contains(const ComparisonType& Item) const
 		{
@@ -981,7 +637,6 @@ namespace Fuko
 			}
 			return false;
 		}
-
 		template <typename Predicate>
 		FORCEINLINE bool ContainsByPredicate(Predicate Pred) const
 		{
@@ -991,10 +646,8 @@ namespace Fuko
 		bool operator==(const TArray& OtherArray) const
 		{
 			SizeType Count = Num();
-
 			return Count == OtherArray.Num() && CompareItems(GetData(), OtherArray.GetData(), Count);
 		}
-
 		FORCEINLINE bool operator!=(const TArray& OtherArray) const
 		{
 			return !(*this == OtherArray);
@@ -1111,7 +764,7 @@ namespace Fuko
 		{
 			CheckAddress(&Item);
 			InsertUninitializedImpl(Index, 1);
-			new(GetData() + Index) ElementType(std::moveIfPossible(Item));
+			new(GetData() + Index) ElementType(std::move(Item));
 			return Index;
 		}
 		SizeType Insert(const ElementType& Item, SizeType Index)
@@ -1126,19 +779,15 @@ namespace Fuko
 		{
 			CheckAddress(&Item);
 
-			// construct a copy in place at Index (this new operator will insert at 
-			// Index, then construct that memory with Item)
 			InsertUninitializedImpl(Index, 1);
 			ElementType* Ptr = GetData() + Index;
-			new(Ptr) ElementType(std::moveIfPossible(Item));
+			new(Ptr) ElementType(std::move(Item));
 			return *Ptr;
 		}
 		ElementType& Insert_GetRef(const ElementType& Item, SizeType Index)
 		{
 			CheckAddress(&Item);
 
-			// construct a copy in place at Index (this new operator will insert at 
-			// Index, then construct that memory with Item)
 			InsertUninitializedImpl(Index, 1);
 			ElementType* Ptr = GetData() + Index;
 			new(Ptr) ElementType(Item);
@@ -1411,7 +1060,7 @@ namespace Fuko
 		FORCEINLINE SizeType Add(ElementType&& Item)
 		{
 			CheckAddress(&Item);
-			return Emplace(std::moveIfPossible(Item));
+			return Emplace(std::move(Item));
 		}
 
 		FORCEINLINE SizeType Add(const ElementType& Item)
@@ -1423,7 +1072,7 @@ namespace Fuko
 		FORCEINLINE ElementType& Add_GetRef(ElementType&& Item)
 		{
 			CheckAddress(&Item);
-			return Emplace_GetRef(std::moveIfPossible(Item));
+			return Emplace_GetRef(std::move(Item));
 		}
 
 		FORCEINLINE ElementType& Add_GetRef(const ElementType& Item)
@@ -1478,13 +1127,13 @@ namespace Fuko
 
 	public:
 
-		FORCEINLINE SizeType AddUnique(ElementType&& Item) { return AddUniqueImpl(std::moveIfPossible(Item)); }
+		FORCEINLINE SizeType AddUnique(ElementType&& Item) { return AddUniqueImpl(std::move(Item)); }
 
 		FORCEINLINE SizeType AddUnique(const ElementType& Item) { return AddUniqueImpl(Item); }
 
 		FORCEINLINE void Reserve(SizeType Number)
 		{
-			checkSlow(Number >= 0);
+			check(Number >= 0);
 			if (Number > ArrayMax)
 			{
 				ResizeTo(Number);
@@ -1550,7 +1199,7 @@ namespace Fuko
 					ReadIndex++;
 				}
 				SizeType RunLength = ReadIndex - RunStartIndex;
-				checkSlow(RunLength > 0);
+				check(RunLength > 0);
 				if (NotMatch)
 				{
 					// this was a non-matching run, we need to move it
@@ -1639,27 +1288,19 @@ namespace Fuko
 		// Iterators
 		typedef TIndexedContainerIterator<      TArray, ElementType, SizeType> TIterator;
 		typedef TIndexedContainerIterator<const TArray, const ElementType, SizeType> TConstIterator;
-
 		TIterator CreateIterator()
 		{
 			return TIterator(*this);
 		}
-
 		TConstIterator CreateConstIterator() const
 		{
 			return TConstIterator(*this);
 		}
 
-#if TARRAY_RANGED_FOR_CHECKS
 		typedef TCheckedPointerIterator<      ElementType, SizeType> RangedForIteratorType;
 		typedef TCheckedPointerIterator<const ElementType, SizeType> RangedForConstIteratorType;
-#else
-		typedef       ElementType* RangedForIteratorType;
-		typedef const ElementType* RangedForConstIteratorType;
-#endif
 
-	public:
-
+		// support foreach 
 #if TARRAY_RANGED_FOR_CHECKS
 		FORCEINLINE RangedForIteratorType      begin() { return RangedForIteratorType(ArrayNum, GetData()); }
 		FORCEINLINE RangedForConstIteratorType begin() const { return RangedForConstIteratorType(ArrayNum, GetData()); }
@@ -1724,9 +1365,8 @@ namespace Fuko
 		FORCENOINLINE void ResizeTo(SizeType NewMax)
 		{
 			if (NewMax)
-			{
 				NewMax = AllocatorInstance.CalculateSlackReserve(NewMax, sizeof(ElementType));
-			}
+			
 			if (NewMax != ArrayMax)
 			{
 				ArrayMax = NewMax;
@@ -1736,13 +1376,12 @@ namespace Fuko
 		FORCENOINLINE void ResizeForCopy(SizeType NewMax, SizeType PrevMax)
 		{
 			if (NewMax)
-			{
 				NewMax = AllocatorInstance.CalculateSlackReserve(NewMax, sizeof(ElementType));
-			}
+			
 			if (NewMax > PrevMax)
 			{
-				AllocatorInstance.ResizeAllocation(0, NewMax, sizeof(ElementType));
 				ArrayMax = NewMax;
+				AllocatorInstance.ResizeAllocation(0, NewMax, sizeof(ElementType));
 			}
 			else
 			{
@@ -1750,23 +1389,14 @@ namespace Fuko
 			}
 		}
 
-		/**
-		 * @fn template <typename OtherElementType, typename OtherSizeType> void TArray::CopyToEmpty(const OtherElementType* OtherData, OtherSizeType OtherNum, SizeType PrevMax, SizeType ExtraSlack)
-		 *
-		 * @brief 将对方数组的内容拷贝给自己
-		 *
-		 * @param  OtherData  源数组首地址
-		 * @param  OtherNum   源数组长度
-		 * @param  PrevMax    之前分配的大小
-		 * @param  ExtraSlack 预留的空间
-		 */
 		template <typename OtherElementType, typename OtherSizeType>
 		void CopyToEmpty(const OtherElementType* OtherData, OtherSizeType OtherNum, SizeType PrevMax, SizeType ExtraSlack)
 		{
 			SizeType NewNum = (SizeType)OtherNum;
-			checkf((OtherSizeType)NewNum == OtherNum, TEXT("Invalid number of elements to add to this array type: %llu"), (unsigned long long)NewNum);
 
+			checkf((OtherSizeType)NewNum == OtherNum, TEXT("Invalid number of elements to add to this array type: %llu"), (unsigned long long)NewNum);
 			check(ExtraSlack >= 0);
+
 			ArrayNum = NewNum;
 			if (OtherNum || ExtraSlack || PrevMax)
 			{
@@ -1803,7 +1433,7 @@ namespace Fuko
 		SizeType HeapPush(ElementType&& InItem, const PREDICATE_CLASS& Predicate)
 		{
 			// 在尾部添加元素，然后向上检索堆
-			Add(std::moveIfPossible(InItem));
+			Add(std::move(InItem));
 			TDereferenceWrapper<ElementType, PREDICATE_CLASS> PredicateWrapper(Predicate);
 			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
 
@@ -1823,7 +1453,7 @@ namespace Fuko
 
 		SizeType HeapPush(ElementType&& InItem)
 		{
-			return HeapPush(std::moveIfPossible(InItem), TLess<ElementType>());
+			return HeapPush(std::move(InItem), TLess<ElementType>());
 		}
 
 		SizeType HeapPush(const ElementType& InItem)
@@ -1905,7 +1535,6 @@ namespace Fuko
 		const ElementAllocatorType& GetAllocatorInstance() const { return AllocatorInstance; }
 		ElementAllocatorType& GetAllocatorInstance() { return AllocatorInstance; }
 	};
-
 }
 
 // TypeTraits
@@ -1915,13 +1544,6 @@ namespace Fuko
 	struct TIsZeroConstructType<TArray<InElementType, Allocator>>
 	{
 		enum { Value = TAllocatorTraits<Allocator>::IsZeroConstruct };
-	};
-
-	template <typename InElementType, typename Allocator>
-	struct TContainerTraits<TArray<InElementType, Allocator> > : public TContainerTraitsBase<TArray<InElementType, Allocator> >
-	{
-		static_assert(TAllocatorTraits<Allocator>::SupportsMove, "TArray no longer supports move-unaware allocators");
-		enum { MoveWillEmptyContainer = TAllocatorTraits<Allocator>::SupportsMove };
 	};
 
 	template <typename T, typename Allocator>

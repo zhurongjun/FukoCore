@@ -22,9 +22,9 @@ namespace Fuko::Algo::Impl
 				return true;
 			}
 
-			auto&& Ref1 = Invoke(Proj, *Next);
-			auto&& Ref2 = Invoke(Proj, *Range);
-			if (Invoke(Pred, Ref1, Ref2))
+			auto&& Ref1 = std::invoke(Proj, *Next);
+			auto&& Ref2 = std::invoke(Proj, *Range);
+			if (std::invoke(Pred, Ref1, Ref2))
 			{
 				return false;
 			}

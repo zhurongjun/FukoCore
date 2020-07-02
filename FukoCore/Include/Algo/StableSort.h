@@ -28,7 +28,7 @@ namespace Fuko::Algo::Impl
 		while (AStart < BStart && BStart < Num)
 		{
 			// 在A中寻找适合B插入的位置
-			int32 NewAOffset = UpperBoundInternal(First + AStart, BStart - AStart, Invoke(Projection, First[BStart]), Projection, Predicate);
+			int32 NewAOffset = UpperBoundInternal(First + AStart, BStart - AStart, std::invoke(Projection, First[BStart]), Projection, Predicate);
 			
 			// |xxxxxxxA---|-----------|
 			// 更新A的起点，NewAOffset的左侧已经是有序序列 
@@ -41,7 +41,7 @@ namespace Fuko::Algo::Impl
 
 			// |xxxxxxxA***|####B------|
 			// 从B序列中寻找正好可以插入A的位置
-			int32 NewBOffset = LowerBoundInternal(First + BStart, Num - BStart, Invoke(Projection, First[AStart]), Projection, Predicate);
+			int32 NewBOffset = LowerBoundInternal(First + BStart, Num - BStart, std::invoke(Projection, First[AStart]), Projection, Predicate);
 			
 			// |xxxxxxxA###|#***B------|
 			// 交换两个区域
@@ -90,7 +90,7 @@ namespace Fuko::Algo::Impl
 					{
 						for (int32 It = SubgroupStart; It < GroupEnd - 1; ++It)	
 						{
-							if (Invoke(Predicate, Invoke(Projection, First[It + 1]), Invoke(Projection, First[It])))
+							if (std::invoke(Predicate, std::invoke(Projection, First[It + 1]), std::invoke(Projection, First[It])))
 							{
 								Swap(First[It], First[It + 1]);
 							}
@@ -106,7 +106,7 @@ namespace Fuko::Algo::Impl
 			{
 				for (int32 Subgroup = 0; Subgroup < Num; Subgroup += 2)
 				{
-					if (Subgroup + 1 < Num && Invoke(Predicate, Invoke(Projection, First[Subgroup + 1]), Invoke(Projection, First[Subgroup])))
+					if (Subgroup + 1 < Num && std::invoke(Predicate, std::invoke(Projection, First[Subgroup + 1]), std::invoke(Projection, First[Subgroup])))
 					{
 						Swap(First[Subgroup], First[Subgroup + 1]);
 					}

@@ -12,7 +12,7 @@ namespace Fuko::Algo::Impl
 			IndexType ParentIndex = HeapGetParentIndex(Index);
 
 			// 假设现在是小根堆，如果子节点大于父节点，则必然不是堆
-			if (Predicate(Invoke(Projection, Heap[Index]), Invoke(Projection, Heap[ParentIndex])))
+			if (Predicate(std::invoke(Projection, Heap[Index]), std::invoke(Projection, Heap[ParentIndex])))
 			{
 				return false;
 			}

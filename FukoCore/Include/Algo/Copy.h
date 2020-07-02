@@ -18,7 +18,7 @@ namespace Fuko::Algo
 	{
 		for (const auto& Value : Input)
 		{
-			if (Invoke(Predicate, Value))
+			if (std::invoke(Predicate, Value))
 			{
 				Output.Add(Value);
 			}

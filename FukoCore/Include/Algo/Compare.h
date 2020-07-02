@@ -31,7 +31,7 @@ namespace Fuko::Algo
 
 		for (size_t Count = SizeA; Count; --Count)
 		{
-			if (!Invoke(Predicate, *A++, *B++))
+			if (!std::invoke(Predicate, *A++, *B++))
 			{
 				return false;
 			}

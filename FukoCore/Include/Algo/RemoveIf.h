@@ -32,7 +32,7 @@ namespace Fuko::Algo
 					return IterStart - First;
 				}
 
-				if (Invoke(Pred, *IterStart))
+				if (std::invoke(Pred, *IterStart))
 				{
 					break;
 				}
@@ -43,7 +43,7 @@ namespace Fuko::Algo
 			// 跳过尾部无需移除的元素
 			for (;;)
 			{
-				if (!Invoke(Pred, *(IterEnd - 1)))
+				if (!std::invoke(Pred, *(IterEnd - 1)))
 				{
 					break;
 				}
@@ -91,7 +91,7 @@ namespace Fuko::Algo
 				return IterStart - First;
 			}
 
-			if (Invoke(Pred, *IterStart))
+			if (std::invoke(Pred, *IterStart))
 			{
 				break;
 			}
@@ -111,7 +111,7 @@ namespace Fuko::Algo
 				return IterStart - First;
 			}
 
-			if (!Invoke(Pred, *IterKeep))
+			if (!std::invoke(Pred, *IterKeep))
 			{
 				*IterStart++ = std::move(*IterKeep);
 			}

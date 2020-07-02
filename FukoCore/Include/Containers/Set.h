@@ -137,8 +137,8 @@ namespace Fuko
 		typedef InElementType ElementType;
 
 		FORCEINLINE TSetElementBase() {}
-		template <typename InitType, typename = typename std::enable_if_t<!std::is_same_v<TSetElementBase, std::decay_t<InitType>>>>
-		explicit FORCEINLINE TSetElementBase(InitType&& InValue) : Value(std::forward<InitType>(InValue)) {}
+		template <typename InitType>
+		FORCEINLINE explicit TSetElementBase(InitType&& InValue) : Value(std::forward<InitType>(InValue)) {}
 
 		TSetElementBase(TSetElementBase&&) = default;
 		TSetElementBase(const TSetElementBase&) = default;
@@ -157,7 +157,7 @@ namespace Fuko
 		using Super = TSetElementBase<InElementType>;
 	public:
 		FORCEINLINE TSetElement() = default;
-		template <typename InitType, typename = typename std::enable_if_t<!std::is_same_v<TSetElement, std::decay_t<InitType>>>>
+		template <typename InitType>
 		explicit FORCEINLINE TSetElement(InitType&& InValue) : Super(std::forward<InitType>(InValue)) {}
 
 		TSetElement(TSetElement&&) = default;
@@ -183,8 +183,6 @@ namespace Fuko
 	class TSet
 	{
 	private:
-		friend struct TContainerTraits<TSet>;
-
 		typedef typename KeyFuncs::KeyInitType     KeyInitType;
 		typedef typename KeyFuncs::ElementInitType ElementInitType;
 
@@ -220,19 +218,12 @@ namespace Fuko
 		template <typename SetType>
 		static FORCEINLINE void MoveOrCopy(SetType& ToSet, SetType& FromSet)
 		{
-			if constexpr (TContainerTraits<SetType>::MoveWillEmptyContainer)
-			{
-				ToSet.Elements = (ElementArrayType&&)FromSet.Elements;
+			ToSet.Elements = (ElementArrayType&&)FromSet.Elements;
 
-				ToSet.Hash.MoveToEmpty(FromSet.Hash);
+			ToSet.Hash.MoveToEmpty(FromSet.Hash);
 
-				ToSet.HashSize = FromSet.HashSize;
-				FromSet.HashSize = 0;
-			}
-			else
-			{
-				ToSet = FromSet;
-			}
+			ToSet.HashSize = FromSet.HashSize;
+			FromSet.HashSize = 0;
 		}
 	public:
 		/** Initializer list constructor. */
@@ -1298,20 +1289,3 @@ namespace Fuko
 		FORCEINLINE TRangedForConstIterator end() const { return TRangedForConstIterator(Elements.end()); }
 	};
 }
-
-// Container triats
-namespace Fuko
-{
-	template<typename ElementType, typename KeyFuncs, typename Allocator>
-	struct TContainerTraits<TSet<ElementType, KeyFuncs, Allocator> > : public TContainerTraitsBase<TSet<ElementType, KeyFuncs, Allocator> >
-	{
-		static_assert(TAllocatorTraits<typename Allocator::HashAllocator>::SupportsMove, "TSet no longer supports move-unaware allocators");
-		enum {
-			MoveWillEmptyContainer =
-			TContainerTraits<typename TSet<ElementType, KeyFuncs, Allocator>::ElementArrayType>::MoveWillEmptyContainer &&
-			TAllocatorTraits<typename Allocator::HashAllocator>::SupportsMove
-		};
-	};
-}
-
-

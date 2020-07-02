@@ -18,9 +18,9 @@ namespace Fuko::Algo
 	{
 		for (auto& Value : Input)
 		{
-			if (Invoke(Predicate, Value))
+			if (std::invoke(Predicate, Value))
 			{
-				Invoke(Callable, Value);
+				std::invoke(Callable, Value);
 			}
 		}
 	}
@@ -38,7 +38,7 @@ namespace Fuko::Algo
 	{
 		for (auto& Value : Input)
 		{
-			Invoke(Callable, Value);
+			std::invoke(Callable, Value);
 		}
 	}
 }

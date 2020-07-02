@@ -16,7 +16,7 @@ namespace Fuko::Algo::Impl
 		T* Result = Array;
 		for (T* Iter = Array + 1; Iter != Array + ArraySize; ++Iter)
 		{
-			if (!Invoke(Predicate, *Result, *Iter))
+			if (!std::invoke(Predicate, *Result, *Iter))
 			{
 				++Result;
 				if (Result != Iter)

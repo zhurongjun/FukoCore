@@ -21,7 +21,7 @@ namespace Fuko::Algo
 		T Result = std::move(Init);
 		for (const auto& InputElem : Input)
 		{
-			Result = Invoke(Op, std::move(Result), InputElem);
+			Result = std::invoke(Op, std::move(Result), InputElem);
 		}
 		return Result;
 	}
@@ -60,7 +60,7 @@ namespace Fuko::Algo
 		T Result = std::move(Init);
 		for (const auto& InputElem : Input)
 		{
-			Result = Invoke(Op, std::move(Result), Invoke(MapOp, InputElem));
+			Result = std::invoke(Op, std::move(Result), std::invoke(MapOp, InputElem));
 		}
 		return Result;
 	}

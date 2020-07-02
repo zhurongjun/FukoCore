@@ -39,7 +39,7 @@ namespace Fuko::Algo
 	{
 		for (auto& Elem : std::forward<RangeType>(Range))
 		{
-			if (Invoke(InPred, Elem))
+			if (std::invoke(InPred, Elem))
 			{
 				Elem = InNew;
 			}

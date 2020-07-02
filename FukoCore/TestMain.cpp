@@ -26,6 +26,8 @@
 int main()
 {
 	Fuko::TMap<int, float> Mapbb;
+	Fuko::TArray<int> arr;
+
 
 	Mapbb.FindOrAdd(10, 4654546.f);
 	Mapbb.FindOrAdd(100, 463545.f);
