@@ -538,7 +538,7 @@ namespace Fuko
 			Reserve(Elements.Num() + InElements.Num());
 			for (ElementType& Element : InElements)
 			{
-				Add(std::moveIfPossible(Element));
+				Add(std::move(Element));
 			}
 			InElements.Reset();
 		}
@@ -563,7 +563,7 @@ namespace Fuko
 			Reserve(Elements.Num() + OtherSet.Num());
 			for (ElementType& Element : OtherSet)
 			{
-				Add(std::moveIfPossible(Element));
+				Add(std::move(Element));
 			}
 			OtherSet.Reset();
 		}
