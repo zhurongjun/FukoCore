@@ -170,6 +170,7 @@
     <ClInclude Include="Include\Algo\Reverse.h" />
     <ClInclude Include="Include\Algo\Rotate.h" />
     <ClInclude Include="Include\Containers\Map.h" />
+    <ClInclude Include="Include\Containers\AllocatorsPmr.h" />
     <ClInclude Include="Include\Containers\Set.h" />
     <ClInclude Include="Include\Algo\Sort.h" />
     <ClInclude Include="Include\Algo\StableSort.h" />

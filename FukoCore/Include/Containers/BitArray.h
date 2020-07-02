@@ -1035,8 +1035,8 @@ namespace Fuko
 		void FindFirstSetBit()
 		{
 			static const uint32 EmptyArrayData = 0;
-			const uint32* ArrayDataA = IfAThenAElseB(ArrayA.GetData(), &EmptyArrayData);
-			const uint32* ArrayDataB = IfAThenAElseB(ArrayB.GetData(), &EmptyArrayData);
+			const uint32* ArrayDataA = ArrayA.GetData() ? ArrayA.GetData() : &EmptyArrayData;
+			const uint32* ArrayDataB = ArrayB.GetData() ? ArrayB.GetData() : &EmptyArrayData;
 
 			// Advance to the next non-zero uint32.
 			uint32 RemainingBitMask = ArrayDataA[this->DWORDIndex] & ArrayDataB[this->DWORDIndex] & UnvisitedBitMask;

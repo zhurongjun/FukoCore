@@ -154,7 +154,7 @@ namespace Fuko
 	template <typename AllocatorType>
 	struct TAllocatorTraitsBase
 	{
-		enum { IsZeroConstruct = false };	// 支持置0初始化
+		enum { IsZeroConstruct = true };	// 支持置0初始化
 	};
 	template <typename AllocatorType>
 	struct TAllocatorTraits : TAllocatorTraitsBase<AllocatorType>
@@ -271,18 +271,6 @@ namespace Fuko
 		typedef ForElementType<FScriptContainerElement> ForAnyElementType;
 	};
 
-	// Helper
-	template<typename ReferencedType>
-	FORCEINLINE ReferencedType* IfAThenAElseB(ReferencedType* A, ReferencedType* B)
-	{
-		return A ? A : B;
-	}
-	template<typename PredicateType, typename ReferencedType>
-	FORCEINLINE ReferencedType* IfPThenAElseB(PredicateType Predicate, ReferencedType* A, ReferencedType* B)
-	{
-		return Predicate ? A : B;
-	}
-
 	class FDefaultBitArrayAllocator;
 
 	template<int IndexSize> class TSizedDefaultAllocator;
@@ -292,227 +280,150 @@ namespace Fuko
 // TAlignedHeapAlloctor,带有内存对齐的堆分配器
 namespace Fuko
 {
-	template<uint32 Alignment = DEFAULT_ALIGNMENT>
+	template<typename T, uint32 Alignment = DEFAULT_ALIGNMENT>
 	class TAlignedHeapAllocator
 	{
 	public:
 		using SizeType = int32;
+		using ElementType = T;
 
-		enum { NeedsElementType = false };
+		TAlignedHeapAllocator() = default;
+		TAlignedHeapAllocator(const TAlignedHeapAllocator&) = delete;
+		TAlignedHeapAllocator(const TAlignedHeapAllocator&&) = delete;
+		TAlignedHeapAllocator& operator=(const TAlignedHeapAllocator&) = delete;
 
-		class ForAnyElementType
+		FORCEINLINE void MoveToEmpty(ForAnyElementType& Other)
 		{
-		public:
-			ForAnyElementType() = default;
-			ForAnyElementType(const ForAnyElementType&) = delete;
-			ForAnyElementType(const ForAnyElementType&&) = delete;
-			ForAnyElementType& operator=(const ForAnyElementType&) = delete;
+			check(this != &Other);
 
-			FORCEINLINE void MoveToEmpty(ForAnyElementType& Other)
+			if (Data)
 			{
-				check(this != &Other);
-
-				if (Data)
-				{
-					AlignedFree(Data);
-				}
-
-				Data = Other.Data;
-				Other.Data = nullptr;
+				_aligned_free(Data);
 			}
 
-			FORCEINLINE ~ForAnyElementType()
-			{
-				if (Data)
-				{
-					AlignedFree(Data);
-				}
-			}
+			Data = Other.Data;
+			Other.Data = nullptr;
+		}
 
-			FORCEINLINE FScriptContainerElement* GetAllocation() const
-			{
-				return Data;
-			}
-		
-			void ResizeAllocation(
-				SizeType PreviousNumElements,
-				SizeType NumElements,
-				size_t NumBytesPerElement
-			)
-			{
-				if (Data || NumElements)
-				{
-					Data = (FScriptContainerElement*)AlignedRealloc(Data, NumElements*NumBytesPerElement, Alignment);
-				}
-			}
-			FORCEINLINE SizeType CalculateSlackReserve(SizeType NumElements, size_t NumBytesPerElement) const
-			{
-				return DefaultCalculateSlackReserve(NumElements, NumBytesPerElement, true, Alignment);
-			}
-			FORCEINLINE SizeType CalculateSlackShrink(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return DefaultCalculateSlackShrink(NumElements, NumAllocatedElements, NumBytesPerElement, true, Alignment);
-			}
-			FORCEINLINE SizeType CalculateSlackGrow(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return DefaultCalculateSlackGrow(NumElements, NumAllocatedElements, NumBytesPerElement, true, Alignment);
-			}
-
-			FORCEINLINE size_t GetAllocatedSize(SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return NumAllocatedElements * NumBytesPerElement;
-			}
-
-			FORCEINLINE bool HasAllocation() const
-			{
-				return !!Data;
-			}
-
-			FORCEINLINE SizeType GetInitialCapacity() const
-			{
-				return 0;
-			}
-		private:
-			FScriptContainerElement* Data;
-		};
-
-		template<typename ElementType>
-		class ForElementType : public ForAnyElementType
+		FORCEINLINE ~ForAnyElementType()
 		{
-		public:
-			ForElementType() = default;
+			if (Data) _aligned_free(Data);
+		}
 
-			FORCEINLINE ElementType* GetAllocation() const
+		FORCEINLINE ElementType* GetAllocation() const { return (ElementType*)Data; }
+
+		void ResizeAllocation(
+			SizeType PreviousNumElements,
+			SizeType NumElements,
+			size_t NumBytesPerElement
+		)
+		{
+			if (Data || NumElements)
 			{
-				return (ElementType*)ForAnyElementType::GetAllocation();
+				Data = _aligned_realloc(Data, NumElements*NumBytesPerElement, Alignment);
 			}
-		};
-	};
+		}
+		FORCEINLINE SizeType CalculateSlackReserve(SizeType NumElements, size_t NumBytesPerElement) const
+		{
+			return DefaultCalculateSlackReserve(NumElements, NumBytesPerElement, true, Alignment);
+		}
+		FORCEINLINE SizeType CalculateSlackShrink(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			return DefaultCalculateSlackShrink(NumElements, NumAllocatedElements, NumBytesPerElement, true, Alignment);
+		}
+		FORCEINLINE SizeType CalculateSlackGrow(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			return DefaultCalculateSlackGrow(NumElements, NumAllocatedElements, NumBytesPerElement, true, Alignment);
+		}
 
-	template <uint32 Alignment>
-	struct TAllocatorTraits<TAlignedHeapAllocator<Alignment>> : TAllocatorTraitsBase<TAlignedHeapAllocator<Alignment>>
-	{
-		enum { IsZeroConstruct = true };
+		FORCEINLINE size_t GetAllocatedSize(SizeType NumAllocatedElements, size_t NumBytesPerElement) const { return NumAllocatedElements * NumBytesPerElement; }
+
+		FORCEINLINE bool HasAllocation() const { return !!Data; }
+
+		FORCEINLINE SizeType GetInitialCapacity() const { return 0; }
+	private:
+		void* Data;
 	};
 }
 
 // TSizedHeapAllocator,堆分配器 
 namespace Fuko
 {
-	template <int IndexSize>
+	template <typename T, int IndexSize>
 	class TSizedHeapAllocator
 	{
 	public:
 		using SizeType = typename TBitsToSizeType<IndexSize>::Type;
+		using ElementType = T;
 
-		enum { NeedsElementType = false };
+		template <int>
+		friend class TSizedHeapAllocator;
 
-		class ForAnyElementType
+	public:
+		TSizedHeapAllocator() = default;
+		TSizedHeapAllocator(const TSizedHeapAllocator&) = delete;
+		TSizedHeapAllocator(const TSizedHeapAllocator&&) = delete;
+		TSizedHeapAllocator& operator=(const TSizedHeapAllocator&) = delete;
+
+		template <typename OtherAllocator>
+		FORCEINLINE void MoveToEmptyFromOtherAllocator(typename OtherAllocator& Other)
 		{
-			template <int>
-			friend class TSizedHeapAllocator;
+			check((void*)this != (void*)&Other);
 
-		public:
-			ForAnyElementType() = default;
-			ForAnyElementType(const ForAnyElementType&) = delete;
-			ForAnyElementType(const ForAnyElementType&&) = delete;
-			ForAnyElementType& operator=(const ForAnyElementType&) = delete;
-
-			template <typename OtherAllocator>
-			FORCEINLINE void MoveToEmptyFromOtherAllocator(typename OtherAllocator::ForAnyElementType& Other)
+			if (Data)
 			{
-				check((void*)this != (void*)&Other);
-
-				if (Data)
-				{
-					Free(Data);
-				}
-
-				Data = Other.Data;
-				Other.Data = nullptr;
+				Free(Data);
 			}
 
-			FORCEINLINE void MoveToEmpty(ForAnyElementType& Other)
-			{
-				this->MoveToEmptyFromOtherAllocator<TSizedHeapAllocator>(Other);
-			}
+			Data = Other.Data;
+			Other.Data = nullptr;
+		}
 
-			FORCEINLINE ~ForAnyElementType()
-			{
-				if (Data)
-				{
-					Free(Data);
-				}
-			}
-
-			FORCEINLINE FScriptContainerElement* GetAllocation() const
-			{
-				return Data;
-			}
-
-			FORCEINLINE void ResizeAllocation(SizeType PreviousNumElements, SizeType NumElements, size_t NumBytesPerElement)
-			{
-				if (Data || NumElements)
-				{
-					Data = (FScriptContainerElement*)Realloc(Data, NumElements*NumBytesPerElement);
-				}
-			}
-			
-			FORCEINLINE SizeType CalculateSlackReserve(SizeType NumElements, size_t NumBytesPerElement) const
-			{
-				return DefaultCalculateSlackReserve(NumElements, NumBytesPerElement, true);
-			}
-			FORCEINLINE SizeType CalculateSlackShrink(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return DefaultCalculateSlackShrink(NumElements, NumAllocatedElements, NumBytesPerElement, true);
-			}
-			FORCEINLINE SizeType CalculateSlackGrow(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return DefaultCalculateSlackGrow(NumElements, NumAllocatedElements, NumBytesPerElement, true);
-			}
-
-			FORCEINLINE size_t GetAllocatedSize(SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return NumAllocatedElements * NumBytesPerElement;
-			}
-
-			FORCEINLINE bool HasAllocation() const
-			{
-				return !!Data;
-			}
-
-			FORCEINLINE SizeType GetInitialCapacity() const
-			{
-				return 0;
-			}
-
-		private:
-			FScriptContainerElement* Data;
-		};
-
-		template<typename ElementType>
-		class ForElementType : public ForAnyElementType
+		FORCEINLINE void MoveToEmpty(TSizedHeapAllocator& Other)
 		{
-		public:
-			ForElementType() = default;
+			this->MoveToEmptyFromOtherAllocator<TSizedHeapAllocator>(Other);
+		}
 
-			FORCEINLINE ElementType* GetAllocation() const
+		FORCEINLINE ~TSizedHeapAllocator() { if (Data) free(Data); }
+
+		FORCEINLINE ElementType* GetAllocation() const { return (ElementType*)Data; }
+
+		FORCEINLINE void ResizeAllocation(SizeType PreviousNumElements, SizeType NumElements, size_t NumBytesPerElement)
+		{
+			if (Data || NumElements)
 			{
-				return (ElementType*)ForAnyElementType::GetAllocation();
+				Data = (ElementType*)realloc(Data, NumElements*NumBytesPerElement);
 			}
-		};
+		}
+
+		FORCEINLINE SizeType CalculateSlackReserve(SizeType NumElements, size_t NumBytesPerElement) const
+		{
+			return DefaultCalculateSlackReserve(NumElements, NumBytesPerElement, true);
+		}
+		FORCEINLINE SizeType CalculateSlackShrink(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			return DefaultCalculateSlackShrink(NumElements, NumAllocatedElements, NumBytesPerElement, true);
+		}
+		FORCEINLINE SizeType CalculateSlackGrow(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			return DefaultCalculateSlackGrow(NumElements, NumAllocatedElements, NumBytesPerElement, true);
+		}
+
+		FORCEINLINE size_t GetAllocatedSize(SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			return NumAllocatedElements * NumBytesPerElement;
+		}
+
+		FORCEINLINE bool HasAllocation() const { return !!Data; }
+
+		FORCEINLINE SizeType GetInitialCapacity() const { return 0; }
+
+	private:
+		void* Data;
 	};
 
-	template <uint8 IndexSize>
-	struct TAllocatorTraits<TSizedHeapAllocator<IndexSize>> : TAllocatorTraitsBase<TSizedHeapAllocator<IndexSize>>
-	{
-		enum { IsZeroConstruct = true };
-	};
-
-	using FHeapAllocator = TSizedHeapAllocator<32>;
-
-	template <uint8 FromIndexSize, uint8 ToIndexSize>
-	struct TCanMoveBetweenAllocators<TSizedHeapAllocator<FromIndexSize>, TSizedHeapAllocator<ToIndexSize>>
+	template <typename FromT,typename ToT, uint8 FromIndexSize, uint8 ToIndexSize>
+	struct TCanMoveBetweenAllocators<TSizedHeapAllocator<FromT, FromIndexSize>, TSizedHeapAllocator<ToT, ToIndexSize>>
 	{
 		enum { Value = true };
 	};
@@ -521,313 +432,170 @@ namespace Fuko
 // TInlineAllocator,自身具有固定的空间，当空间不够的时候，会使用Fallback的Allocator 
 namespace Fuko
 {
-	template <uint32 NumInlineElements, typename SecondaryAllocator = FDefaultAllocator>
+	template <typename T, uint32 NumInlineElements, typename SecondaryAllocator = TSizedHeapAllocator<T, 32>>
 	class TInlineAllocator
 	{
 	public:
 		using SizeType = int32;
+		using ElementType = T;
 
-		enum { NeedsElementType = true };
-
-		template<typename ElementType>
-		class ForElementType
-		{
-		public:
-			ForElementType() = default;
-			ForElementType(const ForElementType&) = delete;
-			ForElementType(const ForElementType&&) = delete;
-			ForElementType& operator=(const ForElementType&) = delete;
-			
-			FORCEINLINE void MoveToEmpty(ForElementType& Other)
-			{
-				check(this != &Other);
-
-				if (!Other.SecondaryData.GetAllocation())
-				{
-					RelocateConstructItems<ElementType>((void*)InlineData, Other.GetInlineElements(), NumInlineElements);
-				}
-
-				SecondaryData.MoveToEmpty(Other.SecondaryData);
-			}
-
-			FORCEINLINE ElementType* GetAllocation() const
-			{
-				return IfAThenAElseB<ElementType>(SecondaryData.GetAllocation(), GetInlineElements());
-			}
-
-			void ResizeAllocation(SizeType PreviousNumElements, SizeType NumElements, size_t NumBytesPerElement)
-			{
-				if (NumElements <= NumInlineElements)
-				{
-					if (SecondaryData.GetAllocation())
-					{
-						RelocateConstructItems<ElementType>((void*)InlineData, (ElementType*)SecondaryData.GetAllocation(), PreviousNumElements);
-						SecondaryData.ResizeAllocation(0, 0, NumBytesPerElement);
-					}
-				}
-				else
-				{
-					if (!SecondaryData.GetAllocation())
-					{
-						SecondaryData.ResizeAllocation(0, NumElements, NumBytesPerElement);
-						RelocateConstructItems<ElementType>((void*)SecondaryData.GetAllocation(), GetInlineElements(), PreviousNumElements);
-					}
-					else
-					{
-						SecondaryData.ResizeAllocation(PreviousNumElements, NumElements, NumBytesPerElement);
-					}
-				}
-			}
-
-			FORCEINLINE SizeType CalculateSlackReserve(SizeType NumElements, size_t NumBytesPerElement) const
-			{
-				return NumElements <= NumInlineElements ?
-					NumInlineElements :
-					SecondaryData.CalculateSlackReserve(NumElements, NumBytesPerElement);
-			}
-			FORCEINLINE SizeType CalculateSlackShrink(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return NumElements <= NumInlineElements ?
-					NumInlineElements :
-					SecondaryData.CalculateSlackShrink(NumElements, NumAllocatedElements, NumBytesPerElement);
-			}
-			FORCEINLINE SizeType CalculateSlackGrow(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return NumElements <= NumInlineElements ?
-					NumInlineElements :
-					SecondaryData.CalculateSlackGrow(NumElements, NumAllocatedElements, NumBytesPerElement);
-			}
-
-			size_t GetAllocatedSize(SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				if (NumAllocatedElements > NumInlineElements)
-				{
-					return SecondaryData.GetAllocatedSize(NumAllocatedElements, NumBytesPerElement);
-				}
-				return 0;
-			}
-
-			bool HasAllocation() const
-			{
-				return SecondaryData.HasAllocation();
-			}
-
-			SizeType GetInitialCapacity() const
-			{
-				return NumInlineElements;
-			}
-		private:
-			TTypeCompatibleBytes<ElementType> InlineData[NumInlineElements];
-
-			typename SecondaryAllocator::template ForElementType<ElementType> SecondaryData;
-
-			ElementType* GetInlineElements() const
-			{
-				return (ElementType*)InlineData;
-			}
-		};
-		typedef void ForAnyElementType;
-	};
-}
-
-// TNonRelocatableInlineAllocator,TInlineAllocator的特化版，空间不够的时候直接开堆 
-namespace Fuko
-{
-	template <uint32 NumInlineElements>
-	class TNonRelocatableInlineAllocator
-	{
 	public:
-		using SizeType = int32;
+		TInlineAllocator() = default;
+		TInlineAllocator(const TInlineAllocator&) = delete;
+		TInlineAllocator(const TInlineAllocator&&) = delete;
+		TInlineAllocator& operator=(const TInlineAllocator&) = delete;
 
-		enum { NeedsElementType = true };
-
-		template<typename ElementType>
-		class ForElementType
+		FORCEINLINE void MoveToEmpty(ForElementType& Other)
 		{
-		public:
-			ForElementType() : Data(GetInlineElements()) {}
-			ForElementType(const ForElementType&) = delete;
-			ForElementType(const ForElementType&&) = delete;
-			ForElementType& operator=(const ForElementType&) = delete;
+			check(this != &Other);
 
-			FORCEINLINE void MoveToEmpty(ForElementType& Other)
+			if (!Other.SecondaryData.GetAllocation())
 			{
-				check(this != &Other);
-
-				if (HasAllocation())
-				{
-					Free(Data);
-				}
-
-				if (Other.HasAllocation())
-				{
-					Data = Other.Data;
-					Other.Data = nullptr;
-				}
-				else
-				{
-					Data = GetInlineElements();
-					RelocateConstructItems<ElementType>(GetInlineElements(), Other.GetInlineElements(), NumInlineElements);
-				}
+				RelocateConstructItems<ElementType>((void*)InlineData, Other.GetInlineElements(), NumInlineElements);
 			}
 
-			FORCEINLINE ElementType* GetAllocation() const
-			{
-				return Data;
-			}
+			SecondaryData.MoveToEmpty(Other.SecondaryData);
+		}
 
-			void ResizeAllocation(SizeType PreviousNumElements, SizeType NumElements, size_t NumBytesPerElement)
+		FORCEINLINE ElementType* GetAllocation() const
+		{
+			auto A = SecondaryData.GetAllocation();
+			auto B = GetInlineElements();
+			return A ? A : B;
+		}
+
+		void ResizeAllocation(SizeType PreviousNumElements, SizeType NumElements, size_t NumBytesPerElement)
+		{
+			if (NumElements <= NumInlineElements)
 			{
-				if (NumElements <= NumInlineElements)
+				if (SecondaryData.GetAllocation())
 				{
-					if (HasAllocation())
-					{
-						RelocateConstructItems<ElementType>(GetInlineElements(), Data, PreviousNumElements);
-						Free(Data);
-						Data = GetInlineElements();
-					}
+					RelocateConstructItems<ElementType>((void*)InlineData, (ElementType*)SecondaryData.GetAllocation(), PreviousNumElements);
+					SecondaryData.ResizeAllocation(0, 0, NumBytesPerElement);
+				}
+			}
+			else
+			{
+				if (!SecondaryData.GetAllocation())
+				{
+					SecondaryData.ResizeAllocation(0, NumElements, NumBytesPerElement);
+					RelocateConstructItems<ElementType>((void*)SecondaryData.GetAllocation(), GetInlineElements(), PreviousNumElements);
 				}
 				else
 				{
-					if (HasAllocation())
-					{
-						Data = (ElementType*)Realloc(Data, NumElements*NumBytesPerElement);
-					}
-					else
-					{
-						Data = (ElementType*)Realloc(nullptr, NumElements*NumBytesPerElement);
-						RelocateConstructItems<ElementType>(Data, GetInlineElements(), PreviousNumElements);
-					}
+					SecondaryData.ResizeAllocation(PreviousNumElements, NumElements, NumBytesPerElement);
 				}
 			}
+		}
 
-			FORCEINLINE SizeType CalculateSlackReserve(SizeType NumElements, size_t NumBytesPerElement) const
+		FORCEINLINE SizeType CalculateSlackReserve(SizeType NumElements, size_t NumBytesPerElement) const
+		{
+			return NumElements <= NumInlineElements ?
+				NumInlineElements :
+				SecondaryData.CalculateSlackReserve(NumElements, NumBytesPerElement);
+		}
+		FORCEINLINE SizeType CalculateSlackShrink(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			return NumElements <= NumInlineElements ?
+				NumInlineElements :
+				SecondaryData.CalculateSlackShrink(NumElements, NumAllocatedElements, NumBytesPerElement);
+		}
+		FORCEINLINE SizeType CalculateSlackGrow(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			return NumElements <= NumInlineElements ?
+				NumInlineElements :
+				SecondaryData.CalculateSlackGrow(NumElements, NumAllocatedElements, NumBytesPerElement);
+		}
+
+		size_t GetAllocatedSize(SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			if (NumAllocatedElements > NumInlineElements)
 			{
-				return (NumElements <= NumInlineElements) ? NumInlineElements : DefaultCalculateSlackReserve(NumElements, NumBytesPerElement, true);
+				return SecondaryData.GetAllocatedSize(NumAllocatedElements, NumBytesPerElement);
 			}
+			return 0;
+		}
 
-			FORCEINLINE SizeType CalculateSlackShrink(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return (NumElements <= NumInlineElements) ? NumInlineElements : DefaultCalculateSlackShrink(NumElements, NumAllocatedElements, NumBytesPerElement, true);
-			}
+		bool HasAllocation() const { return SecondaryData.HasAllocation(); }
 
-			FORCEINLINE SizeType CalculateSlackGrow(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return (NumElements <= NumInlineElements) ? NumInlineElements : DefaultCalculateSlackGrow(NumElements, NumAllocatedElements, NumBytesPerElement, true);
-			}
+		SizeType GetInitialCapacity() const { return NumInlineElements; }
+	private:
+		TTypeCompatibleBytes<ElementType> InlineData[NumInlineElements];
 
-			size_t GetAllocatedSize(SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return HasAllocation() ? (NumAllocatedElements * NumBytesPerElement) : 0;
-			}
+		SecondaryAllocator SecondaryData;
 
-			FORCEINLINE bool HasAllocation() const
-			{
-				return Data != GetInlineElements();
-			}
-
-			SizeType GetInitialCapacity() const
-			{
-				return NumInlineElements;
-			}
-
-		private:
-			ElementType* Data;
-
-			TTypeCompatibleBytes<ElementType> InlineData[NumInlineElements];
-
-			FORCEINLINE ElementType* GetInlineElements() const
-			{
-				return (ElementType*)InlineData;
-			}
-		};
-
-		typedef void ForAnyElementType;
+		ElementType* GetInlineElements() const
+		{
+			return (ElementType*)InlineData;
+		}
 	};
 }
 
 // TFixedAllocator,固定大小的Allocator，空间不够也不会开堆
 namespace Fuko
 {
-	template <uint32 NumInlineElements>
+	template <typename T, uint32 NumInlineElements>
 	class TFixedAllocator
 	{
 	public:
 		using SizeType = int32;
+		using ElementType = T;
 
-		enum { NeedsElementType = true };
+	public:
+		TFixedAllocator() = default;
+		TFixedAllocator(const TFixedAllocator&) = delete;
+		TFixedAllocator(const TFixedAllocator&&) = delete;
+		TFixedAllocator& operator=(const TFixedAllocator&) = delete;
 
-		template<typename ElementType>
-		class ForElementType
+		FORCEINLINE void MoveToEmpty(ForElementType& Other)
 		{
-		public:
-			ForElementType() = default;
-			ForElementType(const ForElementType&) = delete;
-			ForElementType(const ForElementType&&) = delete;
-			ForElementType& operator=(const ForElementType&) = delete;
+			check(this != &Other);
+			RelocateConstructItems<ElementType>((void*)InlineData, Other.GetInlineElements(), NumInlineElements);
+		}
 
-			FORCEINLINE void MoveToEmpty(ForElementType& Other)
-			{
-				check(this != &Other);
-				RelocateConstructItems<ElementType>((void*)InlineData, Other.GetInlineElements(), NumInlineElements);
-			}
+		FORCEINLINE ElementType* GetAllocation() const
+		{
+			return GetInlineElements();
+		}
 
-			FORCEINLINE ElementType* GetAllocation() const
-			{
-				return GetInlineElements();
-			}
+		void ResizeAllocation(SizeType PreviousNumElements, SizeType NumElements, size_t NumBytesPerElement)
+		{
+			check(NumElements <= NumInlineElements);
+		}
 
-			void ResizeAllocation(SizeType PreviousNumElements, SizeType NumElements, size_t NumBytesPerElement)
-			{
-				check(NumElements <= NumInlineElements);
-			}
+		FORCEINLINE SizeType CalculateSlackReserve(SizeType NumElements, size_t NumBytesPerElement) const
+		{
+			check(NumElements <= NumInlineElements);
+			return NumInlineElements;
+		}
+		FORCEINLINE SizeType CalculateSlackShrink(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			check(NumAllocatedElements <= NumInlineElements);
+			return NumInlineElements;
+		}
+		FORCEINLINE SizeType CalculateSlackGrow(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
+		{
+			check(NumElements <= NumInlineElements);
+			return NumInlineElements;
+		}
 
-			FORCEINLINE SizeType CalculateSlackReserve(SizeType NumElements, size_t NumBytesPerElement) const
-			{
-				check(NumElements <= NumInlineElements);
-				return NumInlineElements;
-			}
-			FORCEINLINE SizeType CalculateSlackShrink(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				check(NumAllocatedElements <= NumInlineElements);
-				return NumInlineElements;
-			}
-			FORCEINLINE SizeType CalculateSlackGrow(SizeType NumElements, SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				check(NumElements <= NumInlineElements);
-				return NumInlineElements;
-			}
-
-			FORCEINLINE size_t GetAllocatedSize(SizeType NumAllocatedElements, size_t NumBytesPerElement) const
-			{
-				return 0;
-			}
-
-			FORCEINLINE bool HasAllocation() const
-			{
-				return false;
-			}
-
-			SizeType GetInitialCapacity() const
-			{
-				return NumInlineElements;
-			}
-		private:
-			TTypeCompatibleBytes<ElementType> InlineData[NumInlineElements];
-			ElementType* GetInlineElements() const
-			{
-				return (ElementType*)InlineData;
-			}
-		};
-
-		typedef void ForAnyElementType;
+		FORCEINLINE size_t GetAllocatedSize(SizeType NumAllocatedElements, size_t NumBytesPerElement) const { return 0; }
+		FORCEINLINE bool HasAllocation() const { return false; }
+		FORCEINLINE SizeType GetInitialCapacity() const { return NumInlineElements; }
+	
+	private:
+		TTypeCompatibleBytes<ElementType> InlineData[NumInlineElements];
+		ElementType* GetInlineElements() const
+		{
+			return (ElementType*)InlineData;
+		}
 	};
 }
 
 // TSparseArrayAllocator,给稀疏数组使用的Allocator
 namespace Fuko
 {
-	template<typename InElementAllocator = FDefaultAllocator, typename InBitArrayAllocator = FDefaultBitArrayAllocator>
+	template<typename InElementAllocator = TSizedHeapAllocator, typename InBitArrayAllocator = FDefaultBitArrayAllocator>
 	class TSparseArrayAllocator
 	{
 	public:
