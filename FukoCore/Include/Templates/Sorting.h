@@ -55,11 +55,6 @@ private:
 	T* Begin;
 	int32 Size;
 };
-template <typename T>
-struct TIsContiguousContainer< TArrayRange<T> >
-{
-	enum { Value = true };
-};
 
 // 排序
 template<class T, class PREDICATE_CLASS>

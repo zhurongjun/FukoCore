@@ -4,7 +4,7 @@
 #include "UtilityTemp.h"
 #include "Templates/TypeHash.h"
 
-// std::forward
+// forward
 namespace Fuko
 {
 	template<typename ...Types>

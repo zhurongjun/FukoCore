@@ -4,38 +4,7 @@
 #include <Math/MathUtility.h>
 #include "CoreMinimal/Assert.h"
 #include <Containers/Allocators.h>
-
-// Help function
-namespace Fuko::BitArrayHelper
-{
-	static FORCEINLINE uint32 GetAndClearNextBit(uint32& Mask)
-	{
-		const uint32 LowestBitMask = (Mask) & (-(int32)Mask);
-		const uint32 BitIndex = FMath::FloorLog2(LowestBitMask);
-		Mask ^= LowestBitMask;
-		return BitIndex;
-	}
-	static constexpr uint32 BitsPerWord = NumBitsPerDWORD;
-
-	FORCEINLINE static uint32 CalculateNumWords(int32 NumBits)
-	{
-		check(NumBits >= 0);
-		return FMath::DivideAndRoundUp(static_cast<uint32>(NumBits), BitsPerWord);
-	}
-}
-
-// std::forward declaration
-namespace Fuko
-{
-	template<typename Allocator = FDefaultBitArrayAllocator>
-	class TBitArray;
-
-	template<typename Allocator = FDefaultBitArrayAllocator>
-	class TConstSetBitIterator;
-
-	template<typename Allocator = FDefaultBitArrayAllocator, typename OtherAllocator = FDefaultBitArrayAllocator>
-	class TConstDualSetBitIterator;
-}
+#include "AllocatorsPmr.h"
 
 // Bit reference
 namespace Fuko
@@ -145,139 +114,40 @@ namespace Fuko
 	class FRelativeBitReference
 	{
 	public:
-		FORCEINLINE explicit FRelativeBitReference(int32 BitIndex)
+		static constexpr size_t NumBitsPerDWORD = 32;
+		static constexpr size_t NumBitsPerDWORDLogTwo = 5;
+		FORCEINLINE explicit FRelativeBitReference(size_t BitIndex)
 			: DWORDIndex(BitIndex >> NumBitsPerDWORDLogTwo)
 			, Mask(1 << (BitIndex & (NumBitsPerDWORD - 1)))
 		{
 		}
 
-		int32  DWORDIndex;
-		uint32 Mask;
+		size_t  DWORDIndex;
+		uint32	Mask;
 	};
 }
 
 // BitArray
 namespace Fuko
 {
-	template<typename Allocator /*= FDefaultBitArrayAllocator*/>
-	class TBitArray
+	class BitArray final
 	{
-		template <typename, typename>
-		friend class TScriptBitArray;
-	public:
-		typedef typename Allocator::template ForElementType<uint32> AllocatorType;
+		static constexpr size_t NumBitsPerDWORD = 32;
+		static constexpr size_t NumBitsPerDWORDLogTwo = 5;
+		static constexpr uint32 EmptyMask = 0u;
+		static constexpr uint32 FullMask = ~EmptyMask;
 
-		template<typename>
-		friend class TConstSetBitIterator;
-
-		template<typename, typename>
-		friend class TConstDualSetBitIterator;
-
-		TBitArray()
-			: NumBits(0)
-			, MaxBits(AllocatorInstance.GetInitialCapacity() * NumBitsPerDWORD)
+		FORCEINLINE static size_t CalculateNumWords(size_t NumBits)
 		{
-			SetWords(GetData(), AllocatorInstance.GetInitialCapacity(), false);
+			check(NumBits >= 0);
+			return FMath::DivideAndRoundUp(NumBits, NumBitsPerDWORD);
 		}
-
-		FORCEINLINE explicit TBitArray(bool bValue, int32 InNumBits)
-			: MaxBits(AllocatorInstance.GetInitialCapacity() * NumBitsPerDWORD)
-		{
-			Init(bValue, InNumBits);
-		}
-
-		FORCEINLINE TBitArray(TBitArray&& Other)
-		{
-			MoveOrCopy(*this, Other);
-		}
-
-		FORCEINLINE TBitArray(const TBitArray& Copy)
-			: NumBits(0)
-			, MaxBits(0)
-		{
-			*this = Copy;
-		}
-
-		FORCEINLINE TBitArray& operator=(TBitArray&& Other)
-		{
-			if (this != &Other)
-			{
-				MoveOrCopy(*this, Other);
-			}
-
-			return *this;
-		}
-
-		FORCEINLINE TBitArray& operator=(const TBitArray& Copy)
-		{
-			if (this == &Copy)
-			{
-				return *this;
-			}
-
-			Empty(Copy.Num());
-			NumBits = Copy.NumBits;
-			if (NumBits)
-			{
-				Memcpy(GetData(), Copy.GetData(), GetNumWords() * sizeof(uint32));
-			}
-			return *this;
-		}
-
-		FORCEINLINE bool operator==(const TBitArray<Allocator>& Other) const
-		{
-			if (Num() != Other.Num())
-			{
-				return false;
-			}
-
-			return Memcmp(GetData(), Other.GetData(), GetNumWords() * sizeof(uint32)) == 0;
-		}
-
-		FORCEINLINE bool operator<(const TBitArray<Allocator>& Other) const
-		{
-			if (Num() != Other.Num())
-			{
-				return Num() < Other.Num();
-			}
-
-			uint32 NumWords = GetNumWords();
-			const uint32* Data0 = GetData();
-			const uint32* Data1 = Other.GetData();
-
-			for (uint32 i = 0; i < NumWords; i++)
-			{
-				if (Data0[i] != Data1[i])
-				{
-					return Data0[i] < Data1[i];
-				}
-			}
-			return false;
-		}
-
-		FORCEINLINE bool operator!=(const TBitArray<Allocator>& Other)
-		{
-			return !(*this == Other);
-		}
-
-	private:
-		FORCEINLINE uint32 GetNumWords() const
-		{
-			return BitArrayHelper::CalculateNumWords(NumBits);
-		}
-
-		FORCEINLINE uint32 GetMaxWords() const
-		{
-			return BitArrayHelper::CalculateNumWords(MaxBits);
-		}
-
 		FORCEINLINE uint32 GetLastWordMask() const
 		{
-			const uint32 UnusedBits = (BitArrayHelper::BitsPerWord - static_cast<uint32>(NumBits) % BitArrayHelper::BitsPerWord) % BitArrayHelper::BitsPerWord;
+			const uint32 UnusedBits = (NumBitsPerDWORD - m_NumBits % NumBitsPerDWORD) % NumBitsPerDWORD;
 			return ~0u >> UnusedBits;
 		}
-
-		FORCEINLINE static void SetWords(uint32* Words, int32 NumWords, bool bValue)
+		FORCEINLINE static void SetWords(uint32* Words, size_t NumWords, bool bValue)
 		{
 			if (NumWords > 8)
 			{
@@ -293,38 +163,219 @@ namespace Fuko
 			}
 		}
 
-		template <typename BitArrayType>
-		static FORCEINLINE void MoveOrCopy(BitArrayType& ToArray, BitArrayType& FromArray)
+		FORCEINLINE void ResizeTo(size_t InNum)
 		{
-			ToArray.AllocatorInstance.MoveToEmpty(FromArray.AllocatorInstance);
+			const size_t PrevNumDWORDs = CalculateNumWords(m_MaxBits);
+			const size_t MaxDWORDs = CalculateNumWords(InNum);
 
-			ToArray.NumBits = FromArray.NumBits;
-			ToArray.MaxBits = FromArray.MaxBits;
-			FromArray.NumBits = 0;
-			FromArray.MaxBits = 0;
+			if (m_Data) m_Data = (uint32*)m_Allocator->Realloc(m_Data, MaxDWORDs * sizeof(uint32));
+			else m_Data = (uint32*)m_Allocator->Alloc(MaxDWORDs * sizeof(uint32));
+
+			if (MaxDWORDs > PrevNumDWORDs)
+				Memzero(m_Data + PrevNumDWORDs, (MaxDWORDs - PrevNumDWORDs) * sizeof(uint32));
+			m_MaxBits = MaxDWORDs * NumBitsPerDWORD;
+		}
+	private:
+		IAllocator* m_Allocator;
+		uint32*		m_Data;
+		size_t		m_NumBits;
+		size_t		m_MaxBits;
+	public:
+		friend class TConstSetBitIterator;
+		friend class TConstDualSetBitIterator;
+
+		// construct 
+		BitArray(IAllocator* Alloc = DefaultAllocator())
+			: m_Allocator(Alloc)
+			, m_Data(nullptr)
+			, m_NumBits(0)
+			, m_MaxBits(0)
+		{
+			check(m_Allocator != nullptr);
+		}
+		FORCEINLINE explicit BitArray(bool bValue, int32 InNumBits, IAllocator* Alloc = DefaultAllocator())
+			: m_Allocator(Alloc)
+			, m_Data(nullptr)
+			, m_NumBits(0)
+			, m_MaxBits(0)
+		{
+			check(m_Allocator != nullptr);
+			Init(bValue, InNumBits);
 		}
 
-	public:
-		int32 Add(const bool Value)
+		// copy construct 
+		FORCEINLINE BitArray(const BitArray& Other, IAllocator* Alloc = DefaultAllocator())
+			: m_Allocator(Alloc)
+			, m_Data(nullptr)
+			, m_NumBits(0)
+			, m_MaxBits(0)
 		{
-			const int32 Index = NumBits;
+			check(m_Allocator != nullptr);
+			Empty(Other.m_NumBits);
+			m_NumBits = Other.m_NumBits;
+			if (Other.m_NumBits)
+			{
+				Memcpy(GetData(), Other.GetData(), CalculateNumWords(m_NumBits) * sizeof(uint32));
+			}
+		}
+
+		// move construct 
+		FORCEINLINE BitArray(BitArray&& Other)
+			: m_Allocator(Other.m_Allocator)
+			, m_Data(Other.m_Data)
+			, m_NumBits(Other.m_NumBits)
+			, m_MaxBits(Other.m_MaxBits)
+		{
+			check(m_Allocator != nullptr);
+		}
+
+		// assign operator
+		FORCEINLINE BitArray& operator=(BitArray&& Other)
+		{
+			if (this == &Other) return *this;
+			m_Data = Other.m_Data;
+
+			m_NumBits = Other.m_NumBits;
+			m_MaxBits = Other.m_MaxBits;
+			Other.m_NumBits = 0;
+			Other.m_MaxBits = 0;
+		}
+		FORCEINLINE BitArray& operator=(const BitArray& Other)
+		{
+			if (this == &Other) return *this;
+
+			Empty(Other.Num());
+			m_NumBits = Other.m_NumBits;
+			if (m_NumBits)
+			{
+				Memcpy(GetData(), Other.GetData(), CalculateNumWords(m_NumBits) * sizeof(uint32));
+			}
+			return *this;
+		}
+
+		// destruct 
+		FORCEINLINE ~BitArray()
+		{
+			if (m_Data) m_Allocator->Free(m_Data);
+			m_NumBits = 0;
+			m_MaxBits = 0;
+		}
+
+		// compare operator 
+		FORCEINLINE bool operator==(const BitArray& Other) const
+		{
+			if (Num() != Other.Num()) return false;
+			return Memcmp(GetData(), Other.GetData(), CalculateNumWords(m_NumBits) * sizeof(uint32)) == 0;
+		}
+		FORCEINLINE bool operator!=(const BitArray& Other)
+		{
+			return !(*this == Other);
+		}
+		FORCEINLINE bool operator<(const BitArray& Other) const
+		{
+			if (Num() != Other.Num()) return Num() < Other.Num();
+
+			size_t NumWords = CalculateNumWords(m_NumBits);
+			const uint32* Data0 = GetData();
+			const uint32* Data1 = Other.GetData();
+
+			for (uint32 i = 0; i < NumWords; i++)
+			{
+				if (Data0[i] != Data1[i])
+				{
+					return Data0[i] < Data1[i];
+				}
+			}
+			return false;
+		}
+
+		// get information
+		FORCEINLINE const uint32* GetData() const { return m_Data; }
+		FORCEINLINE uint32* GetData() { return m_Data; }
+		FORCEINLINE size_t Num() const { return m_NumBits; }
+		FORCEINLINE size_t Max() const { return m_MaxBits; }
+		FORCENOINLINE IAllocator* GetAllocator() { return m_Allocator; }
+		FORCENOINLINE const IAllocator* GetAllocator() const { return m_Allocator; }
+
+		// set num & empty & reserve 
+		void Empty(size_t ExpectedNumBits = 0)
+		{
+			ExpectedNumBits = CalculateNumWords(ExpectedNumBits) * NumBitsPerDWORD;
+			const size_t InitialMaxBits = 0;
+
+			m_NumBits = 0;
+
+			// resize 
+			if (ExpectedNumBits > m_MaxBits || m_MaxBits > InitialMaxBits)
+			{
+				ResizeTo(FMath::Max(ExpectedNumBits, InitialMaxBits));
+			}
+		}
+		void Reserve(size_t Number)
+		{
+			if (Number > m_MaxBits)
+			{
+				const size_t MaxDWORDs = m_Allocator->GetGrow(
+					CalculateNumWords(Number),
+					CalculateNumWords(m_MaxBits),
+					sizeof(uint32)
+				);
+				ResizeTo(MaxDWORDs * NumBitsPerDWORD);
+			}
+		}
+		void Reset()
+		{
+			SetWords(GetData(), CalculateNumWords(m_NumBits), false);
+			m_NumBits = 0;
+		}
+		void SetNumUninitialized(size_t InNumBits)
+		{
+			m_NumBits = InNumBits;
+
+			if (InNumBits > m_MaxBits)
+			{
+				ResizeTo(InNumBits);
+			}
+		}
+
+		// operator []
+		FORCEINLINE FBitReference operator[](size_t Index)
+		{
+			check(Index >= 0 && Index < m_NumBits);
+			return FBitReference(
+				GetData()[Index / NumBitsPerDWORD],
+				1 << (Index & (NumBitsPerDWORD - 1))
+			);
+		}
+		FORCEINLINE const FConstBitReference operator[](size_t Index) const
+		{
+			check(Index >= 0 && Index < m_NumBits);
+			return FConstBitReference(
+				GetData()[Index / NumBitsPerDWORD],
+				1 << (Index & (NumBitsPerDWORD - 1))
+			);
+		}
+
+		// add 
+		size_t Add(const bool Value)
+		{
+			const size_t Index = m_NumBits;
 
 			Reserve(Index + 1);
-			++NumBits;
+			++m_NumBits;
 			(*this)[Index] = Value;
 
 			return Index;
 		}
-
-		int32 Add(const bool Value, int32 NumToAdd)
+		size_t Add(const bool Value, size_t NumToAdd)
 		{
-			const int32 Index = NumBits;
+			const size_t Index = m_NumBits;
 
 			if (NumToAdd > 0)
 			{
 				Reserve(Index + NumToAdd);
-				NumBits += NumToAdd;
-				for (int32 It = Index, End = It + NumToAdd; It != End; ++It)
+				m_NumBits += NumToAdd;
+				for (size_t It = Index, End = It + NumToAdd; It != End; ++It)
 				{
 					(*this)[It] = Value;
 				}
@@ -333,56 +384,18 @@ namespace Fuko
 			return Index;
 		}
 
-		void Empty(int32 ExpectedNumBits = 0)
+		// Init 
+		FORCEINLINE void Init(bool bValue, size_t InNumBits)
 		{
-			ExpectedNumBits = static_cast<int32>(BitArrayHelper::CalculateNumWords(ExpectedNumBits)) * NumBitsPerDWORD;
-			const int32 InitialMaxBits = AllocatorInstance.GetInitialCapacity() * NumBitsPerDWORD;
+			m_NumBits = InNumBits;
 
-			if (ExpectedNumBits > MaxBits || MaxBits > InitialMaxBits)
-			{
-				MaxBits = FMath::Max(ExpectedNumBits, InitialMaxBits);
-				Realloc(0);
-			}
-			else
-			{
-				SetWords(GetData(), GetNumWords(), false);
-			}
-
-			NumBits = 0;
-		}
-
-		void Reserve(int32 Number)
-		{
-			if (Number > MaxBits)
-			{
-				const uint32 MaxDWORDs = AllocatorInstance.CalculateSlackGrow(
-					BitArrayHelper::CalculateNumWords(Number),
-					GetMaxWords(),
-					sizeof(uint32)
-				);
-				MaxBits = MaxDWORDs * NumBitsPerDWORD;
-				Realloc(NumBits);
-			}
-		}
-
-		void Reset()
-		{
-			SetWords(GetData(), GetNumWords(), false);
-
-			NumBits = 0;
-		}
-
-		FORCEINLINE void Init(bool bValue, int32 InNumBits)
-		{
-			NumBits = InNumBits;
-
-			const uint32 NumWords = GetNumWords();
-			const uint32 MaxWords = GetMaxWords();
+			const size_t NumWords = CalculateNumWords(m_NumBits);
+			const size_t MaxWords = CalculateNumWords(m_MaxBits);
 
 			if (NumWords > MaxWords)
 			{
-				AllocatorInstance.ResizeAllocation(0, NumWords, sizeof(uint32));
-				MaxBits = NumWords * NumBitsPerDWORD;
+				// Realloc 
+				ResizeTo(NumWords * NumBitsPerDWORD);
 
 				uint32* Words = GetData();
 				SetWords(Words, NumWords, bValue);
@@ -390,6 +403,7 @@ namespace Fuko
 			}
 			else if (bValue & (NumWords > 0))
 			{
+				// set to true
 				uint32* Words = GetData();
 				SetWords(Words, NumWords - 1, true);
 				Words[NumWords - 1] = GetLastWordMask();
@@ -397,88 +411,23 @@ namespace Fuko
 			}
 			else
 			{
+				// set to false 
 				SetWords(GetData(), MaxWords, false);
 			}
 		}
 
-		void SetNumUninitialized(int32 InNumBits)
+		// validate 
+		FORCEINLINE bool IsValidIndex(size_t InIndex) const
 		{
-			int32 PreviousNumBits = NumBits;
-			NumBits = InNumBits;
-
-			if (InNumBits > MaxBits)
-			{
-				const int32 PreviousNumDWORDs = BitArrayHelper::CalculateNumWords(PreviousNumBits);
-				const uint32 MaxDWORDs = AllocatorInstance.CalculateSlackReserve(
-					BitArrayHelper::CalculateNumWords(InNumBits), sizeof(uint32));
-
-				AllocatorInstance.ResizeAllocation(PreviousNumDWORDs, MaxDWORDs, sizeof(uint32));
-
-				MaxBits = MaxDWORDs * NumBitsPerDWORD;
-			}
+			return InIndex >= 0 && InIndex < m_NumBits;
 		}
 
-		FORCENOINLINE void SetRange(int32 Index, int32 Num, bool Value)
+		// remove 
+		void RemoveAt(size_t BaseIndex, size_t NumBitsToRemove = 1)
 		{
-			check(Index >= 0 && Num >= 0 && Index + Num <= NumBits);
+			check(BaseIndex >= 0 && NumBitsToRemove >= 0 && BaseIndex + NumBitsToRemove <= m_NumBits);
 
-			if (Num == 0)
-			{
-				return;
-			}
-
-			// 计算设置uint32的数量
-			uint32 StartIndex = Index / NumBitsPerDWORD;
-			uint32 Count = (Index + Num + (NumBitsPerDWORD - 1)) / NumBitsPerDWORD - StartIndex;
-
-			// 计算首位的Mask 
-			uint32 StartMask = 0xFFFFFFFFu << (Index % NumBitsPerDWORD);
-			uint32 EndMask = 0xFFFFFFFFu >> (NumBitsPerDWORD - (Index + Num) % NumBitsPerDWORD) % NumBitsPerDWORD;
-
-			uint32* Data = GetData() + StartIndex;
-			if (Value)
-			{
-				if (Count == 1)
-				{
-					*Data |= StartMask & EndMask;
-				}
-				else
-				{
-					*Data++ |= StartMask;
-					Count -= 2;
-					while (Count != 0)
-					{
-						*Data++ = ~0;
-						--Count;
-					}
-					*Data |= EndMask;
-				}
-			}
-			else
-			{
-				if (Count == 1)
-				{
-					*Data &= ~(StartMask & EndMask);
-				}
-				else
-				{
-					*Data++ &= ~StartMask;
-					Count -= 2;
-					while (Count != 0)
-					{
-						*Data++ = 0;
-						--Count;
-					}
-					*Data &= ~EndMask;
-				}
-			}
-		}
-
-		void RemoveAt(int32 BaseIndex, int32 NumBitsToRemove = 1)
-		{
-			check(BaseIndex >= 0 && NumBitsToRemove >= 0 && BaseIndex + NumBitsToRemove <= NumBits);
-
-			if (BaseIndex + NumBitsToRemove != NumBits)
+			if (BaseIndex + NumBitsToRemove != m_NumBits)
 			{
 				// Until otherwise necessary, this is an obviously correct implementation rather than an efficient implementation.
 				FIterator WriteIt(*this);
@@ -508,98 +457,79 @@ namespace Fuko
 					}
 				}
 			}
-			NumBits -= NumBitsToRemove;
+			m_NumBits -= NumBitsToRemove;
 		}
-
-		void RemoveAtSwap(int32 BaseIndex, int32 NumBitsToRemove = 1)
+		void RemoveAtSwap(size_t BaseIndex, size_t NumBitsToRemove = 1)
 		{
-			check(BaseIndex >= 0 && NumBitsToRemove >= 0 && BaseIndex + NumBitsToRemove <= NumBits);
-			if (BaseIndex < NumBits - NumBitsToRemove)
+			check(BaseIndex >= 0 && NumBitsToRemove >= 0 && BaseIndex + NumBitsToRemove <= m_NumBits);
+			if (BaseIndex < m_NumBits - NumBitsToRemove)
 			{
-				for (int32 Index = 0; Index < NumBitsToRemove; Index++)
+				for (size_t Index = 0; Index < NumBitsToRemove; Index++)
 				{
-					(*this)[BaseIndex + Index] = (bool)(*this)[NumBits - NumBitsToRemove + Index];
+					(*this)[BaseIndex + Index] = (bool)(*this)[m_NumBits - NumBitsToRemove + Index];
 				}
 			}
-			NumBits -= NumBitsToRemove;
+			m_NumBits -= NumBitsToRemove;
 		}
 
-		uint32 GetAllocatedSize(void) const
+		// find 
+		size_t Find(bool bValue) const
 		{
-			return BitArrayHelper::CalculateNumWords(MaxBits) * sizeof(uint32);
-		}
-
-		int32 Find(bool bValue) const
-		{
-			const uint32 Test = bValue ? 0u : (uint32)-1;
+			// test to skip head 
+			const uint32 Test = bValue ? EmptyMask : FullMask;
 
 			const uint32* RESTRICT DwordArray = GetData();
-			const int32 LocalNumBits = NumBits;
-			const int32 DwordCount = BitArrayHelper::CalculateNumWords(LocalNumBits);
-			int32 DwordIndex = 0;
-			while (DwordIndex < DwordCount && DwordArray[DwordIndex] == Test)
-			{
-				++DwordIndex;
-			}
+			const size_t DwordCount = CalculateNumWords(m_NumBits);
+			size_t DwordIndex = 0;
 
+			// skip head 
+			while (DwordIndex < DwordCount && DwordArray[DwordIndex] == Test) ++DwordIndex;
+
+			// now find bit 
 			if (DwordIndex < DwordCount)
 			{
+				// reserve for CountTrailingZeros
 				const uint32 Bits = bValue ? (DwordArray[DwordIndex]) : ~(DwordArray[DwordIndex]);
-				ASSUME(Bits != 0);
-				const int32 LowestBitIndex = FMath::CountTrailingZeros(Bits) + (DwordIndex << NumBitsPerDWORDLogTwo);
-				if (LowestBitIndex < LocalNumBits)
-				{
-					return LowestBitIndex;
-				}
+				check(Bits != 0);
+				const size_t LowestBitIndex = FMath::CountTrailingZeros(Bits) + (DwordIndex << NumBitsPerDWORDLogTwo);
+				
+				if (LowestBitIndex < m_NumBits) return LowestBitIndex;
+			}
+			return INDEX_NONE;
+		}
+		size_t FindLast(bool bValue) const
+		{
+			size_t DwordIndex = CalculateNumWords(m_NumBits) - 1;
+			const uint32* RESTRICT DwordArray = GetData();
+			const uint32 Test = bValue ? EmptyMask : FullMask;
+			uint32 Mask = FullMask >> GetLastWordMask();
+
+			// skip tail 
+			if ((DwordArray[DwordIndex] & Mask) == (Test & Mask))
+			{
+				--DwordIndex;
+				while (DwordIndex >= 0 && DwordArray[DwordIndex] == Test) --DwordIndex;
 			}
 
+			// now find bit index 
+			if (DwordIndex >= 0)
+			{
+				const uint32 Bits = (bValue ? DwordArray[DwordIndex] : ~DwordArray[DwordIndex]) & Mask;
+				check(Bits != 0);
+				uint32 BitIndex = (NumBitsPerDWORD - 1) - FMath::CountLeadingZeros(Bits);
+				size_t Result = BitIndex + (DwordIndex << NumBitsPerDWORDLogTwo);
+				return Result;
+			}
 			return INDEX_NONE;
 		}
 
-		int32 FindLast(bool bValue) const
-		{
-			const int32 LocalNumBits = NumBits;
-
-			uint32 SlackIndex = ((LocalNumBits - 1) % NumBitsPerDWORD) + 1;
-			uint32 Mask = ~0u >> (NumBitsPerDWORD - SlackIndex);
-
-			uint32 DwordIndex = BitArrayHelper::CalculateNumWords(LocalNumBits);
-			const uint32* RESTRICT DwordArray = GetData();
-			const uint32 Test = bValue ? 0u : ~0u;
-			for (;;)
-			{
-				if (DwordIndex == 0)
-				{
-					return INDEX_NONE;
-				}
-				--DwordIndex;
-				if ((DwordArray[DwordIndex] & Mask) != (Test & Mask))
-				{
-					break;
-				}
-				Mask = ~0u;
-			}
-
-			const uint32 Bits = (bValue ? DwordArray[DwordIndex] : ~DwordArray[DwordIndex]) & Mask;
-			ASSUME(Bits != 0);
-
-			uint32 BitIndex = (NumBitsPerDWORD - 1) - FMath::CountLeadingZeros(Bits);
-
-			int32 Result = BitIndex + (DwordIndex << NumBitsPerDWORDLogTwo);
-			return Result;
-		}
-
-		FORCEINLINE bool Contains(bool bValue) const
-		{
-			return Find(bValue) != INDEX_NONE;
-		}
-
-		int32 FindAndSetFirstZeroBit(int32 ConservativeStartIndex = 0)
+		// find and set 
+		size_t FindAndSetFirstZeroBit(size_t ConservativeStartIndex = 0)
 		{
 			uint32* RESTRICT DwordArray = GetData();
-			const int32 LocalNumBits = NumBits;
-			const int32 DwordCount = BitArrayHelper::CalculateNumWords(LocalNumBits);
-			int32 DwordIndex = FMath::DivideAndRoundDown(ConservativeStartIndex, NumBitsPerDWORD);
+			const size_t LocalNumBits = m_NumBits;
+			const size_t DwordCount = CalculateNumWords(LocalNumBits);
+			size_t DwordIndex = FMath::DivideAndRoundDown(ConservativeStartIndex, NumBitsPerDWORD);
 			while (DwordIndex < DwordCount && DwordArray[DwordIndex] == (uint32)-1)
 			{
 				++DwordIndex;
@@ -608,9 +538,9 @@ namespace Fuko
 			if (DwordIndex < DwordCount)
 			{
 				const uint32 Bits = ~(DwordArray[DwordIndex]);
-				UE_ASSUME(Bits != 0);
+				check(Bits != 0);
 				const uint32 LowestBit = (Bits) & (-(int32)Bits);
-				const int32 LowestBitIndex = FMath::CountTrailingZeros(Bits) + (DwordIndex << NumBitsPerDWORDLogTwo);
+				const size_t LowestBitIndex = FMath::CountTrailingZeros(Bits) + (DwordIndex << NumBitsPerDWORDLogTwo);
 				if (LowestBitIndex < LocalNumBits)
 				{
 					DwordArray[DwordIndex] |= LowestBit;
@@ -620,17 +550,16 @@ namespace Fuko
 
 			return INDEX_NONE;
 		}
-
-		int32 FindAndSetLastZeroBit()
+		size_t FindAndSetLastZeroBit()
 		{
-			const int32 LocalNumBits = NumBits;
+			const size_t LocalNumBits = m_NumBits;
 
 			// Get the correct mask for the last word
 			uint32 SlackIndex = ((LocalNumBits - 1) % NumBitsPerDWORD) + 1;
-			uint32 Mask = ~0u >> (NumBitsPerDWORD - SlackIndex);
+			uint32 Mask = FullMask >> (NumBitsPerDWORD - SlackIndex);
 
 			// Iterate over the array until we see a word with a zero bit.
-			uint32 DwordIndex = BitArrayHelper::CalculateNumWords(LocalNumBits);
+			size_t DwordIndex = CalculateNumWords(LocalNumBits);
 			uint32* RESTRICT DwordArray = GetData();
 			for (;;)
 			{
@@ -643,47 +572,88 @@ namespace Fuko
 				{
 					break;
 				}
-				Mask = ~0u;
+				Mask = FullMask;
 			}
 
 			// Flip the bits, then we only need to find the first one bit -- easy.
 			const uint32 Bits = ~DwordArray[DwordIndex] & Mask;
-			ASSUME(Bits != 0);
+			check(Bits != 0);
 
 			uint32 BitIndex = (NumBitsPerDWORD - 1) - FMath::CountLeadingZeros(Bits);
 			DwordArray[DwordIndex] |= 1u << BitIndex;
 
-			int32 Result = BitIndex + (DwordIndex << NumBitsPerDWORDLogTwo);
+			size_t Result = BitIndex + (DwordIndex << NumBitsPerDWORDLogTwo);
 			return Result;
 		}
 
-		FORCEINLINE bool IsValidIndex(int32 InIndex) const
+		// contains 
+		FORCEINLINE bool Contains(bool bValue) const
 		{
-			return InIndex >= 0 && InIndex < NumBits;
+			return Find(bValue) != INDEX_NONE;
 		}
 
-		FORCEINLINE int32 Num() const { return NumBits; }
-		FORCEINLINE FBitReference operator[](int32 Index)
+		// set range 
+		FORCENOINLINE void SetRange(size_t Index, size_t Num, bool Value)
 		{
-			check(Index >= 0 && Index < NumBits);
-			return FBitReference(
-				GetData()[Index / NumBitsPerDWORD],
-				1 << (Index & (NumBitsPerDWORD - 1))
-			);
+			check(Index >= 0 && Num >= 0 && Index + Num <= m_NumBits);
+
+			if (Num == 0) return;
+
+			// calculate dword index and count  
+			size_t StartIndex = Index / NumBitsPerDWORD;
+			size_t Count = (Index + Num + (NumBitsPerDWORD - 1)) / NumBitsPerDWORD - StartIndex;
+
+			// calculate mask 
+			uint32 StartMask = FullMask << (Index % NumBitsPerDWORD);
+			uint32 EndMask = FullMask >> (NumBitsPerDWORD - (Index + Num) % NumBitsPerDWORD) % NumBitsPerDWORD;
+
+			uint32* Data = GetData() + StartIndex;
+			if (Value)
+			{
+				// set to true 
+				if (Count == 1)
+				{
+					*Data |= StartMask & EndMask;
+				}
+				else
+				{
+					*Data++ |= StartMask;
+					Count -= 2;	// exclude start and end 
+					while (Count != 0)
+					{
+						*Data++ = FullMask;
+						--Count;
+					}
+					*Data |= EndMask;
+				}
+			}
+			else
+			{
+				// set to false 
+				if (Count == 1)
+				{
+					*Data &= ~(StartMask & EndMask);
+				}
+				else
+				{
+					*Data++ &= ~StartMask;
+					Count -= 2;	// exclude start and end 
+					while (Count != 0)
+					{
+						*Data++ = 0;
+						--Count;
+					}
+					*Data &= ~EndMask;
+				}
+			}
 		}
-		FORCEINLINE const FConstBitReference operator[](int32 Index) const
-		{
-			check(Index >= 0 && Index < NumBits);
-			return FConstBitReference(
-				GetData()[Index / NumBitsPerDWORD],
-				1 << (Index & (NumBitsPerDWORD - 1))
-			);
-		}
+		
+		// access 
 		FORCEINLINE FBitReference AccessCorrespondingBit(const FRelativeBitReference& RelativeReference)
 		{
 			check(RelativeReference.Mask);
 			check(RelativeReference.DWORDIndex >= 0);
-			check(((uint32)RelativeReference.DWORDIndex + 1) * NumBitsPerDWORD - 1 - FMath::CountLeadingZeros(RelativeReference.Mask) < (uint32)NumBits);
+			check(((uint32)RelativeReference.DWORDIndex + 1) * NumBitsPerDWORD - 1 - FMath::CountLeadingZeros(RelativeReference.Mask) < (uint32)m_NumBits);
 			return FBitReference(
 				GetData()[RelativeReference.DWORDIndex],
 				RelativeReference.Mask
@@ -693,176 +663,147 @@ namespace Fuko
 		{
 			check(RelativeReference.Mask);
 			check(RelativeReference.DWORDIndex >= 0);
-			check(((uint32)RelativeReference.DWORDIndex + 1) * NumBitsPerDWORD - 1 - FMath::CountLeadingZeros(RelativeReference.Mask) < (uint32)NumBits);
+			check(((uint32)RelativeReference.DWORDIndex + 1) * NumBitsPerDWORD - 1 - FMath::CountLeadingZeros(RelativeReference.Mask) < (uint32)m_NumBits);
 			return FConstBitReference(
 				GetData()[RelativeReference.DWORDIndex],
 				RelativeReference.Mask
 			);
 		}
 
-		/** BitArray iterator. */
+		// iterator 
 		class FIterator : public FRelativeBitReference
 		{
 		public:
-			FORCEINLINE FIterator(TBitArray<Allocator>& InArray, int32 StartIndex = 0)
+			FORCEINLINE FIterator(BitArray& InArray, size_t StartIndex = 0)
 				: FRelativeBitReference(StartIndex)
 				, Array(InArray)
 				, Index(StartIndex)
 			{
 			}
+
 			FORCEINLINE FIterator& operator++()
 			{
 				++Index;
 				this->Mask <<= 1;
+				
+				// Advance to the next uint32.
 				if (!this->Mask)
 				{
-					// Advance to the next uint32.
 					this->Mask = 1;
 					++this->DWORDIndex;
 				}
 				return *this;
 			}
-			/** conversion to "bool" returning true if the iterator is valid. */
+			
 			FORCEINLINE explicit operator bool() const
 			{
 				return Index < Array.Num();
 			}
-			/** inverse of the "bool" operator */
+
 			FORCEINLINE bool operator !() const
 			{
 				return !(bool)*this;
 			}
 
 			FORCEINLINE FBitReference GetValue() const { return FBitReference(Array.GetData()[this->DWORDIndex], this->Mask); }
-			FORCEINLINE int32 GetIndex() const { return Index; }
+			FORCEINLINE size_t GetIndex() const { return Index; }
 		private:
-			TBitArray<Allocator>& Array;
-			int32 Index;
+			BitArray&	Array;
+			size_t		Index;
 		};
 
-		/** Const BitArray iterator. */
+		// const iterator 
 		class FConstIterator : public FRelativeBitReference
 		{
 		public:
-			FORCEINLINE FConstIterator(const TBitArray<Allocator>& InArray, int32 StartIndex = 0)
+			FORCEINLINE FConstIterator(const BitArray& InArray, size_t StartIndex = 0)
 				: FRelativeBitReference(StartIndex)
 				, Array(InArray)
 				, Index(StartIndex)
 			{
 			}
+
 			FORCEINLINE FConstIterator& operator++()
 			{
 				++Index;
 				this->Mask <<= 1;
+				// Advance to the next uint32.
 				if (!this->Mask)
 				{
-					// Advance to the next uint32.
 					this->Mask = 1;
 					++this->DWORDIndex;
 				}
 				return *this;
 			}
 
-			/** conversion to "bool" returning true if the iterator is valid. */
 			FORCEINLINE explicit operator bool() const
 			{
 				return Index < Array.Num();
 			}
-			/** inverse of the "bool" operator */
+
 			FORCEINLINE bool operator !() const
 			{
 				return !(bool)*this;
 			}
 
 			FORCEINLINE FConstBitReference GetValue() const { return FConstBitReference(Array.GetData()[this->DWORDIndex], this->Mask); }
-			FORCEINLINE int32 GetIndex() const { return Index; }
+			FORCEINLINE size_t GetIndex() const { return Index; }
 		private:
-			const TBitArray<Allocator>& Array;
-			int32 Index;
+			const BitArray& Array;
+			size_t			Index;
 		};
 
-		/** Const reverse iterator. */
+		// const reverse iterator 
 		class FConstReverseIterator : public FRelativeBitReference
 		{
 		public:
-			FORCEINLINE FConstReverseIterator(const TBitArray<Allocator>& InArray)
+			FORCEINLINE FConstReverseIterator(const BitArray& InArray)
 				: FRelativeBitReference(InArray.Num() - 1)
 				, Array(InArray)
 				, Index(InArray.Num() - 1)
 			{
 			}
+
 			FORCEINLINE FConstReverseIterator& operator++()
 			{
 				--Index;
 				this->Mask >>= 1;
+				
+				// Advance to the next uint32.
 				if (!this->Mask)
 				{
-					// Advance to the next uint32.
 					this->Mask = (1 << (NumBitsPerDWORD - 1));
 					--this->DWORDIndex;
 				}
 				return *this;
 			}
 
-			/** conversion to "bool" returning true if the iterator is valid. */
 			FORCEINLINE explicit operator bool() const
 			{
 				return Index >= 0;
 			}
-			/** inverse of the "bool" operator */
+
 			FORCEINLINE bool operator !() const
 			{
 				return !(bool)*this;
 			}
 
 			FORCEINLINE FConstBitReference GetValue() const { return FConstBitReference(Array.GetData()[this->DWORDIndex], this->Mask); }
-			FORCEINLINE int32 GetIndex() const { return Index; }
+			FORCEINLINE size_t GetIndex() const { return Index; }
 		private:
-			const TBitArray<Allocator>& Array;
-			int32 Index;
+			const BitArray&	Array;
+			size_t			Index;
 		};
-
-		FORCEINLINE const uint32* GetData() const
-		{
-			return (uint32*)AllocatorInstance.GetAllocation();
-		}
-
-		FORCEINLINE uint32* GetData()
-		{
-			return (uint32*)AllocatorInstance.GetAllocation();
-		}
-
-	private:
-		AllocatorType AllocatorInstance;
-		int32         NumBits;
-		int32         MaxBits;
-
-		FORCENOINLINE void Realloc(int32 PreviousNumBits)
-		{
-			const uint32 PreviousNumDWORDs = BitArrayHelper::CalculateNumWords(PreviousNumBits);
-			const uint32 MaxDWORDs = BitArrayHelper::CalculateNumWords(MaxBits);
-
-			AllocatorInstance.ResizeAllocation(PreviousNumDWORDs, MaxDWORDs, sizeof(uint32));
-
-			if (MaxDWORDs)
-			{
-				Memzero((uint32*)AllocatorInstance.GetAllocation() + PreviousNumDWORDs, (MaxDWORDs - PreviousNumDWORDs) * sizeof(uint32));
-			}
-		}
 	};
-
 }
 
 // SetBit Iterator，只访问被设为true的bit 
 namespace Fuko
 {
-	template<typename Allocator>
 	class TConstSetBitIterator : public FRelativeBitReference
 	{
 	public:
-
-		/** Constructor. */
-		TConstSetBitIterator(const TBitArray<Allocator>& InArray, int32 StartIndex = 0)
+		TConstSetBitIterator(const BitArray& InArray, size_t StartIndex = 0)
 			: FRelativeBitReference(StartIndex)
 			, Array(InArray)
 			, UnvisitedBitMask((~0U) << (StartIndex & (NumBitsPerDWORD - 1)))
@@ -876,13 +817,10 @@ namespace Fuko
 			}
 		}
 
-		/** std::forwards iteration operator. */
 		FORCEINLINE TConstSetBitIterator& operator++()
 		{
-			// Mark the current bit as visited.
 			UnvisitedBitMask &= ~this->Mask;
 
-			// Find the first set bit that hasn't been visited yet.
 			FindFirstSetBit();
 
 			return *this;
@@ -890,7 +828,6 @@ namespace Fuko
 
 		FORCEINLINE friend bool operator==(const TConstSetBitIterator& Lhs, const TConstSetBitIterator& Rhs)
 		{
-			// We only need to compare the bit index and the array... all the rest of the state is unobservable.
 			return Lhs.CurrentBitIndex == Rhs.CurrentBitIndex && &Lhs.Array == &Rhs.Array;
 		}
 
@@ -899,38 +836,34 @@ namespace Fuko
 			return !(Lhs == Rhs);
 		}
 
-		/** conversion to "bool" returning true if the iterator is valid. */
 		FORCEINLINE explicit operator bool() const
 		{
 			return CurrentBitIndex < Array.Num();
 		}
-		/** inverse of the "bool" operator */
+
 		FORCEINLINE bool operator !() const
 		{
 			return !(bool)*this;
 		}
 
-		/** Index accessor. */
-		FORCEINLINE int32 GetIndex() const
+		FORCEINLINE size_t GetIndex() const
 		{
 			return CurrentBitIndex;
 		}
 
 	private:
+		const BitArray& Array;
 
-		const TBitArray<Allocator>& Array;
+		uint32		UnvisitedBitMask;	// mask to skip start bits 
+		size_t		CurrentBitIndex;	// current reach bit index
+		size_t		BaseBitIndex;		// bit index that we begin to find 
 
-		uint32 UnvisitedBitMask;
-		int32 CurrentBitIndex;
-		int32 BaseBitIndex;
-
-		/** Find the first set bit starting with the current bit, inclusive. */
 		void FindFirstSetBit()
 		{
-			const uint32* ArrayData = Array.GetData();
-			const int32   ArrayNum = Array.Num();
-			const int32   LastDWORDIndex = (ArrayNum - 1) / NumBitsPerDWORD;
-
+			const uint32*	ArrayData = Array.GetData();
+			const size_t	ArrayNum = Array.Num();
+			const size_t	LastDWORDIndex = (ArrayNum - 1) / NumBitsPerDWORD;
+		
 			// Advance to the next non-zero uint32.
 			uint32 RemainingBitMask = ArrayData[this->DWORDIndex] & UnvisitedBitMask;
 			while (!RemainingBitMask)
@@ -967,15 +900,14 @@ namespace Fuko
 		}
 	};
 
-	template<typename Allocator, typename OtherAllocator>
 	class TConstDualSetBitIterator : public FRelativeBitReference
 	{
 	public:
 
 		/** Constructor. */
 		FORCEINLINE TConstDualSetBitIterator(
-			const TBitArray<Allocator>& InArrayA,
-			const TBitArray<OtherAllocator>& InArrayB,
+			const BitArray& InArrayA,
+			const BitArray& InArrayB,
 			int32 StartIndex = 0
 		)
 			: FRelativeBitReference(StartIndex)
@@ -1017,19 +949,19 @@ namespace Fuko
 		}
 
 		/** Index accessor. */
-		FORCEINLINE int32 GetIndex() const
+		FORCEINLINE size_t GetIndex() const
 		{
 			return CurrentBitIndex;
 		}
 
 	private:
 
-		const TBitArray<Allocator>& ArrayA;
-		const TBitArray<OtherAllocator>& ArrayB;
+		const BitArray& ArrayA;
+		const BitArray& ArrayB;
 
-		uint32 UnvisitedBitMask;
-		int32 CurrentBitIndex;
-		int32 BaseBitIndex;
+		uint32 UnvisitedBitMask;	// mask to skip start bits 
+		size_t CurrentBitIndex;		// current reach bit index
+		size_t BaseBitIndex;		// bit index that we begin to find 
 
 		/** Find the first bit that is set in both arrays, starting with the current bit, inclusive. */
 		void FindFirstSetBit()
@@ -1044,7 +976,7 @@ namespace Fuko
 			{
 				this->DWORDIndex++;
 				BaseBitIndex += NumBitsPerDWORD;
-				const int32 LastDWORDIndex = (ArrayA.Num() - 1) / NumBitsPerDWORD;
+				const size_t LastDWORDIndex = (ArrayA.Num() - 1) / NumBitsPerDWORD;
 				if (this->DWORDIndex <= LastDWORDIndex)
 				{
 					RemainingBitMask = ArrayDataA[this->DWORDIndex] & ArrayDataB[this->DWORDIndex];

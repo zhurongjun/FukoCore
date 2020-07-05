@@ -18,26 +18,15 @@
 #include "Templates/Atomic.h"
 #include "Templates/Tuple.h"
 #include "Templates/Pair.h"
-#include "Containers/SparseArray.h"
 #include "Templates/Models.h"
-#include "Containers/Set.h"
-#include "Containers/Map.h"
+#include "Containers/BitArray.h"
+#include "Containers/SparseArray.h"
+
 
 int main()
 {
-	Fuko::TMap<int, float> Mapbb;
-	Fuko::TArray<int> arr;
-	
-	Fuko::TTuple<int, int> tpa = Fuko::MakeTuple(10, 10);
-
-	Mapbb.FindOrAdd(10, 4654546.f);
-	Mapbb.FindOrAdd(100, 463545.f);
-	Mapbb.FindOrAdd(222, 26454.f);
-
-	for (auto pair : Mapbb)
-	{
-		std::cout << "Key: " << pair.Key << "\tValue: " << pair.Value << std::endl;
-	}
+	Fuko::BitArray arr;
+	Fuko::TSparseArray<int> sparseArr;
 
 	system("pause");
 	return 0;

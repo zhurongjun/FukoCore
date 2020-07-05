@@ -551,5 +551,8 @@
     <ClInclude Include="Include\Containers\Map.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Include\Containers\AllocatorsPmr.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

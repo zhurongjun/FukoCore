@@ -12,13 +12,6 @@
 #define TSPARSEARRAY_RANGED_FOR_CHECKS 0 
 #endif // DEBUG
 
-// std::forward
-namespace Fuko
-{
-	template<typename ElementType, typename Allocator = FDefaultSparseArrayAllocator >
-	class TSparseArray;
-}
-
 // Struct
 namespace Fuko
 {
@@ -57,31 +50,158 @@ namespace Fuko
 // TSparseArray
 namespace Fuko
 {
-	template<typename InElementType, typename Allocator>
-	class TSparseArray
+	template<typename T>
+	class TSparseArray final
 	{
-		using ElementType = InElementType;
+		using ElementType = T;
 
-		template <typename, typename>
-		friend class TScriptSparseArray;
+		// 使用占位符来避免TArray实例化冗余的元素(防止Free部分的元素依旧被调用构造) 
+		using FElementOrFreeListLink = TSparseArrayElementOrFreeListLink<TAlignedBytes<sizeof(ElementType), alignof(ElementType)>>;
+		using DataArrayType = TArray<FElementOrFreeListLink>;
+		
+		DataArrayType	m_Data;				// contains all element 
+		BitArray		m_AllocationFlags;	// whether the element is be set
+		int32			m_FirstFreeIndex;	// first free index in data array
+		int32			m_NumFreeIndices;	// free indices num
+
+	private:
+		// for sparse array compare 
+		template <typename Predicate>
+		class FElementCompareClass
+		{
+			const Predicate& Pred;
+
+		public:
+			FElementCompareClass(const Predicate& InPredicate)
+				: Pred(InPredicate)
+			{}
+
+			bool operator()(const FElementOrFreeListLink& A, const FElementOrFreeListLink& B) const
+			{
+				return Pred(*(ElementType*)&A.ElementData, *(ElementType*)&B.ElementData);
+			}
+		};
+
+		FElementOrFreeListLink& GetData(int32 Index) { return m_Data[Index];}
+		const FElementOrFreeListLink& GetData(int32 Index) const { return m_Data[Index]; }
 
 	public:
+		// construct 
+		TSparseArray(IAllocator* BitArrayAlloc = DefaultAllocator(), IAllocator* ElementAlloc = DefaultAllocator())
+			: m_Data(ElementAlloc)
+			, m_AllocationFlags(BitArrayAlloc)
+			, m_FirstFreeIndex(-1)
+			, m_NumFreeIndices(0)
+		{}
 
-		// Destructor
+		// copy construct 
+		TSparseArray(const TSparseArray& InCopy, IAllocator* BitArrayAlloc = DefaultAllocator(), IAllocator* ElementAlloc = DefaultAllocator())
+			: m_Data(ElementAlloc)
+			, m_AllocationFlags(BitArrayAlloc)
+			, m_FirstFreeIndex(-1)
+			, m_NumFreeIndices(0)
+		{
+			*this = InCopy;
+		}
+
+		// move construct 
+		TSparseArray(TSparseArray&& Other)
+			: m_Data(std::move(Other.m_Data))
+			, m_AllocationFlags(std::move(Other.m_AllocationFlags))
+			, m_FirstFreeIndex(Other.m_FirstFreeIndex)
+			, m_NumFreeIndices(Other.m_NumFreeIndices)
+		{
+			Other.m_FirstFreeIndex = -1;
+			Other.NumFreeIndices = 0;
+		}
+
+		// copy assign operator 
+		TSparseArray& operator=(const TSparseArray& Other)
+		{
+			if (this == &Other) return *this;
+
+			int32 SrcMax = Other.GetMaxIndex();
+
+			// Reallocate the array.
+			Empty(SrcMax);
+			m_Data.AddUninitialized(SrcMax);
+
+			// Copy the other array's element allocation state.
+			m_FirstFreeIndex = Other.m_FirstFreeIndex;
+			m_NumFreeIndices = Other.m_NumFreeIndices;
+			m_AllocationFlags = Other.m_AllocationFlags;
+
+			if constexpr (!std::is_trivially_copy_constructible_v<ElementType>)
+			{
+				FElementOrFreeListLink* DestData = (FElementOrFreeListLink*)m_Data.GetData();
+				const FElementOrFreeListLink* SrcData = (FElementOrFreeListLink*)Other.m_Data.GetData();
+
+				for (int32 Index = 0; Index < SrcMax; ++Index)
+				{
+					FElementOrFreeListLink& DestElement = DestData[Index];
+					const FElementOrFreeListLink& SrcElement = SrcData[Index];
+					if (Other.IsAllocated(Index))
+					{
+						// call copy construct
+						::new((uint8*)&DestElement.ElementData) ElementType(*(const ElementType*)&SrcElement.ElementData);
+					}
+					else
+					{
+						// copy free list info 
+						DestElement.PrevFreeIndex = SrcElement.PrevFreeIndex;
+						DestElement.NextFreeIndex = SrcElement.NextFreeIndex;
+					}
+				}
+			}
+			else
+			{
+				// Use the much faster path for types that allow it
+				Memcpy(m_Data.GetData(), Other.m_Data.GetData(), sizeof(FElementOrFreeListLink) * SrcMax);
+			}
+
+			return *this;
+		}
+
+		// move assign operator 
+		TSparseArray& operator=(TSparseArray&& Other)
+		{
+			if (this != &Other)
+			{
+				// Destruct the allocated elements.
+				if constexpr (!std::is_trivially_destructible_v<ElementType>::Value)
+				{
+					for (ElementType& Element : *this)
+					{
+						DestructItem(&Element);
+					}
+				}
+
+				m_Data = std::move(Other.Data);
+				m_AllocationFlags = std::move(Other.m_AllocationFlags);
+
+				m_FirstFreeIndex = Other.m_FirstFreeIndex;
+				m_NumFreeIndices = Other.m_NumFreeIndices;
+				Other.m_FirstFreeIndex = -1;
+				Other.m_NumFreeIndices = 0;
+			}
+			return *this;
+		}
+		
+		// destructor
 		~TSparseArray()
 		{
 			Empty();
 		}
 
-		/** Marks an index as allocated, and returns information about the allocation. */
+		// allocate index, set the index as allocated, but won't call construct 
 		FSparseArrayAllocationInfo AllocateIndex(int32 Index)
 		{
 			check(Index >= 0);
 			check(Index < GetMaxIndex());
-			check(!AllocationFlags[Index]);
+			check(!m_AllocationFlags[Index]);
 
 			// Flag the element as allocated.
-			AllocationFlags[Index] = true;
+			m_AllocationFlags[Index] = true;
 
 			// Set the allocation info.
 			FSparseArrayAllocationInfo Result;
@@ -91,84 +211,63 @@ namespace Fuko
 			return Result;
 		}
 
-		/**
-		 * Allocates space for an element in the array.  The element is not initialized, and you must use the corresponding placement new operator
-		 * to construct the element in the allocated memory.
-		 */
+		// special add 
 		FSparseArrayAllocationInfo AddUninitialized()
 		{
 			int32 Index;
-			if (NumFreeIndices)
+			if (m_NumFreeIndices)
 			{
 				// Remove and use the first index from the list of free elements.
-				Index = FirstFreeIndex;
-				FirstFreeIndex = GetData(FirstFreeIndex).NextFreeIndex;
-				--NumFreeIndices;
-				if (NumFreeIndices)
+				Index = m_FirstFreeIndex;
+				m_FirstFreeIndex = GetData(m_FirstFreeIndex).NextFreeIndex;
+				--m_NumFreeIndices;
+				if (m_NumFreeIndices)
 				{
-					GetData(FirstFreeIndex).PrevFreeIndex = -1;
+					GetData(m_FirstFreeIndex).PrevFreeIndex = -1;
 				}
 			}
 			else
 			{
 				// Add a new element.
-				Index = Data.AddUninitialized(1);
-				AllocationFlags.Add(false);
+				Index = m_Data.AddUninitialized(1);
+				m_AllocationFlags.Add(false);
 			}
 
 			return AllocateIndex(Index);
 		}
-
-		/** Adds an element to the array. */
-		int32 Add(const ElementType& Element)
-		{
-			FSparseArrayAllocationInfo Allocation = AddUninitialized();
-			new(Allocation) ElementType(Element);
-			return Allocation.Index;
-		}
-
-		/** Adds an element to the array. */
-		int32 Add(ElementType&& Element)
-		{
-			FSparseArrayAllocationInfo Allocation = AddUninitialized();
-			new(Allocation) ElementType(std::move(Element));
-			return Allocation.Index;
-		}
-
 		FSparseArrayAllocationInfo AddUninitializedAtLowestFreeIndex(int32& LowestFreeIndexSearchStart)
 		{
 			int32 Index;
-			if (NumFreeIndices)
+			if (m_NumFreeIndices)
 			{
-				Index = AllocationFlags.FindAndSetFirstZeroBit(LowestFreeIndexSearchStart);
+				Index = m_AllocationFlags.FindAndSetFirstZeroBit(LowestFreeIndexSearchStart);
 				LowestFreeIndexSearchStart = Index + 1;
 
 				auto& IndexData = GetData(Index);
 
 				// Update FirstFreeIndex
-				if (FirstFreeIndex == Index)
+				if (m_FirstFreeIndex == Index)
 				{
-					FirstFreeIndex = IndexData.NextFreeIndex;
+					m_FirstFreeIndex = IndexData.NextFreeIndex;
 				}
 
-				// Link our next and prev free nodes together
+				// Link the linked list for remove a node 
 				if (IndexData.NextFreeIndex >= 0)
 				{
 					GetData(IndexData.NextFreeIndex).PrevFreeIndex = IndexData.PrevFreeIndex;
 				}
-
 				if (IndexData.PrevFreeIndex >= 0)
 				{
 					GetData(IndexData.PrevFreeIndex).NextFreeIndex = IndexData.NextFreeIndex;
 				}
 
-				--NumFreeIndices;
+				--m_NumFreeIndices;
 			}
 			else
 			{
 				// Add a new element.
-				Index = Data.AddUninitialized(1);
-				AllocationFlags.Add(true);
+				Index = m_Data.AddUninitialized(1);
+				m_AllocationFlags.Add(true);
 			}
 
 			FSparseArrayAllocationInfo Result;
@@ -177,10 +276,19 @@ namespace Fuko
 			return Result;
 		}
 
-		/**
-		 * Add an element at the lowest free index, instead of the last freed index.
-		 * This requires a search which can be accelerated with LowestFreeIndexSearchStart.
-		 */
+		// add
+		int32 Add(const ElementType& Element)
+		{
+			FSparseArrayAllocationInfo Allocation = AddUninitialized();
+			new(Allocation) ElementType(Element);
+			return Allocation.Index;
+		}
+		int32 Add(ElementType&& Element)
+		{
+			FSparseArrayAllocationInfo Allocation = AddUninitialized();
+			new(Allocation) ElementType(std::move(Element));
+			return Allocation.Index;
+		}
 		int32 AddAtLowestFreeIndex(const ElementType& Element, int32& LowestFreeIndexSearchStart)
 		{
 			FSparseArrayAllocationInfo Allocation = AddUninitializedAtLowestFreeIndex(LowestFreeIndexSearchStart);
@@ -188,36 +296,33 @@ namespace Fuko
 			return Allocation.Index;
 		}
 
-		/**
-		 * Allocates space for an element in the array at a given index.  The element is not initialized, and you must use the corresponding placement new operator
-		 * to construct the element in the allocated memory.
-		 */
+		// special insert 
 		FSparseArrayAllocationInfo InsertUninitialized(int32 Index)
 		{
 			// Enlarge the array to include the given index.
-			if (Index >= Data.Num())
+			if (Index >= m_Data.Num())
 			{
-				Data.AddUninitialized(Index + 1 - Data.Num());
-				while (AllocationFlags.Num() < Data.Num())
+				m_Data.AddUninitialized(Index + 1 - m_Data.Num());
+				while (m_AllocationFlags.Num() < m_Data.Num())
 				{
-					const int32 FreeIndex = AllocationFlags.Num();
+					const int32 FreeIndex = m_AllocationFlags.Num();
 					GetData(FreeIndex).PrevFreeIndex = -1;
-					GetData(FreeIndex).NextFreeIndex = FirstFreeIndex;
-					if (NumFreeIndices)
+					GetData(FreeIndex).NextFreeIndex = m_FirstFreeIndex;
+					if (m_NumFreeIndices)
 					{
-						GetData(FirstFreeIndex).PrevFreeIndex = FreeIndex;
+						GetData(m_FirstFreeIndex).PrevFreeIndex = FreeIndex;
 					}
-					FirstFreeIndex = FreeIndex;
-					always_check(AllocationFlags.Add(false) == FreeIndex);
-					++NumFreeIndices;
+					m_FirstFreeIndex = FreeIndex;
+					always_check(m_AllocationFlags.Add(false) == FreeIndex);
+					++m_NumFreeIndices;
 				};
 			}
 
 			// Verify that the specified index is free.
-			check(!AllocationFlags[Index]);
+			check(!m_AllocationFlags[Index]);
 
 			// Remove the index from the list of free elements.
-			--NumFreeIndices;
+			--m_NumFreeIndices;
 			const int32 PrevFreeIndex = GetData(Index).PrevFreeIndex;
 			const int32 NextFreeIndex = GetData(Index).NextFreeIndex;
 			if (PrevFreeIndex != -1)
@@ -226,7 +331,7 @@ namespace Fuko
 			}
 			else
 			{
-				FirstFreeIndex = NextFreeIndex;
+				m_FirstFreeIndex = NextFreeIndex;
 			}
 			if (NextFreeIndex != -1)
 			{
@@ -236,18 +341,16 @@ namespace Fuko
 			return AllocateIndex(Index);
 		}
 
-		/**
-		 * Inserts an element to the array.
-		 */
+		// insert 
 		void Insert(int32 Index, typename TTypeTraits<ElementType>::ConstInitType Element)
 		{
 			new(InsertUninitialized(Index)) ElementType(Element);
 		}
 
-		/** Removes Count elements from the array, starting from Index. */
+		// remove at 
 		void RemoveAt(int32 Index, int32 Count = 1)
 		{
-			if (!std::is_trivially_destructible_v<ElementType>::Value)
+			if constexpr (!std::is_trivially_destructible_v<ElementType>::Value)
 			{
 				for (int32 It = Index, ItCount = Count; ItCount; ++It, --ItCount)
 				{
@@ -258,33 +361,30 @@ namespace Fuko
 			RemoveAtUninitialized(Index, Count);
 		}
 
-		/** Removes Count elements from the array, starting from Index, without destructing them. */
+		// remove, but won't destruct item 
 		void RemoveAtUninitialized(int32 Index, int32 Count = 1)
 		{
 			for (; Count; --Count)
 			{
-				check(AllocationFlags[Index]);
+				check(m_AllocationFlags[Index]);
 
 				// Mark the element as free and add it to the free element list.
-				if (NumFreeIndices)
+				if (m_NumFreeIndices)
 				{
-					GetData(FirstFreeIndex).PrevFreeIndex = Index;
+					GetData(m_FirstFreeIndex).PrevFreeIndex = Index;
 				}
 				auto& IndexData = GetData(Index);
 				IndexData.PrevFreeIndex = -1;
-				IndexData.NextFreeIndex = NumFreeIndices > 0 ? FirstFreeIndex : INDEX_NONE;
-				FirstFreeIndex = Index;
-				++NumFreeIndices;
-				AllocationFlags[Index] = false;
+				IndexData.NextFreeIndex = m_NumFreeIndices > 0 ? m_FirstFreeIndex: INDEX_NONE;
+				m_FirstFreeIndex = Index;
+				++m_NumFreeIndices;
+				m_AllocationFlags[Index] = false;
 
 				++Index;
 			}
 		}
 
-		/**
-		 * Removes all elements from the array, potentially leaving space allocated for an expected number of elements about to be added.
-		 * @param ExpectedNumElements - The expected number of elements about to be added.
-		 */
+		// set num & empty & shrink...
 		void Empty(int32 ExpectedNumElements = 0)
 		{
 			// Destruct the allocated elements.
@@ -298,13 +398,11 @@ namespace Fuko
 			}
 
 			// Free the allocated elements.
-			Data.Empty(ExpectedNumElements);
-			FirstFreeIndex = -1;
-			NumFreeIndices = 0;
-			AllocationFlags.Empty(ExpectedNumElements);
+			m_Data.Empty(ExpectedNumElements);
+			m_FirstFreeIndex = -1;
+			m_NumFreeIndices = 0;
+			m_AllocationFlags.Empty(ExpectedNumElements);
 		}
-
-		/** Empties the array, but keep its allocated memory as slack. */
 		void Reset()
 		{
 			// Destruct the allocated elements.
@@ -318,63 +416,54 @@ namespace Fuko
 			}
 
 			// Free the allocated elements.
-			Data.Reset();
-			FirstFreeIndex = -1;
-			NumFreeIndices = 0;
-			AllocationFlags.Reset();
+			m_Data.Reset();
+			m_FirstFreeIndex = -1;
+			m_NumFreeIndices = 0;
+			m_AllocationFlags.Reset();
 		}
-
-		/**
-		 * Preallocates enough memory to contain the specified number of elements.
-		 *
-		 * @param	ExpectedNumElements		the total number of elements that the array will have
-		 */
 		void Reserve(int32 ExpectedNumElements)
 		{
-			if (ExpectedNumElements > Data.Num())
+			if (ExpectedNumElements < m_Data.Num()) return;
+			
+			const int32 ElementsToAdd = ExpectedNumElements - m_Data.Num();
+
+			// allocate memory in the array itself
+			int32 ElementIndex = m_Data.AddUninitialized(ElementsToAdd);
+
+			// now mark the new elements as free
+			for (int32 FreeIndex = ExpectedNumElements - 1; FreeIndex >= ElementIndex; --FreeIndex)
 			{
-				const int32 ElementsToAdd = ExpectedNumElements - Data.Num();
-
-				// allocate memory in the array itself
-				int32 ElementIndex = Data.AddUninitialized(ElementsToAdd);
-
-				// now mark the new elements as free
-				for (int32 FreeIndex = ExpectedNumElements - 1; FreeIndex >= ElementIndex; --FreeIndex)
+				if (m_NumFreeIndices)
 				{
-					if (NumFreeIndices)
-					{
-						GetData(FirstFreeIndex).PrevFreeIndex = FreeIndex;
-					}
-					GetData(FreeIndex).PrevFreeIndex = -1;
-					GetData(FreeIndex).NextFreeIndex = NumFreeIndices > 0 ? FirstFreeIndex : INDEX_NONE;
-					FirstFreeIndex = FreeIndex;
-					++NumFreeIndices;
+					GetData(m_FirstFreeIndex).PrevFreeIndex = FreeIndex;
 				}
+				GetData(FreeIndex).PrevFreeIndex = -1;
+				GetData(FreeIndex).NextFreeIndex = m_NumFreeIndices> 0 ? m_NumFreeIndices : INDEX_NONE;
+				m_FirstFreeIndex = FreeIndex;
+				++m_NumFreeIndices;
+			}
 
-				if (ElementsToAdd == ExpectedNumElements)
-				{
-					AllocationFlags.Init(false, ElementsToAdd);
-				}
-				else
-				{
-					AllocationFlags.Add(false, ElementsToAdd);
-				}
+			if (ElementsToAdd == ExpectedNumElements)
+			{
+				m_AllocationFlags.Init(false, ElementsToAdd);
+			}
+			else
+			{
+				m_AllocationFlags.Add(false, ElementsToAdd);
 			}
 		}
-
-		/** Shrinks the array's storage to avoid slack. */
 		void Shrink()
 		{
 			// Determine the highest allocated index in the data array.
-			int32 MaxAllocatedIndex = AllocationFlags.FindLast(true);
+			int32 MaxAllocatedIndex = m_AllocationFlags.FindLast(true);
 
 			const int32 FirstIndexToRemove = MaxAllocatedIndex + 1;
-			if (FirstIndexToRemove < Data.Num())
+			if (FirstIndexToRemove < m_Data.Num())
 			{
-				if (NumFreeIndices > 0)
+				if (m_NumFreeIndices > 0)
 				{
 					// Look for elements in the free list that are in the memory to be freed.
-					int32 FreeIndex = FirstFreeIndex;
+					int32 FreeIndex = m_FirstFreeIndex;
 					while (FreeIndex != INDEX_NONE)
 					{
 						if (FreeIndex >= FirstIndexToRemove)
@@ -391,9 +480,9 @@ namespace Fuko
 							}
 							else
 							{
-								FirstFreeIndex = NextFreeIndex;
+								m_FirstFreeIndex = NextFreeIndex;
 							}
-							--NumFreeIndices;
+							--m_NumFreeIndices;
 
 							FreeIndex = NextFreeIndex;
 						}
@@ -405,44 +494,40 @@ namespace Fuko
 				}
 
 				// Truncate unallocated elements at the end of the data array.
-				Data.RemoveAt(FirstIndexToRemove, Data.Num() - FirstIndexToRemove);
-				AllocationFlags.RemoveAt(FirstIndexToRemove, AllocationFlags.Num() - FirstIndexToRemove);
+				m_Data.RemoveAt(FirstIndexToRemove, m_Data.Num() - FirstIndexToRemove);
+				m_AllocationFlags.RemoveAt(FirstIndexToRemove, m_AllocationFlags.Num() - FirstIndexToRemove);
 			}
 
 			// Shrink the data array.
-			Data.Shrink();
+			m_Data.Shrink();
 		}
 
-		/** Compacts the allocated elements into a contiguous index range. */
-		/** Returns true if any elements were relocated, false otherwise. */
+		// compact elements return whether any element been removed
 		bool Compact()
 		{
-			int32 NumFree = NumFreeIndices;
-			if (NumFree == 0)
-			{
-				return false;
-			}
+			if (m_NumFreeIndices == 0) return false;
 
+			int32 NumFree = m_NumFreeIndices;
 			bool bResult = false;
+			FElementOrFreeListLink* ElementData = m_Data.GetData();
 
-			FElementOrFreeListLink* ElementData = Data.GetData();
-
-			int32 EndIndex = Data.Num();
+			int32 EndIndex = m_Data.Num();
 			int32 TargetIndex = EndIndex - NumFree;
-			int32 FreeIndex = FirstFreeIndex;
+			int32 FreeIndex = m_FirstFreeIndex;
 			while (FreeIndex != -1)
 			{
 				int32 NextFreeIndex = GetData(FreeIndex).NextFreeIndex;
 				if (FreeIndex < TargetIndex)
 				{
-					// We need an element here
+					// find last allocated element
 					do
 					{
 						--EndIndex;
-					} while (!AllocationFlags[EndIndex]);
+					} while (!m_AllocationFlags[EndIndex]);
 
-					RelocateConstructItems<FElementOrFreeListLink>(ElementData + FreeIndex, ElementData + EndIndex, 1);
-					AllocationFlags[FreeIndex] = true;
+					// move element to the hole 
+					RelocateConstructItems(ElementData + FreeIndex, ElementData + EndIndex, 1);
+					m_AllocationFlags[FreeIndex] = true;
 
 					bResult = true;
 				}
@@ -450,41 +535,39 @@ namespace Fuko
 				FreeIndex = NextFreeIndex;
 			}
 
-			Data.RemoveAt(TargetIndex, NumFree);
-			AllocationFlags.RemoveAt(TargetIndex, NumFree);
+			m_Data.RemoveAt(TargetIndex, NumFree);
+			m_AllocationFlags.RemoveAt(TargetIndex, NumFree);
 
-			NumFreeIndices = 0;
-			FirstFreeIndex = -1;
+			m_NumFreeIndices = 0;
+			m_FirstFreeIndex = -1;
 
 			return bResult;
 		}
-
-		/** Compacts the allocated elements into a contiguous index range. Does not change the iteration order of the elements. */
-		/** Returns true if any elements were relocated, false otherwise. */
 		bool CompactStable()
 		{
-			if (NumFreeIndices == 0)
-			{
-				return false;
-			}
+			if (m_NumFreeIndices == 0) return false;
 
 			// Copy the existing elements to a new array.
-			TSparseArray<ElementType, Allocator> CompactedArray;
+			TSparseArray<ElementType> CompactedArray(m_AllocationFlags.GetAllocator(),m_Data.GetAllocator());
 			CompactedArray.Empty(Num());
 			for (TConstIterator It(*this); It; ++It)
 			{
-				new(CompactedArray.AddUninitialized()) ElementType(*It);
+				new(CompactedArray.AddUninitialized()) ElementType(std::move(*It));
 			}
 
 			// Replace this array with the compacted array.
-			Exchange(*this, CompactedArray);
+			Swap(*this, CompactedArray);
 
 			return true;
 		}
 
-		/** Sorts the elements using the provided comparison class. */
-		template<typename PREDICATE_CLASS>
-		void Sort(const PREDICATE_CLASS& Predicate)
+		// sort 
+		void Sort()
+		{
+			Sort(TLess<ElementType>());
+		}
+		template<typename Predicate>
+		void Sort(const Predicate& Pred)
 		{
 			if (Num() > 0)
 			{
@@ -492,19 +575,15 @@ namespace Fuko
 				Compact();
 
 				// Sort the elements according to the provided comparison class.
-				::Sort(&GetData(0), Num(), FElementCompareClass< PREDICATE_CLASS >(Predicate));
+				::Sort(&GetData(0), Num(), FElementCompareClass<Predicate>(Pred));
 			}
 		}
-
-		/** Sorts the elements assuming < operator is defined for ElementType. */
-		void Sort()
+		void StableSort()
 		{
-			Sort(TLess<ElementType>());
+			StableSort(TLess<ElementType>());
 		}
-
-		/** Stable sorts the elements using the provided comparison class. */
-		template<typename PREDICATE_CLASS>
-		void StableSort(const PREDICATE_CLASS& Predicate)
+		template<typename Predicate>
+		void StableSort(const Predicate& Pred)
 		{
 			if (Num() > 0)
 			{
@@ -512,42 +591,20 @@ namespace Fuko
 				CompactStable();
 
 				// Sort the elements according to the provided comparison class.
-				::StableSort(&GetData(0), Num(), FElementCompareClass<PREDICATE_CLASS>(Predicate));
+				::StableSort(&GetData(0), Num(), FElementCompareClass<Predicate>(Pred));
 			}
 		}
 
-		/** Stable sorts the elements assuming < operator is defined for ElementType. */
-		void StableSort()
-		{
-			StableSort(TLess<ElementType>());
-		}
+		// get information 
+		bool IsCompact() const { return m_NumFreeIndices == 0; }
+		bool IsAllocated(int32 Index) const { return m_AllocationFlags[Index]; }
+		int32 GetMaxIndex() const { return m_Data.Num(); }
+		int32 Num() const { return m_Data.Num() - m_NumFreeIndices; }
 
-		/**
-		 * Helper function to return the amount of memory allocated by this container
-		 * Only returns the size of allocations made directly by the container, not the elements themselves.
-		 * @return number of bytes allocated by this container
-		 */
-		uint32 GetAllocatedSize(void) const
-		{
-			return	(Data.Max()) * sizeof(FElementOrFreeListLink) +
-				AllocationFlags.GetAllocatedSize();
-		}
-
-		bool IsCompact() const
-		{
-			return NumFreeIndices == 0;
-		}
-
-		/**
-		 * Equality comparison operator.
-		 * Checks that both arrays have the same elements and element indices; that means that unallocated elements are signifigant!
-		 */
+		// compare 
 		friend bool operator==(const TSparseArray& A, const TSparseArray& B)
 		{
-			if (A.GetMaxIndex() != B.GetMaxIndex())
-			{
-				return false;
-			}
+			if (A.GetMaxIndex() != B.GetMaxIndex()) return false;
 
 			for (int32 ElementIndex = 0; ElementIndex < A.GetMaxIndex(); ElementIndex++)
 			{
@@ -568,145 +625,71 @@ namespace Fuko
 
 			return true;
 		}
-
-		/**
-		 * Inequality comparison operator.
-		 * Checks that both arrays have the same elements and element indices; that means that unallocated elements are signifigant!
-		 */
 		friend bool operator!=(const TSparseArray& A, const TSparseArray& B)
 		{
 			return !(A == B);
 		}
 
-		TSparseArray()
-			: FirstFreeIndex(-1)
-			, NumFreeIndices(0)
-		{}
-		TSparseArray(TSparseArray&& InCopy)
-		{
-			MoveOrCopy(*this, InCopy);
-		}
-		TSparseArray(const TSparseArray& InCopy)
-			: FirstFreeIndex(-1)
-			, NumFreeIndices(0)
-		{
-			*this = InCopy;
-		}
-
-		TSparseArray& operator=(TSparseArray&& InCopy)
-		{
-			if (this != &InCopy)
-			{
-				MoveOrCopy(*this, InCopy);
-			}
-			return *this;
-		}
-		TSparseArray& operator=(const TSparseArray& InCopy)
-		{
-			if (this != &InCopy)
-			{
-				int32 SrcMax = InCopy.GetMaxIndex();
-
-				// Reallocate the array.
-				Empty(SrcMax);
-				Data.AddUninitialized(SrcMax);
-
-				// Copy the other array's element allocation state.
-				FirstFreeIndex = InCopy.FirstFreeIndex;
-				NumFreeIndices = InCopy.NumFreeIndices;
-				AllocationFlags = InCopy.AllocationFlags;
-
-				// Determine whether we need per element construction or bulk copy is fine
-				if constexpr (!std::is_trivially_copy_constructible_v<ElementType>)
-				{
-					FElementOrFreeListLink* DestData = (FElementOrFreeListLink*)Data.GetData();
-					const FElementOrFreeListLink* SrcData = (FElementOrFreeListLink*)InCopy.Data.GetData();
-
-					// Use the inplace new to copy the element to an array element
-					for (int32 Index = 0; Index < SrcMax; ++Index)
-					{
-						FElementOrFreeListLink& DestElement = DestData[Index];
-						const FElementOrFreeListLink& SrcElement = SrcData[Index];
-						if (InCopy.IsAllocated(Index))
-						{
-							::new((uint8*)&DestElement.ElementData) ElementType(*(const ElementType*)&SrcElement.ElementData);
-						}
-						else
-						{
-							DestElement.PrevFreeIndex = SrcElement.PrevFreeIndex;
-							DestElement.NextFreeIndex = SrcElement.NextFreeIndex;
-						}
-					}
-				}
-				else
-				{
-					// Use the much faster path for types that allow it
-					Memcpy(Data.GetData(), InCopy.Data.GetData(), sizeof(FElementOrFreeListLink) * SrcMax);
-				}
-			}
-			return *this;
-		}
-
-	private:
-		template <typename SparseArrayType>
-		FORCEINLINE static typename void MoveOrCopy(SparseArrayType& ToArray, SparseArrayType& FromArray)
-		{
-			// Destruct the allocated elements.
-			if constexpr (!std::is_trivially_destructible_v<ElementType>::Value)
-			{
-				for (ElementType& Element : ToArray)
-				{
-					DestructItem(&Element);
-				}
-			}
-
-			ToArray.Data = (DataType&&)FromArray.Data;
-			ToArray.AllocationFlags = (AllocationBitArrayType&&)FromArray.AllocationFlags;
-
-			ToArray.FirstFreeIndex = FromArray.FirstFreeIndex;
-			ToArray.NumFreeIndices = FromArray.NumFreeIndices;
-			FromArray.FirstFreeIndex = -1;
-			FromArray.NumFreeIndices = 0;
-		}
-
-	public:
-		// Accessors.
+		// accessor
 		ElementType& operator[](int32 Index)
 		{
-			check(Index >= 0 && Index < Data.Num() && Index < AllocationFlags.Num());
+			check(Index >= 0 && Index < m_Data.Num() && Index < m_AllocationFlags.Num());
 			return *(ElementType*)&GetData(Index).ElementData;
 		}
 		const ElementType& operator[](int32 Index) const
 		{
-			check(Index >= 0 && Index < Data.Num() && Index < AllocationFlags.Num());
+			check(Index >= 0 && Index < m_Data.Num() && Index < m_AllocationFlags.Num());
 			return *(ElementType*)&GetData(Index).ElementData;
 		}
+		
+		// convert pointer to index 
 		int32 PointerToIndex(const ElementType* Ptr) const
 		{
-			check(Data.Num());
+			check(m_Data.Num());
 			int32 Index = Ptr - &GetData(0);
-			check(Index >= 0 && Index < Data.Num() && Index < AllocationFlags.Num() && AllocationFlags[Index]);
+			check(Index >= 0 && Index < m_Data.Num() && Index < m_AllocationFlags.Num() && m_AllocationFlags[Index]);
 			return Index;
 		}
+		
+		// check 
 		bool IsValidIndex(int32 Index) const
 		{
-			return AllocationFlags.IsValidIndex(Index) && AllocationFlags[Index];
+			return m_AllocationFlags.IsValidIndex(Index) && m_AllocationFlags[Index];
 		}
-		bool IsAllocated(int32 Index) const { return AllocationFlags[Index]; }
-		int32 GetMaxIndex() const { return Data.Num(); }
-		int32 Num() const { return Data.Num() - NumFreeIndices; }
-
+		
+		// debug check 
 		FORCEINLINE void CheckAddress(const ElementType* Addr) const
 		{
-			Data.CheckAddress(Addr);
+			m_Data.CheckAddress(Addr);
 		}
 
+		// append 
+		TSparseArray& operator+=(const TSparseArray& OtherArray)
+		{
+			this->Reserve(this->Num() + OtherArray.Num());
+			for (typename TSparseArray::TConstIterator It(OtherArray); It; ++It)
+			{
+				this->Add(*It);
+			}
+			return *this;
+		}
+		TSparseArray& operator+=(const TArray<ElementType>& OtherArray)
+		{
+			this->Reserve(this->Num() + OtherArray.Num());
+			for (int32 Idx = 0; Idx < OtherArray.Num(); Idx++)
+			{
+				this->Add(OtherArray[Idx]);
+			}
+			return *this;
+		}
+
+		//------------------------------------------Iterator---------------------------------------------
 	private:
 		template<bool bConst>
 		class TBaseIterator
 		{
 		public:
-			typedef TConstSetBitIterator<typename Allocator::BitArrayAllocator> BitArrayItType;
+			typedef TConstSetBitIterator BitArrayItType;
 
 		private:
 			typedef typename std::conditional_t<bConst, const TSparseArray, TSparseArray> ArrayType;
@@ -753,20 +736,16 @@ namespace Fuko
 		};
 
 	public:
-
-		/** Iterates over all allocated elements in a sparse array. */
 		class TIterator : public TBaseIterator<false>
 		{
 		public:
 			TIterator(TSparseArray& InArray)
-				: TBaseIterator<false>(InArray, TConstSetBitIterator<typename Allocator::BitArrayAllocator>(InArray.AllocationFlags))
-			{
-			}
+				: TBaseIterator<false>(InArray, TConstSetBitIterator(InArray.m_AllocationFlags))
+			{}
 
 			TIterator(TSparseArray& InArray, const typename TBaseIterator<false>::BitArrayItType& InBitArrayIt)
 				: TBaseIterator<false>(InArray, InBitArrayIt)
-			{
-			}
+			{}
 
 			/** Safely removes the current element from the array. */
 			void RemoveCurrent()
@@ -774,20 +753,16 @@ namespace Fuko
 				this->Array.RemoveAt(this->GetIndex());
 			}
 		};
-
-		/** Iterates over all allocated elements in a const sparse array. */
 		class TConstIterator : public TBaseIterator<true>
 		{
 		public:
 			TConstIterator(const TSparseArray& InArray)
-				: TBaseIterator<true>(InArray, TConstSetBitIterator<typename Allocator::BitArrayAllocator>(InArray.AllocationFlags))
-			{
-			}
+				: TBaseIterator<true>(InArray, TConstSetBitIterator(InArray.m_AllocationFlags))
+			{}
 
 			TConstIterator(const TSparseArray& InArray, const typename TBaseIterator<true>::BitArrayItType& InBitArrayIt)
 				: TBaseIterator<true>(InArray, InBitArrayIt)
-			{
-			}
+			{}
 		};
 
 #if TSPARSEARRAY_RANGED_FOR_CHECKS
@@ -797,8 +772,7 @@ namespace Fuko
 			TRangedForIterator(TSparseArray& InArray, const typename TBaseIterator<false>::BitArrayItType& InBitArrayIt)
 				: TIterator(InArray, InBitArrayIt)
 				, InitialNum(InArray.Num())
-			{
-			}
+			{}
 
 		private:
 			int32 InitialNum;
@@ -809,15 +783,13 @@ namespace Fuko
 				return *(TIterator*)&Lhs != *(TIterator*)&Rhs;
 			}
 		};
-
 		class TRangedForConstIterator : public TConstIterator
 		{
 		public:
 			TRangedForConstIterator(const TSparseArray& InArray, const typename TBaseIterator<true>::BitArrayItType& InBitArrayIt)
 				: TConstIterator(InArray, InBitArrayIt)
 				, InitialNum(InArray.Num())
-			{
-			}
+			{}
 
 		private:
 			int32 InitialNum;
@@ -832,34 +804,29 @@ namespace Fuko
 		using TRangedForIterator = TIterator;
 		using TRangedForConstIterator = TConstIterator;
 #endif
+	public:
+		FORCEINLINE TRangedForIterator      begin()			{ return TRangedForIterator(*this, TConstSetBitIterator(m_AllocationFlags)); }
+		FORCEINLINE TRangedForConstIterator begin() const	{ return TRangedForConstIterator(*this, TConstSetBitIterator(m_AllocationFlags)); }
+		FORCEINLINE TRangedForIterator      end()			{ return TRangedForIterator(*this, TConstSetBitIterator(m_AllocationFlags, m_AllocationFlags.Num())); }
+		FORCEINLINE TRangedForConstIterator end() const		{ return TRangedForConstIterator(*this, TConstSetBitIterator(m_AllocationFlags, m_AllocationFlags.Num())); }
 
-		/** Creates an iterator for the contents of this array */
+		// create iterator 
 		TIterator CreateIterator()
 		{
 			return TIterator(*this);
 		}
-
-		/** Creates a const iterator for the contents of this array */
 		TConstIterator CreateConstIterator() const
 		{
 			return TConstIterator(*this);
 		}
-
-	public:
-		FORCEINLINE TRangedForIterator      begin() { return TRangedForIterator(*this, TConstSetBitIterator<typename Allocator::BitArrayAllocator>(AllocationFlags)); }
-		FORCEINLINE TRangedForConstIterator begin() const { return TRangedForConstIterator(*this, TConstSetBitIterator<typename Allocator::BitArrayAllocator>(AllocationFlags)); }
-		FORCEINLINE TRangedForIterator      end() { return TRangedForIterator(*this, TConstSetBitIterator<typename Allocator::BitArrayAllocator>(AllocationFlags, AllocationFlags.Num())); }
-		FORCEINLINE TRangedForConstIterator end() const { return TRangedForConstIterator(*this, TConstSetBitIterator<typename Allocator::BitArrayAllocator>(AllocationFlags, AllocationFlags.Num())); }
-
 	public:
 		// 仅仅访问在两个稀疏数组中都有的元素 
-		template<typename SubsetAllocator = FDefaultBitArrayAllocator>
 		class TConstSubsetIterator
 		{
 		public:
-			TConstSubsetIterator(const TSparseArray& InArray, const TBitArray<SubsetAllocator>& InBitArray) :
+			TConstSubsetIterator(const TSparseArray& InArray, const BitArray& InBitArray) :
 				Array(InArray),
-				BitArrayIt(InArray.AllocationFlags, InBitArray)
+				BitArrayIt(InArray.m_AllocationFlags, InBitArray)
 			{}
 			FORCEINLINE TConstSubsetIterator& operator++()
 			{
@@ -884,76 +851,9 @@ namespace Fuko
 			FORCEINLINE const ElementType* operator->() const { return &Array(GetIndex()); }
 			FORCEINLINE const FRelativeBitReference& GetRelativeBitReference() const { return BitArrayIt; }
 		private:
-			const TSparseArray& Array;
-			TConstDualSetBitIterator<typename Allocator::BitArrayAllocator, SubsetAllocator> BitArrayIt;
+			const TSparseArray&			Array;
+			TConstDualSetBitIterator	BitArrayIt;
 		};
-
-		/** Concatenation operators */
-		TSparseArray& operator+=(const TSparseArray& OtherArray)
-		{
-			this->Reserve(this->Num() + OtherArray.Num());
-			for (typename TSparseArray::TConstIterator It(OtherArray); It; ++It)
-			{
-				this->Add(*It);
-			}
-			return *this;
-		}
-		TSparseArray& operator+=(const TArray<ElementType>& OtherArray)
-		{
-			this->Reserve(this->Num() + OtherArray.Num());
-			for (int32 Idx = 0; Idx < OtherArray.Num(); Idx++)
-			{
-				this->Add(OtherArray[Idx]);
-			}
-			return *this;
-		}
-
-	private:
-		// 使用占位符来避免TArray实例化冗余的元素(防止Free部分的元素依旧被调用构造) 
-		typedef TSparseArrayElementOrFreeListLink<
-			TAlignedBytes<sizeof(ElementType), alignof(ElementType)>
-		> FElementOrFreeListLink;
-
-		// 为稀疏数组的特殊数据存储创造的特殊套娃谓语判断 
-		template <typename PREDICATE_CLASS>
-		class FElementCompareClass
-		{
-			const PREDICATE_CLASS& Predicate;
-
-		public:
-			FElementCompareClass(const PREDICATE_CLASS& InPredicate)
-				: Predicate(InPredicate)
-			{}
-
-			bool operator()(const FElementOrFreeListLink& A, const FElementOrFreeListLink& B) const
-			{
-				return Predicate(*(ElementType*)&A.ElementData, *(ElementType*)&B.ElementData);
-			}
-		};
-
-		FElementOrFreeListLink& GetData(int32 Index)
-		{
-			return ((FElementOrFreeListLink*)Data.GetData())[Index];
-		}
-
-		const FElementOrFreeListLink& GetData(int32 Index) const
-		{
-			return ((FElementOrFreeListLink*)Data.GetData())[Index];
-		}
-
-		// 元素数据
-		typedef TArray<FElementOrFreeListLink, typename Allocator::ElementAllocator> DataType;
-		DataType Data;
-
-		// 标记数组中Index的状况 
-		typedef TBitArray<typename Allocator::BitArrayAllocator> AllocationBitArrayType;
-		AllocationBitArrayType AllocationFlags;
-
-		// 数组中第一个空闲元素的位置，同时也是FreeList的链表头
-		int32 FirstFreeIndex;
-		
-		// FreeList中的元素数量 
-		int32 NumFreeIndices;
 	};
 }
 

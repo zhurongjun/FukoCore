@@ -44,3 +44,11 @@ size_t Fuko::QuantizeSize(size_t Size, uint32 Alignment)
 void Fuko::Trim()
 {
 }
+
+namespace Fuko
+{
+	IAllocator* DefaultAllocator()
+	{
+		return nullptr;
+	}
+}

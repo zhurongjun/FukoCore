@@ -215,7 +215,7 @@ namespace Fuko
 {
 	// 在指定内存上构造对象
 	template <typename ElementType>
-	void DefaultConstructItems(void* Address, int32_t Count)
+	void DefaultConstructItems(ElementType* Address, size_t Count)
 	{
 		if constexpr (TIsZeroConstructType_v<ElementType>)
 		{
@@ -235,18 +235,7 @@ namespace Fuko
 
 	// 在指定内存上析构对象
 	template <typename ElementType>
-	void DestructItem(ElementType* Element)
-	{
-		// 防止类型拥有成员ElementType的typedef
-		typedef ElementType DestructItemsElementTypeTypedef;
-
-		if constexpr (!std::is_trivially_destructible_v<ElementType>)
-		{
-			Element->DestructItemsElementTypeTypedef::~DestructItemsElementTypeTypedef();
-		}
-	}
-	template <typename ElementType>
-	void DestructItems(ElementType* Element, int32_t Count)
+	void DestructItems(ElementType* Element, size_t Count = 1)
 	{
 		if constexpr (!std::is_trivially_destructible_v<ElementType>)
 		{
@@ -264,7 +253,7 @@ namespace Fuko
 
 	// 拷贝对象调用拷贝函数
 	template <typename DestinationElementType, typename SourceElementType>
-	void ConstructItems(void* Dest, const SourceElementType* Source, int32_t Count)
+	void ConstructItems(DestinationElementType* Dest, const SourceElementType* Source, size_t Count)
 	{
 		if constexpr (TIsBitwiseConstructible_v<DestinationElementType, SourceElementType>)
 		{
@@ -275,7 +264,7 @@ namespace Fuko
 			while (Count)
 			{
 				new (Dest) DestinationElementType(*Source);
-				++(DestinationElementType*&)Dest;
+				++Dest;
 				++Source;
 				--Count;
 			}
@@ -284,7 +273,7 @@ namespace Fuko
 
 	// 拷贝对象，调用=重载
 	template <typename ElementType>
-	void CopyAssignItems(ElementType* Dest, const ElementType* Source, int32_t Count)
+	void CopyAssignItems(ElementType* Dest, const ElementType* Source, size_t Count)
 	{
 		if constexpr (std::is_trivially_copy_assignable_v<ElementType>)
 		{
@@ -304,7 +293,7 @@ namespace Fuko
 
 	// 重定向对象
 	template <typename DestElementType, typename SrcElementType>
-	void RelocateConstructItems(void* Dest, const SrcElementType* Source, int32_t Count)
+	void RelocateConstructItems(DestElementType* Dest, const SrcElementType* Source, size_t Count)
 	{
 		if constexpr (TCanBitwiseRelocate_v<DestElementType, SrcElementType>)
 		{
@@ -327,7 +316,7 @@ namespace Fuko
 
 	// 调用移动构造
 	template <typename ElementType>
-	void MoveConstructItems(void* Dest, const ElementType* Source, int32_t Count)
+	void MoveConstructItems(ElementType* Dest, const ElementType* Source, size_t Count)
 	{
 		if constexpr (std::is_trivially_copy_constructible_v<ElementType>)
 		{
@@ -338,7 +327,7 @@ namespace Fuko
 			while (Count)
 			{
 				new (Dest) ElementType((ElementType&&)*Source);
-				++(ElementType*&)Dest;
+				++Dest;
 				++Source;
 				--Count;
 			}
@@ -347,12 +336,13 @@ namespace Fuko
 
 	// 调用移动拷贝
 	template <typename ElementType>
-	void MoveAssignItems(ElementType* Dest, const ElementType* Source, int32_t Count)
+	void MoveAssignItems(ElementType* Dest, const ElementType* Source, size_t Count)
 	{
-		if constexpr (std::is_trivially_copy_assignable_v<ElementType>)
+		if constexpr (std::is_trivially_move_assignable<ElementType>)
 		{
 			Memmove(Dest, Source, sizeof(ElementType) * Count);
 		}
+		else
 		{
 			while (Count)
 			{
@@ -366,7 +356,7 @@ namespace Fuko
 
 	// 比较对象
 	template <typename ElementType>
-	bool CompareItems(const ElementType* A, const ElementType* B, int32_t Count)
+	bool CompareItems(const ElementType* A, const ElementType* B, size_t Count)
 	{
 		if constexpr (TCanBitwiseCompare_v<ElementType>)
 		{
@@ -387,4 +377,10 @@ namespace Fuko
 			return true;
 		}
 	}
+}
+
+namespace Fuko
+{
+	class IAllocator;
+	IAllocator* DefaultAllocator();
 }
