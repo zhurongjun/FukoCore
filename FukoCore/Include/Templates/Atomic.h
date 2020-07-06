@@ -2,6 +2,7 @@
 #include "CoreConfig.h"
 #include "CoreType.h"
 #include <xatomic0.h>
+#include <atomic>
 
 namespace Fuko
 {

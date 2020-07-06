@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TestMain.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Memory\Memory.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -41,9 +38,6 @@
     <ClInclude Include="Include\Math\MathUtility.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Containers\Allocators.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Include\Containers\Array.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -51,9 +45,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Include\CoreConfig.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Containers\ContainerFwd.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Include\CoreType.h">
@@ -551,7 +542,7 @@
     <ClInclude Include="Include\Containers\Map.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Containers\AllocatorsPmr.h">
+    <ClInclude Include="Include\Memory\Allocators.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

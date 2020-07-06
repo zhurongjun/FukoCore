@@ -55,7 +55,6 @@ namespace Fuko
 	{
 	public:
 		TStaticHashTable();
-		TStaticHashTable(ENoInit);
 
 		/**
 		 * @fn void TStaticHashTable::Clear();
@@ -128,13 +127,6 @@ namespace Fuko
 		static_assert((HashSize & (HashSize - 1)) == 0, "Hash size must be power of 2");
 		static_assert(IndexSize - 1 < 0xffff, "Index 0xffff is reserved");
 		Clear();
-	}
-
-	template< uint16 HashSize, uint16 IndexSize >
-	FORCEINLINE TStaticHashTable< HashSize, IndexSize >::TStaticHashTable(ENoInit)
-	{
-		static_assert((HashSize & (HashSize - 1)) == 0, "Hash size must be power of 2");
-		static_assert(IndexSize - 1 < 0xffff, "Index 0xffff is reserved");
 	}
 
 	template< uint16 HashSize, uint16 IndexSize >

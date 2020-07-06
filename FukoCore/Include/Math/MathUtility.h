@@ -41,15 +41,15 @@ inline constexpr float MAX_FLT = 3.402823466e+38F;
 struct FMathGeneric
 {
 	// 截断小数
-	static CONSTEXPR FORCEINLINE int32_t TruncToInt(float F)
+	static constexpr FORCEINLINE int32_t TruncToInt(float F)
 	{
 		return (int32_t)F;
 	}
-	static CONSTEXPR FORCEINLINE float TruncToFloat(float F)
+	static constexpr FORCEINLINE float TruncToFloat(float F)
 	{
 		return (float)TruncToInt(F);
 	}
-	static CONSTEXPR FORCEINLINE double TruncToDouble(float F)
+	static constexpr FORCEINLINE double TruncToDouble(float F)
 	{
 		return (double)TruncToInt(F);
 	}
@@ -322,18 +322,18 @@ struct FMathGeneric
 	}
 
 	// Select
-	static CONSTEXPR FORCEINLINE float FloatSelect(float Comparand, float ValueGEZero, float ValueLTZero)
+	static constexpr FORCEINLINE float FloatSelect(float Comparand, float ValueGEZero, float ValueLTZero)
 	{
 		return Comparand >= 0.f ? ValueGEZero : ValueLTZero;
 	}
-	static CONSTEXPR FORCEINLINE double FloatSelect(double Comparand, double ValueGEZero, double ValueLTZero)
+	static constexpr FORCEINLINE double FloatSelect(double Comparand, double ValueGEZero, double ValueLTZero)
 	{
 		return Comparand >= 0.f ? ValueGEZero : ValueLTZero;
 	}
 
 	// 常用
 	template< class T >
-	static CONSTEXPR FORCEINLINE T Abs(const T A)
+	static constexpr FORCEINLINE T Abs(const T A)
 	{
 		return (A >= (T)0) ? A : -A;
 	}
@@ -342,17 +342,17 @@ struct FMathGeneric
 		return fabsf(A);
 	}
 	template< class T >
-	static CONSTEXPR FORCEINLINE T Sign(const T A)
+	static constexpr FORCEINLINE T Sign(const T A)
 	{
 		return (A > (T)0) ? (T)1 : ((A < (T)0) ? (T)-1 : (T)0);
 	}
 	template< class T >
-	static CONSTEXPR FORCEINLINE T Max(const T A, const T B)
+	static constexpr FORCEINLINE T Max(const T A, const T B)
 	{
 		return (A >= B) ? A : B;
 	}
 	template< class T >
-	static CONSTEXPR FORCEINLINE T Min(const T A, const T B)
+	static constexpr FORCEINLINE T Min(const T A, const T B)
 	{
 		return (A <= B) ? A : B;
 	}
@@ -713,13 +713,13 @@ struct FMath : public FMathWindows
 
 	// 弧度to角度
 	template<class T>
-	static CONSTEXPR FORCEINLINE auto RadiansToDegrees(T const& RadVal) -> decltype(RadVal * (180.f / PI))
+	static constexpr FORCEINLINE auto RadiansToDegrees(T const& RadVal) -> decltype(RadVal * (180.f / PI))
 	{
 		return RadVal * (180.f / PI);
 	}
 	// 角度to弧度
 	template<class T>
-	static CONSTEXPR FORCEINLINE auto DegreesToRadians(T const& DegVal) -> decltype(DegVal * (PI / 180.f))
+	static constexpr FORCEINLINE auto DegreesToRadians(T const& DegVal) -> decltype(DegVal * (PI / 180.f))
 	{
 		return DegVal * (PI / 180.f);
 	}

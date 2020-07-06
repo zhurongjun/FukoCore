@@ -6,7 +6,8 @@
 #include "Algo/Sort.h"
 #include "CoreMinimal/Assert.h"
 #include "Templates/Sorting.h"
-#include "AllocatorsPmr.h"
+#include "Memory/Allocators.h"
+#include "Memory/Memory.h"
 
 // 检测是否在迭代期间修改数组 
 #if FUKO_DEBUG
@@ -19,11 +20,11 @@
 namespace Fuko
 {
 	// 通用迭代器
-	template< typename ContainerType, typename ElementType, typename size_t>
+	template< typename ContainerType, typename ElementType, typename SizeType>
 	class TIndexedContainerIterator
 	{
 	public:
-		TIndexedContainerIterator(ContainerType& InContainer, size_t StartIndex = 0)
+		TIndexedContainerIterator(ContainerType& InContainer, SizeType StartIndex = 0)
 			: Container(InContainer)
 			, Index(StartIndex)
 		{
@@ -54,24 +55,24 @@ namespace Fuko
 			return Tmp;
 		}
 
-		TIndexedContainerIterator& operator+=(size_t Offset)
+		TIndexedContainerIterator& operator+=(SizeType Offset)
 		{
 			Index += Offset;
 			return *this;
 		}
 
-		TIndexedContainerIterator operator+(size_t Offset) const
+		TIndexedContainerIterator operator+(SizeType Offset) const
 		{
 			TIndexedContainerIterator Tmp(*this);
 			return Tmp += Offset;
 		}
 
-		TIndexedContainerIterator& operator-=(size_t Offset)
+		TIndexedContainerIterator& operator-=(SizeType Offset)
 		{
 			return *this += -Offset;
 		}
 
-		TIndexedContainerIterator operator-(size_t Offset) const
+		TIndexedContainerIterator operator-(SizeType Offset) const
 		{
 			TIndexedContainerIterator Tmp(*this);
 			return Tmp -= Offset;
@@ -92,7 +93,7 @@ namespace Fuko
 			return Container.IsValidIndex(Index);
 		}
 
-		size_t GetIndex() const
+		SizeType GetIndex() const
 		{
 			return Index;
 		}
@@ -119,21 +120,21 @@ namespace Fuko
 	private:
 
 		ContainerType& Container;
-		size_t      Index;
+		SizeType      Index;
 	};
 	// 重载+  
-	template <typename ContainerType, typename ElementType, typename size_t>
-	FORCEINLINE TIndexedContainerIterator<ContainerType, ElementType, size_t> operator+(size_t Offset, TIndexedContainerIterator<ContainerType, ElementType, size_t> RHS)
+	template <typename ContainerType, typename ElementType, typename SizeType>
+	FORCEINLINE TIndexedContainerIterator<ContainerType, ElementType, SizeType> operator+(SizeType Offset, TIndexedContainerIterator<ContainerType, ElementType, SizeType> RHS)
 	{
 		return RHS + Offset;
 	}
 
 	// 检测迭代期间是否发生改变
 #if TARRAY_RANGED_FOR_CHECKS
-	template <typename ElementType, typename size_t>
+	template <typename ElementType, typename SizeType>
 	struct TCheckedPointerIterator
 	{
-		explicit TCheckedPointerIterator(const size_t& InNum, ElementType* InPtr)
+		explicit TCheckedPointerIterator(const SizeType& InNum, ElementType* InPtr)
 			: Ptr(InPtr)
 			, CurrentNum(InNum)
 			, InitialNum(InNum)
@@ -159,8 +160,8 @@ namespace Fuko
 
 	private:
 		ElementType*    Ptr;
-		const size_t& CurrentNum;
-		size_t        InitialNum;
+		const SizeType& CurrentNum;
+		SizeType        InitialNum;
 
 		FORCEINLINE friend bool operator!=(const TCheckedPointerIterator& Lhs, const TCheckedPointerIterator& Rhs)
 		{
@@ -225,6 +226,12 @@ namespace Fuko
 	template<typename T>
 	class TArray
 	{
+	public:
+		using ElementType = T;
+		using SizeType = int32;
+
+		static constexpr SizeType ElementAlign = alignof(ElementType);
+		static constexpr SizeType ElementSize = sizeof(ElementType);
 	private:
 		void FreeArray()
 		{
@@ -239,7 +246,7 @@ namespace Fuko
 		}
 
 		template <typename OtherElementType>
-		void CopyToEmpty(const OtherElementType* OtherData, size_t OtherNum, size_t ExtraSlack)
+		void CopyToEmpty(const OtherElementType* OtherData, SizeType OtherNum, SizeType ExtraSlack)
 		{
 			check(ExtraSlack >= 0);
 
@@ -247,7 +254,7 @@ namespace Fuko
 
 			if (OtherNum || ExtraSlack)
 			{
-				size_t NewMax = OtherNum + ExtraSlack;
+				SizeType NewMax = OtherNum + ExtraSlack;
 				
 				if (NewMax > m_Max) ResizeTo(NewMax);
 				ConstructItems<ElementType>(GetData(), OtherData, OtherNum);
@@ -256,16 +263,16 @@ namespace Fuko
 
 		FORCENOINLINE void ResizeGrow()
 		{
-			const size_t NewMax = m_Allocator->GetGrow(m_Num, m_Max, ElementSize, ElementAlign);
+			const SizeType NewMax = (SizeType)m_Allocator->GetGrow(m_Num, m_Max, ElementSize, ElementAlign);
 			ResizeTo(NewMax);
 		}
 		FORCENOINLINE void ResizeShrink()
 		{
-			const size_t NewMax = m_Allocator->GetShrink(m_Num, m_Max, ElementSize, ElementAlign);
+			const SizeType NewMax = m_Allocator->GetShrink(m_Num, m_Max, ElementSize, ElementAlign);
 			check(NewMax >= m_Num);
 			ResizeTo(NewMax);
 		}
-		FORCENOINLINE void ResizeTo(size_t NewMax)
+		FORCENOINLINE void ResizeTo(SizeType NewMax)
 		{
 			if (NewMax != m_Max)
 			{
@@ -276,17 +283,12 @@ namespace Fuko
 					m_Elements = (ElementType*)m_Allocator->Alloc(m_Max * ElementSize, ElementAlign);
 			}
 		}
-	public:
-		using ElementType = T;
-
-		static constexpr size_t ElementAlign = alignof(ElementType);
-		static constexpr size_t ElementSize = sizeof(ElementType);
 
 	protected:
 		IAllocator*		m_Allocator;
 		ElementType*	m_Elements;
-		size_t			m_Num;
-		size_t			m_Max;
+		SizeType			m_Num;
+		SizeType			m_Max;
 
 	public:
 		// construct 
@@ -298,7 +300,7 @@ namespace Fuko
 		{
 			check(m_Allocator != nullptr);
 		}
-		FORCEINLINE TArray(const ElementType* Ptr, size_t Count, IAllocator* Alloc = DefaultAllocator())
+		FORCEINLINE TArray(const ElementType* Ptr, SizeType Count, IAllocator* Alloc = DefaultAllocator())
 			: m_Elements(nullptr)
 			, m_Num(0)
 			, m_Max(0)
@@ -317,7 +319,7 @@ namespace Fuko
 		{
 			check(m_Allocator != nullptr);
 
-			CopyToEmpty(InitList.begin(), (size_t)InitList.size(), 0);
+			CopyToEmpty(InitList.begin(), (SizeType)InitList.size(), 0);
 		}
 
 		// copy construct 
@@ -338,7 +340,7 @@ namespace Fuko
 		{
 			CopyToEmpty(Other.GetData(), Other.Num(), 0);
 		}
-		FORCEINLINE TArray(const TArray& Other, size_t ExtraSlack, IAllocator* Alloc = DefaultAllocator())
+		FORCEINLINE TArray(const TArray& Other, SizeType ExtraSlack, IAllocator* Alloc = DefaultAllocator())
 			: m_Elements(nullptr)
 			, m_Num(0)
 			, m_Max(0)
@@ -351,7 +353,7 @@ namespace Fuko
 		TArray& operator=(std::initializer_list<ElementType> InitList)
 		{
 			DestructItems(m_Elements, m_Num);
-			CopyToEmpty(InitList.begin(), (size_t)InitList.size(), 0);
+			CopyToEmpty(InitList.begin(), (SizeType)InitList.size(), 0);
 			return *this;
 		}
 		TArray& operator=(const TArray& Other)
@@ -408,9 +410,9 @@ namespace Fuko
 		FORCEINLINE ElementType* GetData() { return m_Elements; }
 		FORCEINLINE const ElementType* GetData() const { return m_Elements; }
 		FORCEINLINE uint32 GetTypeSize() const { return ElementSize; }
-		FORCEINLINE size_t Num() const { return m_Num; }
-		FORCEINLINE size_t Max() const { return m_Max; }
-		FORCEINLINE size_t GetSlack() const { return m_Max - m_Num; }
+		FORCEINLINE SizeType Num() const { return m_Num; }
+		FORCEINLINE SizeType Max() const { return m_Max; }
+		FORCEINLINE SizeType GetSlack() const { return m_Max - m_Num; }
 		FORCEINLINE const IAllocator* GetAllocator() const { return m_Allocator; }
 		FORCEINLINE IAllocator* GetAllocator() { return m_Allocator; }
 
@@ -435,22 +437,22 @@ namespace Fuko
 				TEXT("Attempting to use a container element (%p) which already comes from the container being modified (%p, m_Max: %d, m_Num: %d, SizeofElement: %d)!")
 				, Addr, m_Elements, m_Max, m_Num, ElementSize);
 		}
-		FORCEINLINE void RangeCheck(size_t Index) const
+		FORCEINLINE void RangeCheck(SizeType Index) const
 		{
 			CheckInvariants();
 			checkf((Index >= 0) & (Index < m_Num), TEXT("Array index out of bounds: %i from an array of size %i"), Index, m_Num);
 		}
 		
 		// runtime check 
-		FORCEINLINE bool IsValidIndex(size_t Index) const { return Index >= 0 && Index < m_Num; }
+		FORCEINLINE bool IsValidIndex(SizeType Index) const { return Index >= 0 && Index < m_Num; }
 
 		// operator []
-		FORCEINLINE ElementType& operator[](size_t Index)
+		FORCEINLINE ElementType& operator[](SizeType Index)
 		{
 			RangeCheck(Index);
 			return GetData()[Index];
 		}
-		FORCEINLINE const ElementType& operator[](size_t Index) const
+		FORCEINLINE const ElementType& operator[](SizeType Index) const
 		{
 			RangeCheck(Index);
 			return GetData()[Index];
@@ -459,12 +461,12 @@ namespace Fuko
 		// get element 
 		FORCEINLINE ElementType& Top() { return Last(); }
 		FORCEINLINE const ElementType& Top() const { return Last(); }
-		FORCEINLINE ElementType& Last(size_t IndexFromTheEnd = 0)
+		FORCEINLINE ElementType& Last(SizeType IndexFromTheEnd = 0)
 		{
 			RangeCheck(m_Num - IndexFromTheEnd - 1);
 			return GetData()[m_Num - IndexFromTheEnd - 1];
 		}
-		FORCEINLINE const ElementType& Last(size_t IndexFromTheEnd = 0) const
+		FORCEINLINE const ElementType& Last(SizeType IndexFromTheEnd = 0) const
 		{
 			RangeCheck(m_Num - IndexFromTheEnd - 1);
 			return GetData()[m_Num - IndexFromTheEnd - 1];
@@ -490,7 +492,7 @@ namespace Fuko
 				ResizeTo(m_Num);
 			}
 		}
-		FORCEINLINE void Reserve(size_t Number)
+		FORCEINLINE void Reserve(SizeType Number)
 		{
 			check(Number >= 0);
 			if (Number > m_Max)
@@ -500,7 +502,7 @@ namespace Fuko
 		}
 
 		// set num & empty 
-		void Reset(size_t NewSize = 0)
+		void Reset(SizeType NewSize = 0)
 		{
 			if (NewSize <= m_Max)
 			{
@@ -512,7 +514,7 @@ namespace Fuko
 				Empty(NewSize);
 			}
 		}
-		void Empty(size_t Slack = 0)
+		void Empty(SizeType Slack = 0)
 		{
 			check(Slack >= 0);
 
@@ -520,12 +522,12 @@ namespace Fuko
 			m_Num = 0;
 			if (m_Max != Slack) ResizeTo(Slack);
 		}
-		void SetNum(size_t NewNum, bool bAllowShrinking = true)
+		void SetNum(SizeType NewNum, bool bAllowShrinking = true)
 		{
 			if (NewNum > Num())
 			{
-				const size_t Diff = NewNum - m_Num;
-				const size_t Index = AddUninitialized(Diff);
+				const SizeType Diff = NewNum - m_Num;
+				const SizeType Index = AddUninitialized(Diff);
 				DefaultConstructItems<ElementType>(GetData() + Index, Diff);
 			}
 			else if (NewNum < Num())
@@ -533,7 +535,7 @@ namespace Fuko
 				RemoveAt(NewNum, Num() - NewNum, bAllowShrinking);
 			}
 		}
-		void SetNumZeroed(size_t NewNum, bool bAllowShrinking = true)
+		void SetNumZeroed(SizeType NewNum, bool bAllowShrinking = true)
 		{
 			if (NewNum > Num())
 			{
@@ -544,7 +546,7 @@ namespace Fuko
 				RemoveAt(NewNum, Num() - NewNum, bAllowShrinking);
 			}
 		}
-		void SetNumUninitialized(size_t NewNum, bool bAllowShrinking = true)
+		void SetNumUninitialized(SizeType NewNum, bool bAllowShrinking = true)
 		{
 			if (NewNum > Num())
 			{
@@ -555,7 +557,7 @@ namespace Fuko
 				RemoveAt(NewNum, Num() - NewNum, bAllowShrinking);
 			}
 		}
-		void SetNumUnsafe(size_t NewNum)
+		void SetNumUnsafe(SizeType NewNum)
 		{
 			check(NewNum <= Num() && NewNum >= 0);
 			m_Num = NewNum;
@@ -627,25 +629,25 @@ namespace Fuko
 
 		// indexof 
 		template<typename KeyType>
-		FORCEINLINE size_t IndexOf(const KeyType& Item) const
+		FORCEINLINE SizeType IndexOf(const KeyType& Item) const
 		{
 			const ElementType* FindPtr = this->Find(Item);
 			return FindPtr == nullptr ? INDEX_NONE : FindPtr - m_Elements;
 		}
 		template<typename KeyType>
-		FORCEINLINE size_t IndexOfLast(const KeyType& Item) const
+		FORCEINLINE SizeType IndexOfLast(const KeyType& Item) const
 		{
 			const ElementType* FindPtr = this->FindLast(Item);
 			return FindPtr == nullptr ? INDEX_NONE : FindPtr - m_Elements;
 		}
 		template<typename Predicate>
-		FORCEINLINE size_t IndexOfBy(Predicate Pred) const
+		FORCEINLINE SizeType IndexOfBy(Predicate Pred) const
 		{
 			const ElementType* FindPtr = this->FindBy(Pred);
 			return FindPtr == nullptr ? INDEX_NONE : FindPtr - m_Elements;
 		}
 		template<typename Predicate>
-		FORCEINLINE size_t IndexOfByLastBy(Predicate Pred) const
+		FORCEINLINE SizeType IndexOfByLastBy(Predicate Pred) const
 		{
 			const ElementType* FindPtr = this->FindLastBy(Pred);
 			return FindPtr == nullptr ? INDEX_NONE : FindPtr - m_Elements;
@@ -688,36 +690,36 @@ namespace Fuko
 		}
 
 		// special insert 
-		void InsertUninitialized(size_t Index, size_t Count = 1)
+		void InsertUninitialized(SizeType Index, SizeType Count = 1)
 		{
 			CheckInvariants();
 			check((Count >= 0) && (Index >= 0) && (Index <= m_Num) && (m_Num + Count > 0));
 
-			const size_t OldNum = m_Num;
+			const SizeType OldNum = m_Num;
 			m_Num += Count;
 			if (m_Num > m_Max) ResizeGrow(OldNum);
 
 			ElementType* Ptr = m_Elements + Index;
 			RelocateConstructItems<ElementType>(Ptr + Count, Ptr, OldNum - Index);
 		}
-		FORCEINLINE void InsertZeroed(size_t Index, size_t Count = 1)
+		FORCEINLINE void InsertZeroed(SizeType Index, SizeType Count = 1)
 		{
 			InsertUninitialized(Index, Count);
 			Memzero(m_Elements + Index, Count * ElementSize);
 		}
-		FORCEINLINE ElementType& InsertZeroed_GetRef(size_t Index)
+		FORCEINLINE ElementType& InsertZeroed_GetRef(SizeType Index)
 		{
 			InsertUninitialized(Index, 1);
 			ElementType* Ptr = m_Elements+ Index;
 			Memzero(Ptr, ElementSize);
 			return *Ptr;
 		}
-		FORCEINLINE void InsertDefaulted(size_t Index, size_t Count = 1)
+		FORCEINLINE void InsertDefaulted(SizeType Index, SizeType Count = 1)
 		{
 			InsertUninitialized(Index, Count);
 			DefaultConstructItems<ElementType>(m_Elements + Index, Count);
 		}
-		FORCEINLINE ElementType& InsertDefaulted_GetRef(size_t Index)
+		FORCEINLINE ElementType& InsertDefaulted_GetRef(SizeType Index)
 		{
 			InsertUninitialized(Index, 1);
 			ElementType* Ptr = m_Elements + Index;
@@ -726,43 +728,43 @@ namespace Fuko
 		}
 
 		// insert 
-		FORCEINLINE void Insert(std::initializer_list<ElementType> InitList, const size_t InIndex)
+		FORCEINLINE void Insert(std::initializer_list<ElementType> InitList, const SizeType InIndex)
 		{
 			InsertUninitialized(InIndex, InitList.size());
 			ConstructItems<ElementType>(m_Elements + InIndex, InitList.begin(), InitList.size());
 		}
-		FORCEINLINE void Insert(const TArray& Items, const size_t InIndex)
+		FORCEINLINE void Insert(const TArray& Items, const SizeType InIndex)
 		{
 			check(this != &Items);
 			InsertUninitialized(InIndex, Items.m_Num);
 			ConstructItems<ElementType>(m_Elements + InIndex, Items.m_Elements, Items.m_Num);
 		}
-		FORCEINLINE void Insert(TArray&& Items, const size_t InIndex)
+		FORCEINLINE void Insert(TArray&& Items, const SizeType InIndex)
 		{
 			check(this != &Items);
 			InsertUninitialized(InIndex, Items.Num());
 			MoveConstructItems<ElementType>(m_Elements + InIndex, Items.m_Elements, Items.m_Num);
 			Items.m_Num = 0;
 		}
-		FORCEINLINE void Insert(const ElementType* Ptr, size_t Count, size_t Index)
+		FORCEINLINE void Insert(const ElementType* Ptr, SizeType Count, SizeType Index)
 		{
 			check(Ptr != nullptr);
 			InsertUninitialized(Index, Count);
 			ConstructItems<ElementType>(GetData() + Index, Ptr, Count);
 		}
-		FORCEINLINE void Insert(ElementType&& Item, size_t Index)
+		FORCEINLINE void Insert(ElementType&& Item, SizeType Index)
 		{
 			CheckAddress(&Item);
 			InsertUninitialized(Index, 1);
 			new(m_Elements + Index) ElementType(std::move(Item));
 		}
-		FORCEINLINE void Insert(const ElementType& Item, size_t Index)
+		FORCEINLINE void Insert(const ElementType& Item, SizeType Index)
 		{
 			CheckAddress(&Item);
 			InsertUninitialized(Index, 1);
 			new(m_Elements + Index) ElementType(Item);
 		}
-		FORCEINLINE ElementType& Insert_GetRef(ElementType&& Item, size_t Index)
+		FORCEINLINE ElementType& Insert_GetRef(ElementType&& Item, SizeType Index)
 		{
 			CheckAddress(&Item);
 
@@ -771,7 +773,7 @@ namespace Fuko
 			new(Ptr) ElementType(std::move(Item));
 			return *Ptr;
 		}
-		FORCEINLINE ElementType& Insert_GetRef(const ElementType& Item, size_t Index)
+		FORCEINLINE ElementType& Insert_GetRef(const ElementType& Item, SizeType Index)
 		{
 			CheckAddress(&Item);
 
@@ -782,24 +784,24 @@ namespace Fuko
 		}
 
 		// add
-		FORCEINLINE size_t AddUninitialized(size_t Count = 1)
+		FORCEINLINE SizeType AddUninitialized(SizeType Count = 1)
 		{
 			CheckInvariants();
 			check(Count >= 0);
 
-			const size_t OldNum = m_Num;
+			const SizeType OldNum = m_Num;
 			if ((m_Num += Count) > m_Max)
 			{
-				ResizeGrow(OldNum);
+				ResizeGrow();
 			}
 			return OldNum;
 		}
-		FORCEINLINE size_t Add(ElementType&& Item)
+		FORCEINLINE SizeType Add(ElementType&& Item)
 		{
 			CheckAddress(&Item);
 			return Emplace(std::move(Item));
 		}
-		FORCEINLINE size_t Add(const ElementType& Item)
+		FORCEINLINE SizeType Add(const ElementType& Item)
 		{
 			CheckAddress(&Item);
 			return Emplace(Item);
@@ -814,28 +816,28 @@ namespace Fuko
 			CheckAddress(&Item);
 			return Emplace_GetRef(Item);
 		}
-		FORCEINLINE size_t Add(size_t Count = 1)
+		FORCEINLINE SizeType Add(SizeType Count = 1)
 		{
-			const size_t Index = AddUninitialized(Count);
+			const SizeType Index = AddUninitialized(Count);
 			DefaultConstructItems<ElementType>(GetData() + Index, Count);
 			return Index;
 		}
 		FORCEINLINE ElementType& Add_GetRef()
 		{
-			const size_t Index = AddUninitialized(1);
+			const SizeType Index = AddUninitialized(1);
 			ElementType* Ptr = GetData() + Index;
 			DefaultConstructItems<ElementType>(Ptr, 1);
 			return *Ptr;
 		}
-		FORCEINLINE size_t AddZeroed(size_t Count = 1)
+		FORCEINLINE SizeType AddZeroed(SizeType Count = 1)
 		{
-			const size_t Index = AddUninitialized(Count);
+			const SizeType Index = AddUninitialized(Count);
 			Memzero(GetData() + Index, Count * ElementSize);
 			return Index;
 		}
 		FORCEINLINE ElementType& AddZeroed_GetRef()
 		{
-			const size_t Index = AddUninitialized(1);
+			const SizeType Index = AddUninitialized(1);
 			ElementType* Ptr = GetData() + Index;
 			Memzero(Ptr, ElementSize);
 			return *Ptr;
@@ -843,28 +845,28 @@ namespace Fuko
 
 		// emplace 
 		template <typename... ArgsType>
-		FORCEINLINE size_t Emplace(ArgsType&&... Args)
+		FORCEINLINE SizeType Emplace(ArgsType&&... Args)
 		{
-			const size_t Index = AddUninitialized();
+			const SizeType Index = AddUninitialized();
 			new(GetData() + Index) ElementType(std::forward<ArgsType>(Args)...);
 			return Index;
 		}
 		template <typename... ArgsType>
 		FORCEINLINE ElementType& Emplace_GetRef(ArgsType&&... Args)
 		{
-			const size_t Index = AddUninitialized();
+			const SizeType Index = AddUninitialized();
 			ElementType* Ptr = GetData() + Index;
 			new(Ptr) ElementType(std::forward<ArgsType>(Args)...);
 			return *Ptr;
 		}
 		template <typename... ArgsType>
-		FORCEINLINE void EmplaceAt(size_t Index, ArgsType&&... Args)
+		FORCEINLINE void EmplaceAt(SizeType Index, ArgsType&&... Args)
 		{
 			InsertUninitialized(Index);
 			new(GetData() + Index) ElementType(std::forward<ArgsType>(Args)...);
 		}
 		template <typename... ArgsType>
-		FORCEINLINE ElementType& EmplaceAt_GetRef(size_t Index, ArgsType&&... Args)
+		FORCEINLINE ElementType& EmplaceAt_GetRef(SizeType Index, ArgsType&&... Args)
 		{
 			InsertUninitialized(Index);
 			ElementType* Ptr = GetData() + Index;
@@ -873,21 +875,21 @@ namespace Fuko
 		}
 
 		// add unique 
-		FORCEINLINE size_t AddUnique(ElementType&& Item) 
+		FORCEINLINE SizeType AddUnique(ElementType&& Item) 
 		{
-			size_t Index = IndexOf(Item);
+			SizeType Index = IndexOf(Item);
 			if (Index != INDEX_NONE) return Index;
 			return Add(std::move(Item));
 		}
-		FORCEINLINE size_t AddUnique(const ElementType& Item) 
+		FORCEINLINE SizeType AddUnique(const ElementType& Item) 
 		{
-			size_t Index = IndexOf(Item);
+			SizeType Index = IndexOf(Item);
 			if (Index != INDEX_NONE) return Index;
 			return Add(Item);
 		}
 
 		// remove at
-		void RemoveAt(size_t Index, size_t Count = 1, bool bAllowShrinking = true)
+		void RemoveAt(SizeType Index, SizeType Count = 1, bool bAllowShrinking = true)
 		{
 			if (Count)
 			{
@@ -907,7 +909,7 @@ namespace Fuko
 				if (bAllowShrinking) ResizeShrink();
 			}
 		}
-		void RemoveAtSwap(size_t Index, size_t Count = 1, bool bAllowShrinking = true)
+		void RemoveAtSwap(SizeType Index, SizeType Count = 1, bool bAllowShrinking = true)
 		{
 			if (Count)
 			{
@@ -918,9 +920,9 @@ namespace Fuko
 				DestructItems(GetData() + Index, Count);
 
 				// move memory 
-				const size_t NumElementsInHole = Count;
-				const size_t NumElementsAfterHole = m_Num - (Index + Count);
-				const size_t NumElementsToMoveIntoHole = FMath::Min(NumElementsInHole, NumElementsAfterHole);
+				const SizeType NumElementsInHole = Count;
+				const SizeType NumElementsAfterHole = m_Num - (Index + Count);
+				const SizeType NumElementsToMoveIntoHole = FMath::Min(NumElementsInHole, NumElementsAfterHole);
 				if (NumElementsToMoveIntoHole)
 				{
 					Memcpy(
@@ -936,17 +938,17 @@ namespace Fuko
 		}
 		
 		// remove
-		size_t Remove(const ElementType& Item)
+		SizeType Remove(const ElementType& Item)
 		{
 			CheckAddress(&Item);
 			return RemoveBy([&Item](ElementType& Element) { return Element == Item; });
 		}
-		size_t RemoveSwap(const ElementType& Item)
+		SizeType RemoveSwap(const ElementType& Item)
 		{
 			CheckAddress(&Item);
 
-			const size_t OriginalNum = m_Num;
-			for (size_t Index = 0; Index < m_Num; Index++)
+			const SizeType OriginalNum = m_Num;
+			for (SizeType Index = 0; Index < m_Num; Index++)
 			{
 				if ((*this)[Index] == Item)
 				{
@@ -956,22 +958,22 @@ namespace Fuko
 			return OriginalNum - m_Num;
 		}
 		template <class Predicate>
-		size_t RemoveBy(Predicate&& Pred)
+		SizeType RemoveBy(Predicate&& Pred)
 		{
-			const size_t OriginalNum = m_Num;
+			const SizeType OriginalNum = m_Num;
 			if (!OriginalNum) return 0;
 
-			size_t WriteIndex = 0;
-			size_t ReadIndex = 0;
+			SizeType WriteIndex = 0;
+			SizeType ReadIndex = 0;
 			bool NotMatch = !Pred(GetData()[ReadIndex]);
 			do
 			{
-				size_t RunStartIndex = ReadIndex++;
+				SizeType RunStartIndex = ReadIndex++;
 				while (ReadIndex < OriginalNum && NotMatch == !Pred(GetData()[ReadIndex]))
 				{
 					ReadIndex++;
 				}
-				size_t RunLength = ReadIndex - RunStartIndex;
+				SizeType RunLength = ReadIndex - RunStartIndex;
 				check(RunLength > 0);
 				if (NotMatch)
 				{
@@ -996,7 +998,7 @@ namespace Fuko
 		template <class Predicate>
 		void RemoveBySwap(const Predicate& Pred, bool bAllowShrinking = true)
 		{
-			for (size_t ItemIndex = 0; ItemIndex < Num();)
+			for (SizeType ItemIndex = 0; ItemIndex < Num();)
 			{
 				if (Pred((*this)[ItemIndex]))
 				{
@@ -1008,23 +1010,23 @@ namespace Fuko
 				}
 			}
 		}
-		size_t RemoveSingle(const ElementType& Item)
+		SizeType RemoveSingle(const ElementType& Item)
 		{
-			size_t Index = Find(Item);
+			SizeType Index = Find(Item);
 			if (Index == INDEX_NONE) return 0;
 
 			auto* RemovePtr = GetData() + Index;
 
 			DestructItems(RemovePtr, 1);
-			const size_t NextIndex = Index + 1;
+			const SizeType NextIndex = Index + 1;
 			RelocateConstructItems<ElementType>(RemovePtr, RemovePtr + 1, m_Num - (Index + 1));
 
 			--m_Num;
 			return 1;
 		}
-		size_t RemoveSingleSwap(const ElementType& Item, bool bAllowShrinking = true)
+		SizeType RemoveSingleSwap(const ElementType& Item, bool bAllowShrinking = true)
 		{
-			size_t Index = Find(Item);
+			SizeType Index = Find(Item);
 			if (Index == INDEX_NONE) return 0;
 
 			RemoveAtSwap(Index, 1, bAllowShrinking);
@@ -1040,7 +1042,7 @@ namespace Fuko
 
 			if (!Source.Num()) return;
 
-			size_t Pos = AddUninitialized(Source.Num());
+			SizeType Pos = AddUninitialized(Source.Num());
 			ConstructItems<ElementType>(GetData() + Pos, Source.GetData(), Source.Num());
 		}
 		template <typename OtherElementType>
@@ -1050,21 +1052,21 @@ namespace Fuko
 
 			if (!Source.Num()) return;
 
-			size_t Pos = AddUninitialized(Source.Num());
+			SizeType Pos = AddUninitialized(Source.Num());
 			MoveAssignItems(GetData() + Pos, Source.GetData(), Source.Num());
 		}
-		FORCEINLINE void Append(const ElementType* Ptr, size_t Count)
+		FORCEINLINE void Append(const ElementType* Ptr, SizeType Count)
 		{
 			check(Ptr != nullptr || Count == 0);
 
-			size_t Pos = AddUninitialized(Count);
+			SizeType Pos = AddUninitialized(Count);
 			ConstructItems<ElementType>(GetData() + Pos, Ptr, Count);
 		}
 		FORCEINLINE void Append(std::initializer_list<ElementType> InitList)
 		{
-			size_t Count = (size_t)InitList.size();
+			SizeType Count = (SizeType)InitList.size();
 
-			size_t Pos = AddUninitialized(Count);
+			SizeType Pos = AddUninitialized(Count);
 			ConstructItems<ElementType>(GetData() + Pos, InitList.begin(), Count);
 		}
 		FORCEINLINE TArray& operator+=(TArray&& Other)
@@ -1084,17 +1086,17 @@ namespace Fuko
 		}
 
 		// Init 
-		void Init(const ElementType& Element, size_t Number)
+		void Init(const ElementType& Element, SizeType Number)
 		{
 			Empty(Number);
-			for (size_t Index = 0; Index < Number; ++Index)
+			for (SizeType Index = 0; Index < Number; ++Index)
 			{
 				new(*this) ElementType(Element);
 			}
 		}
 
 		// swap 
-		FORCEINLINE void Swap(size_t FirstIndexToSwap, size_t SecondIndexToSwap)
+		FORCEINLINE void Swap(SizeType FirstIndexToSwap, SizeType SecondIndexToSwap)
 		{
 			check((FirstIndexToSwap >= 0) && (SecondIndexToSwap >= 0));
 			check((m_Num > FirstIndexToSwap) && (m_Num > SecondIndexToSwap));
@@ -1125,8 +1127,8 @@ namespace Fuko
 		}
 
 		// Iterators
-		typedef TIndexedContainerIterator<      TArray, ElementType, size_t> TIterator;
-		typedef TIndexedContainerIterator<const TArray, const ElementType, size_t> TConstIterator;
+		typedef TIndexedContainerIterator<      TArray, ElementType, SizeType> TIterator;
+		typedef TIndexedContainerIterator<const TArray, const ElementType, SizeType> TConstIterator;
 		TIterator CreateIterator()
 		{
 			return TIterator(*this);
@@ -1141,11 +1143,11 @@ namespace Fuko
 		{
 			Heapify(TLess<ElementType>());
 		}
-		size_t HeapPush(ElementType&& InItem)
+		SizeType HeapPush(ElementType&& InItem)
 		{
 			return HeapPush(std::move(InItem), TLess<ElementType>());
 		}
-		size_t HeapPush(const ElementType& InItem)
+		SizeType HeapPush(const ElementType& InItem)
 		{
 			return HeapPush(InItem, TLess<ElementType>());
 		}
@@ -1165,7 +1167,7 @@ namespace Fuko
 		{
 			return (*this)[0];
 		}
-		void HeapRemoveAt(size_t Index, bool bAllowShrinking = true)
+		void HeapRemoveAt(SizeType Index, bool bAllowShrinking = true)
 		{
 			HeapRemoveAt(Index, TLess< ElementType >(), bAllowShrinking);
 		}
@@ -1180,22 +1182,22 @@ namespace Fuko
 			::Fuko::Algo::Heapify(*this, PredicateWrapper);
 		}
 		template <class Predicate>
-		size_t HeapPush(ElementType&& InItem, const Predicate& Pred)
+		SizeType HeapPush(ElementType&& InItem, const Predicate& Pred)
 		{
 			// 在尾部添加元素，然后向上检索堆
 			Add(std::move(InItem));
 			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(Pred);
-			size_t Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
+			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
 
 			return Result;
 		}
 		template <class Predicate>
-		size_t HeapPush(const ElementType& InItem, const Predicate& Pred)
+		SizeType HeapPush(const ElementType& InItem, const Predicate& Pred)
 		{
 			// 在尾部添加元素，然后向上检索堆
 			Add(InItem);
 			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(Pred);
-			size_t Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
+			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
 
 			return Result;
 		}
@@ -1221,7 +1223,7 @@ namespace Fuko
 			::Fuko::Algo::Impl::HeapSiftDown(GetData(), 0, Num(), FIdentityFunctor(), PredicateWrapper);
 		}
 		template <class Predicate>
-		void HeapRemoveAt(size_t Index, const Predicate& Pred, bool bAllowShrinking = true)
+		void HeapRemoveAt(SizeType Index, const Predicate& Pred, bool bAllowShrinking = true)
 		{
 			RemoveAtSwap(Index, 1, bAllowShrinking);
 
@@ -1237,8 +1239,8 @@ namespace Fuko
 		}
 
 		// support foreach 
-		typedef TCheckedPointerIterator<      ElementType, size_t> RangedForIteratorType;
-		typedef TCheckedPointerIterator<const ElementType, size_t> RangedForConstIteratorType;
+		typedef TCheckedPointerIterator<      ElementType, SizeType> RangedForIteratorType;
+		typedef TCheckedPointerIterator<const ElementType, SizeType> RangedForConstIteratorType;
 #if TARRAY_RANGED_FOR_CHECKS
 		FORCEINLINE RangedForIteratorType      begin() { return RangedForIteratorType(m_Num, GetData()); }
 		FORCEINLINE RangedForConstIteratorType begin() const { return RangedForConstIteratorType(m_Num, GetData()); }
@@ -1270,7 +1272,7 @@ template <typename T> void* operator new(size_t Size, Fuko::TArray<T>& Array)
 	const auto Index = Array.AddUninitialized(1);
 	return &Array[Index];
 }
-template <typename T> void* operator new(size_t Size, Fuko::TArray<T>& Array, typename Fuko::TArray<T>::size_t Index)
+template <typename T> void* operator new(size_t Size, Fuko::TArray<T>& Array, typename Fuko::TArray<T>::SizeType Index)
 {
 	check(Size == sizeof(T));
 	Array.InsertUninitialized(Index);

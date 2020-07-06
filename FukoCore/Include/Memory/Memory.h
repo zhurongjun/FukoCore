@@ -8,7 +8,7 @@
 #include "CoreType.h"
 #include "Math/MathUtility.h"
 
-// Alloc,Realloc,Move,Copy... 
+// Move,Copy... 
 namespace Fuko
 {
 	// 内部swap
@@ -85,13 +85,6 @@ namespace Fuko
 			}
 		}
 	}
-
-	// 内存对齐
-	enum
-	{
-		DEFAULT_ALIGNMENT = 0,
-		MIN_ALIGNMENT = 8
-	};
 
 	FORCEINLINE static void* Memmove(void* Dest, const void* Src, size_t Count)
 	{
@@ -192,22 +185,6 @@ namespace Fuko
 		static_assert(!std::is_pointer_v<T>, "For pointers use the three parameters function");
 		Memcpy(&Dest, &Src, sizeof(T));
 	}
-
-	// 内存分配
-	void* Malloc(size_t Size);
-	void* Realloc(void* Ptr, size_t Size);
-	void  Free(void* Ptr);
-
-	// 对齐的内存分配 
-	void* AlignedMalloc(size_t Size, uint32 Alignment = DEFAULT_ALIGNMENT);
-	void* AlignedRealloc(void* Ptr, size_t Size, uint32 Alignment = DEFAULT_ALIGNMENT);
-	void  AlignedFree(void* Ptr);
-
-	// 取得真实分配的内存大小
-	size_t QuantizeSize(size_t Size, uint32 Alignment = DEFAULT_ALIGNMENT);
-
-	// 修剪内存，使得占用的实际内存尽量的接近使用内存
-	void Trim();
 }
 
 // Construct,Copy,Destruct object manually
@@ -382,5 +359,5 @@ namespace Fuko
 namespace Fuko
 {
 	class IAllocator;
-	IAllocator* DefaultAllocator();
+	CORE_API IAllocator* DefaultAllocator();
 }

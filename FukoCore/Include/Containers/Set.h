@@ -5,7 +5,7 @@
 #include "CoreMinimal/Assert.h"
 #include "SparseArray.h"
 #include "Memory/Memory.h"
-#include "AllocatorsPmr.h"
+#include "Memory/Allocators.h"
 
 // Key functions 
 namespace Fuko
@@ -116,8 +116,8 @@ namespace Fuko
 			check(FMath::IsPowerOfTwo(m_HashSize));
 			
 			// realloc hash 
-			if (m_Hash) m_HashAllocator->Realloc(m_Hash, m_HashSize * sizeof(SetElementId));
-			else m_Hash = m_HashAllocator->Alloc(m_Hash * sizeof(SetElementId));
+			if (m_Hash) (SetElementId*)m_HashAllocator->Realloc(m_Hash, m_HashSize * sizeof(SetElementId));
+			else m_Hash = (SetElementId*)m_HashAllocator->Alloc(m_HashSize * sizeof(SetElementId));
 			
 			if (m_HashSize)
 			{
@@ -917,10 +917,10 @@ namespace Fuko
 			FORCEINLINE ItElementType& operator*() const { return Set[Id]; }
 
 		protected:
-			SetType& Set;
-			typename TTypeTraits<typename KeyFuncs::KeyType>::ConstPointerType Key;
-			SetElementId Id;
-			SetElementId NextId;
+			SetType&		Set;
+			const KeyType&	Key;
+			SetElementId	Id;
+			SetElementId	NextId;
 		};
 	public:
 		class TIterator : public TBaseIterator<false>

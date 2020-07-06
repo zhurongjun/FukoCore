@@ -126,11 +126,11 @@ auto GetData(T&& Container) -> decltype(Container.GetData())
 	static_assert(TIsContiguousContainer_v<T>, "T must be a Contiguous container");
 	return Container.GetData();
 }
-template <typename T, size_t N> CONSTEXPR       T* GetData(T(&Container)[N]) { return Container; }
-template <typename T, size_t N> CONSTEXPR       T* GetData(T(&&Container)[N]) { return Container; }
-template <typename T, size_t N> CONSTEXPR const T* GetData(const T(&Container)[N]) { return Container; }
-template <typename T, size_t N> CONSTEXPR const T* GetData(const T(&&Container)[N]) { return Container; }
-template <typename T> CONSTEXPR const T* GetData(std::initializer_list<T> List) { return List.begin(); }
+template <typename T, size_t N> constexpr       T* GetData(T(&Container)[N]) { return Container; }
+template <typename T, size_t N> constexpr       T* GetData(T(&&Container)[N]) { return Container; }
+template <typename T, size_t N> constexpr const T* GetData(const T(&Container)[N]) { return Container; }
+template <typename T, size_t N> constexpr const T* GetData(const T(&&Container)[N]) { return Container; }
+template <typename T> constexpr const T* GetData(std::initializer_list<T> List) { return List.begin(); }
 
 // 得到长度
 template<typename T>
@@ -139,11 +139,11 @@ auto GetNum(T&& Container) -> decltype(Container.Num())
 	static_assert(TIsContiguousContainer_v<T>, "T must be a Contiguous container");
 	return Container.Num(); 
 }
-template <typename T, size_t N> CONSTEXPR size_t GetNum(T(&Container)[N]) { return N; }
-template <typename T, size_t N> CONSTEXPR size_t GetNum(T(&&Container)[N]) { return N; }
-template <typename T, size_t N> CONSTEXPR size_t GetNum(const T(&Container)[N]) { return N; }
-template <typename T, size_t N> CONSTEXPR size_t GetNum(const T(&&Container)[N]) { return N; }
-template <typename T> CONSTEXPR size_t GetNum(std::initializer_list<T> List) { return List.size(); }
+template <typename T, size_t N> constexpr size_t GetNum(T(&Container)[N]) { return N; }
+template <typename T, size_t N> constexpr size_t GetNum(T(&&Container)[N]) { return N; }
+template <typename T, size_t N> constexpr size_t GetNum(const T(&Container)[N]) { return N; }
+template <typename T, size_t N> constexpr size_t GetNum(const T(&&Container)[N]) { return N; }
+template <typename T> constexpr size_t GetNum(std::initializer_list<T> List) { return List.size(); }
 
 // 得到元素指针类型 
 template <typename RangeType>

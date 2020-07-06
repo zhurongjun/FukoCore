@@ -149,7 +149,7 @@ namespace Fuko
 				wcsicmp(String1, String2);
 		}
 		
-		static FORCEINLINE int32 Strnicmp(const CharType* String1, const CharType* String2, SIZE_T Count)
+		static FORCEINLINE int32 Strnicmp(const CharType* String1, const CharType* String2, size_t Count)
 		{
 			if constexpr (IsAnisChar)
 				strnicmp(String1, String2, Count);

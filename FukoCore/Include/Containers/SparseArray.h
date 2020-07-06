@@ -1,7 +1,7 @@
 #pragma once
 #include "CoreType.h"
 #include "CoreConfig.h"
-#include "Allocators.h"
+#include "Memory/Allocators.h"
 #include "Array.h"
 #include "CoreMinimal/Assert.h"
 #include "BitArray.h"
@@ -344,7 +344,7 @@ namespace Fuko
 		}
 
 		// insert 
-		void Insert(int32 Index, typename TTypeTraits<ElementType>::ConstInitType Element)
+		void Insert(int32 Index, const ElementType& Element)
 		{
 			new(InsertUninitialized(Index)) ElementType(Element);
 		}
