@@ -381,12 +381,17 @@ namespace Fuko
 		{
 			if (this != &Other)
 			{
+				// free memory 
 				DestructItems(m_Elements, m_Num);
+				if (m_Elements) m_Allocator->Free(m_Elements);
+
+				// copy info 
 				m_Elements = Other.m_Elements;
 				m_Num = Other.m_Num;
 				m_Max = Other.m_Max;
 				m_Allocator = Other.m_Allocator;
 
+				// invalidate other 
 				Other.m_Elements = nullptr;
 				Other.m_Num = Other.m_Max = 0;
 			}

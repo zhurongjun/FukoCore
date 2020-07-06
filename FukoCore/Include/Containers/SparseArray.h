@@ -176,11 +176,13 @@ namespace Fuko
 					}
 				}
 
+				// move data 
 				m_Data = std::move(Other.Data);
 				m_AllocationFlags = std::move(Other.m_AllocationFlags);
-
 				m_FirstFreeIndex = Other.m_FirstFreeIndex;
 				m_NumFreeIndices = Other.m_NumFreeIndices;
+
+				// invalidate other 
 				Other.m_FirstFreeIndex = -1;
 				Other.m_NumFreeIndices = 0;
 			}

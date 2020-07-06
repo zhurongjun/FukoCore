@@ -13,7 +13,9 @@ namespace Fuko
 		TPair() = default;
 		TPair(KeyType&& InKey, ValueType&& InValue) :Key(std::forward<KeyType>(InKey)), Value(std::forward<ValueType>(InValue)) {}
 		TPair(const KeyType& InKey, const ValueType& InValue) :Key(InKey), Value(InValue) {}
-		
+		TPair(KeyType&& InKey) : Key(std::forward<KeyType>(InKey)), Value() {}
+		TPair(const KeyType& InKey) : Key(InKey), Value() {}
+
 		// copy & move
 		TPair(const TPair&) = default;
 		TPair(TPair&&) = default;
@@ -39,7 +41,6 @@ namespace Fuko
 		KeyType			Key;
 		ValueType		Value;
 	};
-
 }
 
 // implement MakePair()

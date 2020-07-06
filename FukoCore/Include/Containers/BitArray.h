@@ -233,10 +233,17 @@ namespace Fuko
 		FORCEINLINE BitArray& operator=(BitArray&& Other)
 		{
 			if (this == &Other) return *this;
-			m_Data = Other.m_Data;
 
+			// free memory 
+			if (m_Data) m_Allocator->Free(m_Data);
+
+			// copy data 
+			m_Data = Other.m_Data;
 			m_NumBits = Other.m_NumBits;
 			m_MaxBits = Other.m_MaxBits;
+			m_Allocator = Other.m_Allocator;
+
+			// invalidate other 
 			Other.m_NumBits = 0;
 			Other.m_MaxBits = 0;
 		}

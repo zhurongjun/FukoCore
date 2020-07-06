@@ -21,12 +21,14 @@
 #include "Templates/Models.h"
 #include "Containers/BitArray.h"
 #include "Containers/SparseArray.h"
+#include "Containers/Set.h"
+#include "Containers/Map.h"
 
 
 int main()
 {
-	Fuko::BitArray arr;
-	Fuko::TSparseArray<int> sparseArr;
+	Fuko::TMap<int, int> Map;
+	Fuko::TMultiMap<int, int> MutiMap;
 
 	system("pause");
 	return 0;
