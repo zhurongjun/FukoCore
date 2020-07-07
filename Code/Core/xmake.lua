@@ -1,0 +1,1 @@
+dynamic_module("Core")

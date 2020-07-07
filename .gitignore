@@ -36,3 +36,4 @@ bin/
 .xmake/
 build/
 vsxmake2017/
+CMakeLists.txt
