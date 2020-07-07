@@ -220,7 +220,7 @@ namespace Fuko
 
 	protected:
 		// Avoids allocating hash until first add
-		CORE_API static uint32	EmptyHash[1];
+		static uint32	EmptyHash[1];
 
 		uint32			HashSize;
 		uint16			HashMask;

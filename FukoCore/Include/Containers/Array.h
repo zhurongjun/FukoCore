@@ -1239,18 +1239,18 @@ namespace Fuko
 		}
 
 		// support foreach 
+#if TARRAY_RANGED_FOR_CHECKS
 		typedef TCheckedPointerIterator<      ElementType, SizeType> RangedForIteratorType;
 		typedef TCheckedPointerIterator<const ElementType, SizeType> RangedForConstIteratorType;
-#if TARRAY_RANGED_FOR_CHECKS
 		FORCEINLINE RangedForIteratorType      begin() { return RangedForIteratorType(m_Num, GetData()); }
 		FORCEINLINE RangedForConstIteratorType begin() const { return RangedForConstIteratorType(m_Num, GetData()); }
 		FORCEINLINE RangedForIteratorType      end() { return RangedForIteratorType(m_Num, GetData() + Num()); }
 		FORCEINLINE RangedForConstIteratorType end() const { return RangedForConstIteratorType(m_Num, GetData() + Num()); }
 #else
-		FORCEINLINE RangedForIteratorType      begin() { return GetData(); }
-		FORCEINLINE RangedForConstIteratorType begin() const { return GetData(); }
-		FORCEINLINE RangedForIteratorType      end() { return GetData() + Num(); }
-		FORCEINLINE RangedForConstIteratorType end() const { return GetData() + Num(); }
+		FORCEINLINE ElementType*      	begin() { return GetData(); }
+		FORCEINLINE const ElementType* 	begin() const { return GetData(); }
+		FORCEINLINE ElementType*      	end() { return GetData() + Num(); }
+		FORCEINLINE const ElementType* 	end() const { return GetData() + Num(); }
 #endif		
 	};
 }

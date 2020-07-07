@@ -33,3 +33,6 @@
 temp/
 bin/
 .vs/
+.xmake/
+build/
+vsxmake2017/

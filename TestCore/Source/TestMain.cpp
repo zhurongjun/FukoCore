@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <Containers/Map.h>
 
-
 int main()
 {
 	Fuko::TMap<int, int> Map;

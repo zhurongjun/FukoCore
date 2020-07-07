@@ -6,7 +6,7 @@
 namespace Fuko::Crc
 {
 	/** lookup table with precalculated CRC values - slicing by 8 implementation */
-	static uint32 CRCTablesSB8[8][256];
+	CORE_API extern uint32 CRCTablesSB8[8][256];
 
 	/** initializes the CRC lookup table. Must be called before any of the
 		CRC functions are used. */

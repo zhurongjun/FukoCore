@@ -2,9 +2,9 @@
 
 using namespace Fuko;
 
-CORE_API uint32 FHashTable::EmptyHash[1] = { ~0u };
+uint32 FHashTable::EmptyHash[1] = { ~0u };
 
-CORE_API void FHashTable::Resize(uint32 NewIndexSize)
+void FHashTable::Resize(uint32 NewIndexSize)
 {
 	if (NewIndexSize == IndexSize)
 	{
@@ -36,7 +36,7 @@ CORE_API void FHashTable::Resize(uint32 NewIndexSize)
 	NextIndex = NewNextIndex;
 }
 
-CORE_API float FHashTable::AverageSearch() const
+float FHashTable::AverageSearch() const
 {
 	uint32 SumAvgSearch = 0;
 	uint32 NumElements = 0;
