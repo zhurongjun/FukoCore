@@ -103,13 +103,13 @@ void TestArray()
 		Arr.SetNum(10);
 
 		CountType::Reset();
-		CountType* LastData = Arr.GetAllocator().Data();
+		CountType* LastData = Arr.GetData();
 
 		TArray<CountType> TestMove(std::move(Arr));
 		check(CountType::MoveConstruct == 0);
 		check(Arr.Max() == 0 && Arr.Num() == 0);
-		check(Arr.GetAllocator().Data() == nullptr);
-		check(LastData == TestMove.GetAllocator().Data());
+		check(Arr.GetData() == nullptr);
+		check(LastData == TestMove.GetData());
 	}
 
 	// move assign
@@ -120,14 +120,14 @@ void TestArray()
 		TestMove.SetNum(15);
 		
 		CountType::Reset();
-		CountType* LastData = Arr.GetAllocator().Data();
+		CountType* LastData = Arr.GetData();
 		TestMove = std::move(Arr);
 
 		check(CountType::Destruct == 15);
 		check(CountType::MoveConstruct == 0);
 		check(Arr.Max() == 0 && Arr.Num() == 0);
-		check(Arr.GetAllocator().Data() == nullptr);
-		check(LastData == TestMove.GetAllocator().Data());
+		check(Arr.GetData() == nullptr);
+		check(LastData == TestMove.GetData());
 	}
 
 	// get information test

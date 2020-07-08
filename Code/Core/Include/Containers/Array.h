@@ -11,16 +11,9 @@
 // forward
 namespace Fuko
 {
-	template<typename T,typename Alloc = PmrAllocator<T>>
+	template<typename T,typename Alloc = TPmrAllocator<T>>
 	class TArray;
 }
-
-// 检测是否在迭代期间修改数组 
-#if FUKO_DEBUG
-#define TARRAY_RANGED_FOR_CHECKS 1
-#else
-#define TARRAY_RANGED_FOR_CHECKS 0
-#endif
 
 // 迭代器
 namespace Fuko
@@ -136,7 +129,7 @@ namespace Fuko
 	}
 
 	// 检测迭代期间是否发生改变
-#if TARRAY_RANGED_FOR_CHECKS
+#if FUKO_DEBUG
 	template <typename ElementType, typename SizeType>
 	struct TCheckedPointerIterator
 	{
@@ -218,6 +211,7 @@ namespace Fuko
 		using SizeType = typename AllocType::SizeType;
 	protected:
 		AllocType	m_Allocator;
+		T*			m_Data;
 		SizeType	m_Num;
 		SizeType	m_Max;
 
@@ -225,21 +219,26 @@ namespace Fuko
 	private:
 		FORCENOINLINE void FreeArray()
 		{
-			DestructItems(m_Allocator.Data(), m_Num);
+			DestructItems(GetData(), m_Num);
 			m_Num = 0;
-			m_Max = m_Allocator.Free();
+			m_Max = m_Allocator.Free(m_Data);
 		}
 		FORCENOINLINE void ResizeGrow()
 		{
-			if (m_Num > m_Max) m_Max = m_Allocator.Grow(m_Num, m_Max);
+			if (m_Num > m_Max)
+			{
+				m_Max = m_Allocator.GetGrow(m_Num, m_Max);
+				m_Max = m_Allocator.Reserve(m_Data, m_Max);
+			}
 		}
 		FORCENOINLINE void ResizeShrink()
 		{
-			m_Max = m_Allocator.Shrink(m_Num, m_Max);
+			auto NewMax = m_Allocator.GetShrink(m_Num, m_Max);
+			if (NewMax < m_Max) m_Max = m_Allocator.Reserve(m_Data, m_Max);
 		}
 		FORCENOINLINE void ResizeTo(SizeType NewMax)
 		{
-			if (m_Max != NewMax) m_Max = m_Allocator.Reserve(NewMax);
+			if (m_Max != NewMax) m_Max = m_Allocator.Reserve(m_Data, NewMax);
 		}
 		template <typename OtherElementType>
 		void CopyToEmpty(const OtherElementType* OtherData, SizeType OtherNum, SizeType ExtraSlack)
@@ -260,11 +259,13 @@ namespace Fuko
 		// construct 
 		FORCEINLINE TArray(AllocType&& InAlloc = AllocType())
 			: m_Num(0)
+			, m_Data(nullptr)
 			, m_Max(InAlloc.GetCount(0))
 			, m_Allocator(std::move(InAlloc))
 		{}
 		FORCEINLINE TArray(const ElementType* Ptr, SizeType Count, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
+			, m_Data(nullptr)
 			, m_Max(InAlloc.GetCount(0))
 			, m_Allocator(std::move(InAlloc))
 		{
@@ -273,6 +274,7 @@ namespace Fuko
 		}
 		FORCEINLINE TArray(std::initializer_list<ElementType> InitList, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
+			, m_Data(nullptr)
 			, m_Max(InAlloc.GetCount(0))
 			, m_Allocator(std::move(InAlloc))
 		{
@@ -283,6 +285,7 @@ namespace Fuko
 		template <typename OtherElementType>
 		FORCEINLINE explicit TArray(const TArray<OtherElementType>& Other, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
+			, m_Data(nullptr)
 			, m_Max(InAlloc.GetCount(0))
 			, m_Allocator(std::move(InAlloc))
 		{
@@ -290,6 +293,7 @@ namespace Fuko
 		}
 		FORCEINLINE TArray(const TArray& Other, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
+			, m_Data(nullptr)
 			, m_Max(InAlloc.GetCount(0))
 			, m_Allocator(std::move(InAlloc))
 		{
@@ -297,6 +301,7 @@ namespace Fuko
 		}
 		FORCEINLINE TArray(const TArray& Other, SizeType ExtraSlack, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
+			, m_Data(nullptr)
 			, m_Max(InAlloc.GetCount(0))
 			, m_Allocator(std::move(InAlloc))
 		{
@@ -306,7 +311,7 @@ namespace Fuko
 		// assign operator 
 		TArray& operator=(std::initializer_list<ElementType> InitList)
 		{
-			DestructItems(m_Allocator.Data(), m_Num);
+			DestructItems(GetData(), m_Num);
 			CopyToEmpty(InitList.begin(), (SizeType)InitList.size(), 0);
 			return *this;
 		}
@@ -314,7 +319,7 @@ namespace Fuko
 		{
 			if (this != &Other)
 			{
-				DestructItems(m_Allocator.Data(), m_Num);
+				DestructItems(GetData(), m_Num);
 				CopyToEmpty(Other.GetData(), Other.Num(), 0);
 			}
 			return *this;
@@ -323,11 +328,13 @@ namespace Fuko
 		// move construct 
 		FORCEINLINE TArray(TArray&& Other)
 			: m_Num(Other.m_Num)
+			, m_Data(Other.m_Data)
 			, m_Max(Other.m_Max)
 			, m_Allocator(std::move(Other.m_Allocator))
 		{
 			Other.m_Num = 0;
 			Other.m_Max = 0;
+			Other.m_Data = nullptr;
 		}
 	
 		// move assign operator 
@@ -336,15 +343,17 @@ namespace Fuko
 			if (this == &Other) return *this;
 			
 			// destruct items 
-			DestructItems(m_Allocator.Data(), m_Num);
+			DestructItems(GetData(), m_Num);
 
 			// copy info 
 			m_Allocator = std::move(Other.m_Allocator);
 			m_Num = Other.m_Num;
 			m_Max = Other.m_Max;
+			m_Data = Other.m_Data;
 
 			// invalidate other 
 			Other.m_Num = Other.m_Max = 0;
+			Other.m_Data = nullptr;
 			return *this;
 		}
 		
@@ -356,8 +365,8 @@ namespace Fuko
 		
 	public:
 		// get infomation 
-		FORCEINLINE ElementType* GetData() { return m_Allocator.Data(); }
-		FORCEINLINE const ElementType* GetData() const { return const_cast<TArray*>(this)->m_Allocator.Data(); }
+		FORCEINLINE ElementType* GetData() { return m_Data; }
+		FORCEINLINE const ElementType* GetData() const { return m_Data; }
 		FORCEINLINE uint32 GetTypeSize() const { return ElementSize; }
 		FORCEINLINE SizeType Num() const { return m_Num; }
 		FORCEINLINE SizeType Max() const { return m_Max; }
@@ -1190,7 +1199,7 @@ namespace Fuko
 		}
 
 		// support foreach 
-#if TARRAY_RANGED_FOR_CHECKS
+#if FUKO_DEBUG
 		typedef TCheckedPointerIterator<      ElementType, SizeType> RangedForIteratorType;
 		typedef TCheckedPointerIterator<const ElementType, SizeType> RangedForConstIteratorType;
 		FORCEINLINE RangedForIteratorType      begin() { return RangedForIteratorType(m_Num, GetData()); }

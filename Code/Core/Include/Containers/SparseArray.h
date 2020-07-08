@@ -6,43 +6,23 @@
 #include "CoreMinimal/Assert.h"
 #include "BitArray.h"
 
-#if FUKO_DEBUG
-#define TSPARSEARRAY_RANGED_FOR_CHECKS 1
-#else
-#define TSPARSEARRAY_RANGED_FOR_CHECKS 0 
-#endif // DEBUG
-
-// Struct
+// Structs
 namespace Fuko
 {
-	/**
-	 * @struct FSparseArrayAllocationInfo
-	 *
-	 * @brief 用于输出稀疏数组的元素
-	 */
-	struct FSparseArrayAllocationInfo
+	struct SparseArrayAllocationInfo
 	{
 		int32 Index;
 		void* Pointer;
 	};
 
-	/**
-	 * @union TSparseArrayElementOrFreeListLink
-	 *
-	 * @brief 两用类型，存储已经分配的元素或是空闲元素链表节点
-	 */
 	template<typename ElementType>
-	union TSparseArrayElementOrFreeListLink
+	union TElementOrFreeList
 	{
 		ElementType ElementData;
-
 		struct
 		{
-			// 前一个空闲元素或是分配的元素
-			int32 PrevFreeIndex;
-
-			// 前一个已经分配的元素或是空闲元素 
-			int32 NextFreeIndex;
+			int32 Last;
+			int32 Next;
 		};
 	};
 }
@@ -50,19 +30,21 @@ namespace Fuko
 // TSparseArray
 namespace Fuko
 {
-	template<typename T>
+	template<typename T, typename BitAlloc, typename ArrAlloc>
 	class TSparseArray final
 	{
+		static_assert(std::is_same_v<typename BitAlloc::SizeType, typename ArrAlloc::SizeType>);
 		using ElementType = T;
 
 		// 使用占位符来避免TArray实例化冗余的元素(防止Free部分的元素依旧被调用构造) 
-		using FElementOrFreeListLink = TSparseArrayElementOrFreeListLink<TAlignedBytes<sizeof(ElementType), alignof(ElementType)>>;
-		using DataArrayType = TArray<FElementOrFreeListLink>;
-		
-		DataArrayType	m_Data;				// contains all element 
-		BitArray		m_AllocationFlags;	// whether the element is be set
-		int32			m_FirstFreeIndex;	// first free index in data array
-		int32			m_NumFreeIndices;	// free indices num
+		using FElementOrFreeListLink = TElementOrFreeList<TAlignedBytes<sizeof(ElementType), alignof(ElementType)>>;
+		using DataArrayType = TArray<FElementOrFreeListLink, ArrAlloc>;
+		using SizeType = typename ArrAlloc::SizeType;
+
+		DataArrayType		m_Data;				// contains all elements
+		TBitArray<BitAlloc>	m_AllocationFlags;	// allocation flags 
+		SizeType		m_FirstFreeIndex;	// first free index in data array
+		SizeType		m_NumFreeIndices;	// free indices num
 
 	private:
 		// for sparse array compare 
@@ -81,9 +63,6 @@ namespace Fuko
 				return Pred(*(ElementType*)&A.ElementData, *(ElementType*)&B.ElementData);
 			}
 		};
-
-		FElementOrFreeListLink& GetData(int32 Index) { return m_Data[Index];}
-		const FElementOrFreeListLink& GetData(int32 Index) const { return m_Data[Index]; }
 
 	public:
 		// construct 
@@ -112,7 +91,7 @@ namespace Fuko
 			, m_NumFreeIndices(Other.m_NumFreeIndices)
 		{
 			Other.m_FirstFreeIndex = -1;
-			Other.NumFreeIndices = 0;
+			Other.m_NumFreeIndices = 0;
 		}
 
 		// copy assign operator 
@@ -148,8 +127,8 @@ namespace Fuko
 					else
 					{
 						// copy free list info 
-						DestElement.PrevFreeIndex = SrcElement.PrevFreeIndex;
-						DestElement.NextFreeIndex = SrcElement.NextFreeIndex;
+						DestElement.Last = SrcElement.Last;
+						DestElement.Next = SrcElement.Next;
 					}
 				}
 			}
@@ -196,7 +175,7 @@ namespace Fuko
 		}
 
 		// allocate index, set the index as allocated, but won't call construct 
-		FSparseArrayAllocationInfo AllocateIndex(int32 Index)
+		SparseArrayAllocationInfo AllocateIndex(int32 Index)
 		{
 			check(Index >= 0);
 			check(Index < GetMaxIndex());
@@ -206,7 +185,7 @@ namespace Fuko
 			m_AllocationFlags[Index] = true;
 
 			// Set the allocation info.
-			FSparseArrayAllocationInfo Result;
+			SparseArrayAllocationInfo Result;
 			Result.Index = Index;
 			Result.Pointer = &GetData(Result.Index).ElementData;
 
@@ -214,18 +193,18 @@ namespace Fuko
 		}
 
 		// special add 
-		FSparseArrayAllocationInfo AddUninitialized()
+		SparseArrayAllocationInfo AddUninitialized()
 		{
 			int32 Index;
 			if (m_NumFreeIndices)
 			{
 				// Remove and use the first index from the list of free elements.
 				Index = m_FirstFreeIndex;
-				m_FirstFreeIndex = GetData(m_FirstFreeIndex).NextFreeIndex;
+				m_FirstFreeIndex = GetData(m_FirstFreeIndex).Next;
 				--m_NumFreeIndices;
 				if (m_NumFreeIndices)
 				{
-					GetData(m_FirstFreeIndex).PrevFreeIndex = -1;
+					GetData(m_FirstFreeIndex).Last = -1;
 				}
 			}
 			else
@@ -237,7 +216,7 @@ namespace Fuko
 
 			return AllocateIndex(Index);
 		}
-		FSparseArrayAllocationInfo AddUninitializedAtLowestFreeIndex(int32& LowestFreeIndexSearchStart)
+		SparseArrayAllocationInfo AddUninitializedAtLowestFreeIndex(int32& LowestFreeIndexSearchStart)
 		{
 			int32 Index;
 			if (m_NumFreeIndices)
@@ -250,17 +229,17 @@ namespace Fuko
 				// Update FirstFreeIndex
 				if (m_FirstFreeIndex == Index)
 				{
-					m_FirstFreeIndex = IndexData.NextFreeIndex;
+					m_FirstFreeIndex = IndexData.Next;
 				}
 
 				// Link the linked list for remove a node 
-				if (IndexData.NextFreeIndex >= 0)
+				if (IndexData.Next >= 0)
 				{
-					GetData(IndexData.NextFreeIndex).PrevFreeIndex = IndexData.PrevFreeIndex;
+					GetData(IndexData.Next).Last = IndexData.Last;
 				}
-				if (IndexData.PrevFreeIndex >= 0)
+				if (IndexData.Last >= 0)
 				{
-					GetData(IndexData.PrevFreeIndex).NextFreeIndex = IndexData.NextFreeIndex;
+					GetData(IndexData.Last).Next = IndexData.Next;
 				}
 
 				--m_NumFreeIndices;
@@ -272,7 +251,7 @@ namespace Fuko
 				m_AllocationFlags.Add(true);
 			}
 
-			FSparseArrayAllocationInfo Result;
+			SparseArrayAllocationInfo Result;
 			Result.Index = Index;
 			Result.Pointer = &GetData(Result.Index).ElementData;
 			return Result;
@@ -281,25 +260,25 @@ namespace Fuko
 		// add
 		int32 Add(const ElementType& Element)
 		{
-			FSparseArrayAllocationInfo Allocation = AddUninitialized();
+			SparseArrayAllocationInfo Allocation = AddUninitialized();
 			new(Allocation) ElementType(Element);
 			return Allocation.Index;
 		}
 		int32 Add(ElementType&& Element)
 		{
-			FSparseArrayAllocationInfo Allocation = AddUninitialized();
+			SparseArrayAllocationInfo Allocation = AddUninitialized();
 			new(Allocation) ElementType(std::move(Element));
 			return Allocation.Index;
 		}
 		int32 AddAtLowestFreeIndex(const ElementType& Element, int32& LowestFreeIndexSearchStart)
 		{
-			FSparseArrayAllocationInfo Allocation = AddUninitializedAtLowestFreeIndex(LowestFreeIndexSearchStart);
+			SparseArrayAllocationInfo Allocation = AddUninitializedAtLowestFreeIndex(LowestFreeIndexSearchStart);
 			new(Allocation) ElementType(Element);
 			return Allocation.Index;
 		}
 
 		// special insert 
-		FSparseArrayAllocationInfo InsertUninitialized(int32 Index)
+		SparseArrayAllocationInfo InsertUninitialized(int32 Index)
 		{
 			// Enlarge the array to include the given index.
 			if (Index >= m_Data.Num())
@@ -308,11 +287,11 @@ namespace Fuko
 				while (m_AllocationFlags.Num() < m_Data.Num())
 				{
 					const int32 FreeIndex = m_AllocationFlags.Num();
-					GetData(FreeIndex).PrevFreeIndex = -1;
+					GetData(FreeIndex).Last = -1;
 					GetData(FreeIndex).NextFreeIndex = m_FirstFreeIndex;
 					if (m_NumFreeIndices)
 					{
-						GetData(m_FirstFreeIndex).PrevFreeIndex = FreeIndex;
+						GetData(m_FirstFreeIndex).Last = FreeIndex;
 					}
 					m_FirstFreeIndex = FreeIndex;
 					always_check(m_AllocationFlags.Add(false) == FreeIndex);
@@ -325,11 +304,11 @@ namespace Fuko
 
 			// Remove the index from the list of free elements.
 			--m_NumFreeIndices;
-			const int32 PrevFreeIndex = GetData(Index).PrevFreeIndex;
+			const int32 Last = GetData(Index).Last;
 			const int32 NextFreeIndex = GetData(Index).NextFreeIndex;
-			if (PrevFreeIndex != -1)
+			if (Last != -1)
 			{
-				GetData(PrevFreeIndex).NextFreeIndex = NextFreeIndex;
+				GetData(Last).NextFreeIndex = NextFreeIndex;
 			}
 			else
 			{
@@ -337,7 +316,7 @@ namespace Fuko
 			}
 			if (NextFreeIndex != -1)
 			{
-				GetData(NextFreeIndex).PrevFreeIndex = PrevFreeIndex;
+				GetData(NextFreeIndex).Last = Last;
 			}
 
 			return AllocateIndex(Index);
@@ -373,10 +352,10 @@ namespace Fuko
 				// Mark the element as free and add it to the free element list.
 				if (m_NumFreeIndices)
 				{
-					GetData(m_FirstFreeIndex).PrevFreeIndex = Index;
+					GetData(m_FirstFreeIndex).Last = Index;
 				}
 				auto& IndexData = GetData(Index);
-				IndexData.PrevFreeIndex = -1;
+				IndexData.Last = -1;
 				IndexData.NextFreeIndex = m_NumFreeIndices > 0 ? m_FirstFreeIndex: INDEX_NONE;
 				m_FirstFreeIndex = Index;
 				++m_NumFreeIndices;
@@ -437,9 +416,9 @@ namespace Fuko
 			{
 				if (m_NumFreeIndices)
 				{
-					GetData(m_FirstFreeIndex).PrevFreeIndex = FreeIndex;
+					GetData(m_FirstFreeIndex).Last = FreeIndex;
 				}
-				GetData(FreeIndex).PrevFreeIndex = -1;
+				GetData(FreeIndex).Last = -1;
 				GetData(FreeIndex).NextFreeIndex = m_NumFreeIndices> 0 ? m_NumFreeIndices : INDEX_NONE;
 				m_FirstFreeIndex = FreeIndex;
 				++m_NumFreeIndices;
@@ -470,15 +449,15 @@ namespace Fuko
 					{
 						if (FreeIndex >= FirstIndexToRemove)
 						{
-							const int32 PrevFreeIndex = GetData(FreeIndex).PrevFreeIndex;
+							const int32 Last = GetData(FreeIndex).Last;
 							const int32 NextFreeIndex = GetData(FreeIndex).NextFreeIndex;
 							if (NextFreeIndex != -1)
 							{
-								GetData(NextFreeIndex).PrevFreeIndex = PrevFreeIndex;
+								GetData(NextFreeIndex).Last = Last;
 							}
-							if (PrevFreeIndex != -1)
+							if (Last != -1)
 							{
-								GetData(PrevFreeIndex).NextFreeIndex = NextFreeIndex;
+								GetData(Last).NextFreeIndex = NextFreeIndex;
 							}
 							else
 							{
@@ -691,7 +670,7 @@ namespace Fuko
 		class TBaseIterator
 		{
 		public:
-			typedef TConstSetBitIterator BitArrayItType;
+			typedef ConstSetBitIterator BitArrayItType;
 
 		private:
 			typedef typename std::conditional_t<bConst, const TSparseArray, TSparseArray> ArrayType;
@@ -742,7 +721,7 @@ namespace Fuko
 		{
 		public:
 			TIterator(TSparseArray& InArray)
-				: TBaseIterator<false>(InArray, TConstSetBitIterator(InArray.m_AllocationFlags))
+				: TBaseIterator<false>(InArray, ConstSetBitIterator(InArray.m_AllocationFlags))
 			{}
 
 			TIterator(TSparseArray& InArray, const typename TBaseIterator<false>::BitArrayItType& InBitArrayIt)
@@ -759,7 +738,7 @@ namespace Fuko
 		{
 		public:
 			TConstIterator(const TSparseArray& InArray)
-				: TBaseIterator<true>(InArray, TConstSetBitIterator(InArray.m_AllocationFlags))
+				: TBaseIterator<true>(InArray, ConstSetBitIterator(InArray.m_AllocationFlags))
 			{}
 
 			TConstIterator(const TSparseArray& InArray, const typename TBaseIterator<true>::BitArrayItType& InBitArrayIt)
@@ -767,7 +746,7 @@ namespace Fuko
 			{}
 		};
 
-#if TSPARSEARRAY_RANGED_FOR_CHECKS
+#if FUKO_DEBUG
 		class TRangedForIterator : public TIterator
 		{
 		public:
@@ -807,60 +786,15 @@ namespace Fuko
 		using TRangedForConstIterator = TConstIterator;
 #endif
 	public:
-		FORCEINLINE TRangedForIterator      begin()			{ return TRangedForIterator(*this, TConstSetBitIterator(m_AllocationFlags)); }
-		FORCEINLINE TRangedForConstIterator begin() const	{ return TRangedForConstIterator(*this, TConstSetBitIterator(m_AllocationFlags)); }
-		FORCEINLINE TRangedForIterator      end()			{ return TRangedForIterator(*this, TConstSetBitIterator(m_AllocationFlags, m_AllocationFlags.Num())); }
-		FORCEINLINE TRangedForConstIterator end() const		{ return TRangedForConstIterator(*this, TConstSetBitIterator(m_AllocationFlags, m_AllocationFlags.Num())); }
-
-		// create iterator 
-		TIterator CreateIterator()
-		{
-			return TIterator(*this);
-		}
-		TConstIterator CreateConstIterator() const
-		{
-			return TConstIterator(*this);
-		}
-	public:
-		// 仅仅访问在两个稀疏数组中都有的元素 
-		class TConstSubsetIterator
-		{
-		public:
-			TConstSubsetIterator(const TSparseArray& InArray, const BitArray& InBitArray) :
-				Array(InArray),
-				BitArrayIt(InArray.m_AllocationFlags, InBitArray)
-			{}
-			FORCEINLINE TConstSubsetIterator& operator++()
-			{
-				// Iterate to the next element which is both allocated and has its bit set in the other bit array.
-				++BitArrayIt;
-				return *this;
-			}
-			FORCEINLINE int32 GetIndex() const { return BitArrayIt.GetIndex(); }
-
-			/** conversion to "bool" returning true if the iterator is valid. */
-			FORCEINLINE explicit operator bool() const
-			{
-				return !!BitArrayIt;
-			}
-			/** inverse of the "bool" operator */
-			FORCEINLINE bool operator !() const
-			{
-				return !(bool)*this;
-			}
-
-			FORCEINLINE const ElementType& operator*() const { return Array(GetIndex()); }
-			FORCEINLINE const ElementType* operator->() const { return &Array(GetIndex()); }
-			FORCEINLINE const FRelativeBitReference& GetRelativeBitReference() const { return BitArrayIt; }
-		private:
-			const TSparseArray&			Array;
-			TConstDualSetBitIterator	BitArrayIt;
-		};
+		FORCEINLINE TRangedForIterator      begin()			{ return TRangedForIterator(*this, ConstSetBitIterator(m_AllocationFlags)); }
+		FORCEINLINE TRangedForConstIterator begin() const	{ return TRangedForConstIterator(*this, ConstSetBitIterator(m_AllocationFlags)); }
+		FORCEINLINE TRangedForIterator      end()			{ return TRangedForIterator(*this, ConstSetBitIterator(m_AllocationFlags, m_AllocationFlags.Num())); }
+		FORCEINLINE TRangedForConstIterator end() const		{ return TRangedForConstIterator(*this, ConstSetBitIterator(m_AllocationFlags, m_AllocationFlags.Num())); }
 	};
 }
 
 // operator new 
-inline void* operator new(size_t Size, const Fuko::FSparseArrayAllocationInfo& Allocation)
+inline void* operator new(size_t Size, const Fuko::SparseArrayAllocationInfo& Allocation)
 {
 	check(Allocation.Pointer);
 	return Allocation.Pointer;
