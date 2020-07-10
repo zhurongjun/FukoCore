@@ -99,6 +99,7 @@ namespace Fuko::Algo
 		if ((Data[DwordIndex] & Mask) == (Test & Mask))
 		{
 			--DwordIndex;
+			Mask = FullMask;
 			while (DwordIndex >= 0 && Data[DwordIndex] == Test) --DwordIndex;
 		}
 
@@ -218,6 +219,6 @@ namespace Fuko::Algo
 	template<typename SizeType>
 	FORCEINLINE bool GetBit(uint32* InData, SizeType Index)
 	{
-		return InData[Index >> NumBitsPerDWORDLogTwo] & (1 << (Index & PerDWORDMask)) != 0;
+		return (InData[Index >> NumBitsPerDWORDLogTwo] & (1 << (Index & PerDWORDMask))) != 0;
 	}
 }

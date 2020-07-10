@@ -15,18 +15,18 @@ namespace Fuko
 		using ElementType = TPair<TK, TV>;
 		static constexpr bool bAllowDuplicateKeys = bInAllowDuplicateKeys;
 
-		static FORCEINLINE const KeyType& GetSetKey(const ElementType& Element) { return Element.Key; }
+		static FORCEINLINE const KeyType& Key(const ElementType& Element) { return Element.Key; }
 		template<typename ComparableKey>
 		static FORCEINLINE bool Matches(const KeyType& A, ComparableKey B) { return A == B; }
 		template<typename ComparableKey>
-		static FORCEINLINE uint32 GetKeyHash(ComparableKey Key) { return GetTypeHash(Key); }
+		static FORCEINLINE uint32 Hash(ComparableKey Key) { return GetTypeHash(Key); }
 	};
 }
 
 // Base map
 namespace Fuko
 {
-	template <typename KeyType, typename ValueType, typename KeyFuncs>
+	template <typename KeyType, typename ValueType, template<typename> typename Alloc,typename KeyFuncs>
 	class TMapBase
 	{
 		//-----------------------------begin help function-----------------------------
@@ -44,10 +44,11 @@ namespace Fuko
 			return AddByHash(KeyHash, std::forward<InitKeyType>(Key), std::forward<InitValueType>(Value));
 		}
 		//------------------------------end help function------------------------------
-
 	public:
 		using ElementType = TPair<KeyType, ValueType>;
-		using ElementSetType = TSet<ElementType, KeyFuncs>;
+		using ElementSetType = TSet<ElementType, Alloc, KeyFuncs>;
+		using AllocType = typename ElementSetType::AllocType;
+		using SizeType = typename AllocType::SizeType;
 
 		// special predicate for compare key
 		template<typename Predicate>
@@ -55,8 +56,8 @@ namespace Fuko
 		{
 			TDereferenceWrapper<KeyType, Predicate> Pred;
 		public:
-			FORCEINLINE FKeyComparisonClass(const Predicate& InPredicate) : Pred(InPredicate) {}
-			FORCEINLINE bool operator()(const typename ElementType& A, const typename ElementType& B) const
+			FORCEINLINE FKeyComparisonClass(Predicate&& InPredicate) : Pred(std::move(InPredicate)) {}
+			FORCEINLINE bool operator()(const ElementType& A, const ElementType& B) const
 			{
 				return Pred(A.Key, B.Key);
 			}
@@ -75,39 +76,31 @@ namespace Fuko
 			}
 		};
 	protected:
-		TSet<ElementType, KeyFuncs>	m_Pairs;
+		ElementSetType	m_Pairs;
 
 		// construct 
-		FORCEINLINE TMapBase(
-			IAllocator* HashAlloc = DefaultAllocator(),
-			IAllocator* BitArrayAlloc = DefaultAllocator(),
-			IAllocator* ElementAlloc = DefaultAllocator())
-			: m_Pairs(HashAlloc, BitArrayAlloc, ElementAlloc) {}
+		FORCEINLINE TMapBase(AllocType&& InAlloc)
+			: m_Pairs(std::move(InAlloc)) {}
 		
 		// copy construct
-		FORCEINLINE TMapBase(const TMapBase& Other,
-			IAllocator* HashAlloc = DefaultAllocator(),
-			IAllocator* BitArrayAlloc = DefaultAllocator(),
-			IAllocator* ElementAlloc = DefaultAllocator())
-			: m_Pairs(Other.m_Pairs,HashAlloc, BitArrayAlloc, ElementAlloc) {}
+		FORCEINLINE TMapBase(const TMapBase& Other, AllocType&& InAlloc)
+			: m_Pairs(Other.m_Pairs, std::move(InAlloc)) {}
 		
 		// move construct 
 		FORCEINLINE TMapBase(TMapBase&&) = default;
-
-		// assign 
 		FORCEINLINE TMapBase& operator=(const TMapBase&) = default;
-		
-		// move assign 
 		FORCEINLINE TMapBase& operator=(TMapBase&&) = default;
 	public:
 		// operators 
-		FORCEINLINE void Empty(int32 ExpectedNumElements = 0) { m_Pairs.Empty(ExpectedNumElements); }
-		FORCEINLINE void Reset() { m_Pairs.Reset(); }
+		FORCEINLINE void Empty(SizeType ExpectedNumElements = 0) { m_Pairs.Empty(ExpectedNumElements); }
+		FORCEINLINE void Reset(SizeType ExpectedNumElements = 0) { m_Pairs.Reset(ExpectedNumElements); }
 		FORCEINLINE void Shrink() { m_Pairs.Shrink(); }
 		FORCEINLINE void Compact(){ m_Pairs.Compact(); }
 		FORCEINLINE void CompactStable() { m_Pairs.CompactStable(); }
-		FORCEINLINE void Reserve(int32 Number) { m_Pairs.Reserve(Number); }
-		FORCEINLINE int32 Num() const { return m_Pairs.Num(); }
+		FORCEINLINE void Reserve(SizeType Number) { m_Pairs.Reserve(Number); }
+		FORCEINLINE SizeType Num() const { return m_Pairs.Num(); }
+		FORCEINLINE SizeType Max() const { return m_Pairs.Max(); }
+		FORCEINLINE SizeType GetMaxIndex() const { return m_Pairs.GetMaxIndex(); }
 		
 		// compare operator that not care element order, may be very slow 
 		bool OrderIndependentCompareEqual(const TMapBase& Other) const
@@ -228,16 +221,16 @@ namespace Fuko
 		}
 
 		// find or add key only 
-		FORCEINLINE ValueType& FindOrAdd(const KeyType& Key) { return FindOrAddImpl(KeyFuncs::GetKeyHash(Key), Key); }
-		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key) { return FindOrAddImpl(KeyFuncs::GetKeyHash(Key), std::move(Key)); }
+		FORCEINLINE ValueType& FindOrAdd(const KeyType& Key) { return FindOrAddImpl(KeyFuncs::Hash(Key), Key); }
+		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key) { return FindOrAddImpl(KeyFuncs::Hash(Key), std::move(Key)); }
 		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType& Key) { return FindOrAddImpl(KeyHash, Key); }
 		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key) { return FindOrAddImpl(KeyHash, std::move(Key)); }
 
 		// find or add by key and value 
-		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, const ValueType&  Value) { return FindOrAddImpl(KeyFuncs::GetKeyHash(Key), Key, Value); }
-		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, ValueType&&       Value) { return FindOrAddImpl(KeyFuncs::GetKeyHash(Key), Key, std::move(Value)); }
-		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, const ValueType&  Value) { return FindOrAddImpl(KeyFuncs::GetKeyHash(Key), std::move(Key), Value); }
-		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, ValueType&&       Value) { return FindOrAddImpl(KeyFuncs::GetKeyHash(Key), std::move(Key), std::move(Value)); }
+		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, const ValueType&  Value) { return FindOrAddImpl(KeyFuncs::Hash(Key), Key, Value); }
+		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, ValueType&&       Value) { return FindOrAddImpl(KeyFuncs::Hash(Key), Key, std::move(Value)); }
+		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, const ValueType&  Value) { return FindOrAddImpl(KeyFuncs::Hash(Key), std::move(Key), Value); }
+		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, ValueType&&       Value) { return FindOrAddImpl(KeyFuncs::Hash(Key), std::move(Key), std::move(Value)); }
 		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key, const ValueType&  Value) { return FindOrAddImpl(KeyHash, Key, Value); }
 		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key, ValueType&& Value) { return FindOrAddImpl(KeyHash, Key, std::move(Value)); }
 		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, const ValueType&  Value) { return FindOrAddImpl(KeyHash, std::move(Key), Value); }
@@ -302,167 +295,90 @@ namespace Fuko
 		template<typename Predicate>
 		FORCEINLINE void ValueStableSort(const Predicate& Pred) { m_Pairs.StableSort(FValueComparisonClass<Predicate>(Pred)); }
 
-	protected:
 		//----------------------------------------iterators----------------------------------------
-		template<bool bConst, bool bRangedFor = false>
-		class TBaseIterator
+		class TIterator
 		{
+			using ItType = typename ElementSetType::TIterator;
+			TMapBase&	m_Map;
+			ItType		m_SetIt;
 		public:
-			typedef typename std::conditional_t<
-				bConst,
-				typename std::conditional_t<bRangedFor, typename ElementSetType::TRangedForConstIterator, typename ElementSetType::TConstIterator>,
-				typename std::conditional_t<bRangedFor, typename ElementSetType::TRangedForIterator, typename ElementSetType::TIterator>
-			> PairItType;
-		private:
-			typedef typename std::conditional_t<bConst, const TMapBase, TMapBase>	MapType;
-			typedef typename std::conditional_t<bConst, const KeyType, KeyType>		ItKeyType;
-			typedef typename std::conditional_t<bConst, const ValueType, ValueType> ItValueType;
-			typedef typename std::conditional_t<bConst, const typename ElementSetType::ElementType, typename ElementSetType::ElementType> PairType;
+			FORCEINLINE TIterator(TMapBase& InMap, SizeType StartIndex = 0)
+				: m_SetIt(InMap.m_Pairs, StartIndex)
+				, m_Map(InMap) {}
 
-		public:
-			FORCEINLINE TBaseIterator(const PairItType& InElementIt) : PairIt(InElementIt) {}
-
-			FORCEINLINE TBaseIterator& operator++()
+			FORCEINLINE TIterator& operator++()
 			{
-				++PairIt;
+				++m_SetIt;
 				return *this;
 			}
 
-			FORCEINLINE explicit operator bool() const { return !!PairIt; }
+			FORCEINLINE explicit operator bool() const { return !!m_SetIt; }
 			FORCEINLINE bool operator !() const { return !(bool)*this; }
 
-			FORCEINLINE friend bool operator==(const TBaseIterator& Lhs, const TBaseIterator& Rhs) { return Lhs.PairIt == Rhs.PairIt; }
-			FORCEINLINE friend bool operator!=(const TBaseIterator& Lhs, const TBaseIterator& Rhs) { return Lhs.PairIt != Rhs.PairIt; }
+			FORCEINLINE friend bool operator==(const TIterator& Lhs, const TIterator& Rhs) { return Lhs.m_SetIt == Rhs.m_SetIt; }
+			FORCEINLINE friend bool operator!=(const TIterator& Lhs, const TIterator& Rhs) { return Lhs.m_SetIt != Rhs.m_SetIt; }
 
-			FORCEINLINE ItKeyType&   Key()   const { return PairIt->Key; }
-			FORCEINLINE ItValueType& Value() const { return PairIt->Value; }
+			FORCEINLINE KeyType&   Key()   const { return m_SetIt->Key; }
+			FORCEINLINE ValueType& Value() const { return m_SetIt->Value; }
 
-			FORCEINLINE PairType& operator* () const { return  *PairIt; }
-			FORCEINLINE PairType* operator->() const { return &*PairIt; }
+			FORCEINLINE ElementType& operator* () const { return  *m_SetIt; }
+			FORCEINLINE ElementType* operator->() const { return &*m_SetIt; }
 
-		protected:
-			PairItType PairIt;
+			FORCEINLINE void RemoveCurrent() { m_SetIt->RemoveCurrent(); }
 		};
-		template<bool bConst>
-		class TBaseKeyIterator
+		class TConstIterator
 		{
-		private:
-			typedef typename std::conditional_t<bConst, typename ElementSetType::TConstKeyIterator, typename ElementSetType::TKeyIterator> SetItType;
-			typedef typename std::conditional_t<bConst, const KeyType, KeyType> ItKeyType;
-			typedef typename std::conditional_t<bConst, const ValueType, ValueType> ItValueType;
-
+			using ItType = typename ElementSetType::TConstIterator;
+			ItType	m_SetIt;
 		public:
-			FORCEINLINE TBaseKeyIterator(const SetItType& InSetIt) : SetIt(InSetIt) { }
-			FORCEINLINE TBaseKeyIterator& operator++()
+			FORCEINLINE TConstIterator(const TMapBase& InMap, SizeType StartIndex = 0)
+				: m_SetIt(InMap.m_Pairs, StartIndex)
+				, m_Map(InMap) {}
+
+			FORCEINLINE TConstIterator& operator++()
 			{
-				++SetIt;
+				++m_SetIt;
 				return *this;
 			}
 
-			FORCEINLINE explicit operator bool() const { return !!SetIt; }
+			FORCEINLINE explicit operator bool() const { return !!m_SetIt; }
 			FORCEINLINE bool operator !() const { return !(bool)*this; }
 
-			FORCEINLINE ItKeyType&   Key() const { return SetIt->Key; }
-			FORCEINLINE ItValueType& Value() const { return SetIt->Value; }
+			FORCEINLINE friend bool operator==(const TConstIterator& Lhs, const TConstIterator& Rhs) { return Lhs.m_SetIt == Rhs.m_SetIt; }
+			FORCEINLINE friend bool operator!=(const TConstIterator& Lhs, const TConstIterator& Rhs) { return Lhs.m_SetIt != Rhs.m_SetIt; }
 
-		protected:
-			SetItType SetIt;
+			FORCEINLINE const KeyType&   Key()   const { return m_SetIt->Key; }
+			FORCEINLINE const ValueType& Value() const { return m_SetIt->Value; }
+
+			FORCEINLINE const ElementType& operator* () const { return  *m_SetIt; }
+			FORCEINLINE const ElementType* operator->() const { return &*m_SetIt; }
 		};
-	public:
-		class TIterator : public TBaseIterator<false>
-		{
-		public:
-			FORCEINLINE TIterator(TMapBase& InMap, bool bInRequiresRehashOnRemoval = false)
-				: TBaseIterator<false>(InMap.m_Pairs.CreateIterator())
-				, Map(InMap)
-				, bElementsHaveBeenRemoved(false)
-				, bRequiresRehashOnRemoval(bInRequiresRehashOnRemoval){}
-
-			FORCEINLINE ~TIterator()
-			{
-				if (bElementsHaveBeenRemoved && bRequiresRehashOnRemoval)
-				{
-					Map.m_Pairs.Relax();
-				}
-			}
-
-			FORCEINLINE void RemoveCurrent()
-			{
-				TBaseIterator<false>::PairIt.RemoveCurrent();
-				bElementsHaveBeenRemoved = true;
-			}
-
-		private:
-			TMapBase& Map;
-			bool      bElementsHaveBeenRemoved;
-			bool      bRequiresRehashOnRemoval;
-		};
-		class TConstIterator : public TBaseIterator<true>
-		{
-		public:
-			FORCEINLINE TConstIterator(const TMapBase& InMap)
-				: TBaseIterator<true>(InMap.m_Pairs.CreateConstIterator())
-			{}
-		};
-
-		using TRangedForIterator = TBaseIterator<false, true>;
-		using TRangedForConstIterator = TBaseIterator<true, true>;
-
-		class TConstKeyIterator : public TBaseKeyIterator<true>
-		{
-		public:
-			FORCEINLINE TConstKeyIterator(const TMapBase& InMap, const KeyType& InKey)
-				: TBaseKeyIterator<true>(typename ElementSetType::TConstKeyIterator(InMap.m_Pairs, InKey))
-			{}
-		};
-		class TKeyIterator : public TBaseKeyIterator<false>
-		{
-		public:
-			FORCEINLINE TKeyIterator(TMapBase& InMap, const KeyType& InKey)
-				: TBaseKeyIterator<false>(typename ElementSetType::TKeyIterator(InMap.m_Pairs, InKey))
-			{}
-
-			/** Removes the current key-value pair from the map. */
-			FORCEINLINE void RemoveCurrent()
-			{
-				TBaseKeyIterator<false>::SetIt.RemoveCurrent();
-			}
-		};
-
-		FORCEINLINE TIterator CreateIterator() { return TIterator(*this); }
-		FORCEINLINE TConstIterator CreateConstIterator() const { return TConstIterator(*this); }
-
-		FORCEINLINE TKeyIterator CreateKeyIterator(const KeyType& InKey) { return TKeyIterator(*this, InKey); }
-		FORCEINLINE TConstKeyIterator CreateConstKeyIterator(const KeyType& InKey) const { return TConstKeyIterator(*this, InKey); }
-
-	public:
 		// Support foreach 
-		FORCEINLINE TRangedForIterator      begin() { return TRangedForIterator(m_Pairs.begin()); }
-		FORCEINLINE TRangedForConstIterator begin() const { return TRangedForConstIterator(m_Pairs.begin()); }
-		FORCEINLINE TRangedForIterator      end() { return TRangedForIterator(m_Pairs.end()); }
-		FORCEINLINE TRangedForConstIterator end() const { return TRangedForConstIterator(m_Pairs.end()); }
+		FORCEINLINE TIterator      begin()			{ return TIterator(*this); }
+		FORCEINLINE TConstIterator begin() const	{ return TConstIterator(*this); }
+		FORCEINLINE TIterator      end()			{ return TIterator(*this, GetMaxIndex()); }
+		FORCEINLINE TConstIterator end() const		{ return TConstIterator(*this, GetMaxIndex()); }
 	};
 }
 
 // Signal map
 namespace Fuko
 {
-	template<typename KeyType, typename ValueType, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType, ValueType, false>>
-	class TMap : public TMapBase<KeyType, ValueType, KeyFuncs>
+	template<typename KeyType, typename ValueType
+		, template<typename> typename Alloc = TPmrAllocator
+		, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType, ValueType, false>>
+	class TMap : public TMapBase<KeyType, ValueType, Alloc, KeyFuncs>
 	{
 		static_assert(!KeyFuncs::bAllowDuplicateKeys, "TMap cannot be instantiated with a KeyFuncs which allows duplicate keys");
 	public:
-		typedef TMapBase<KeyType, ValueType, KeyFuncs> Super;
+		using Super = TMapBase<KeyType, ValueType, Alloc, KeyFuncs>;
 		using typename Super::ElementType;
+		using typename Super::SizeType;
+		using typename Super::AllocType;
 
 		// construct 
-		FORCEINLINE TMap(IAllocator* HashAlloc = DefaultAllocator(),
-			IAllocator* BitArrayAlloc = DefaultAllocator(),
-			IAllocator* ElementAlloc = DefaultAllocator()) :Super(HashAlloc, BitArrayAlloc, ElementAlloc) {}
-		TMap(std::initializer_list<ElementType> InitList,
-			IAllocator* HashAlloc = DefaultAllocator(),
-			IAllocator* BitArrayAlloc = DefaultAllocator(),
-			IAllocator* ElementAlloc = DefaultAllocator()) : Super(HashAlloc, BitArrayAlloc, ElementAlloc)
+		FORCEINLINE TMap(AllocType&& InAlloc) :Super(InAlloc) {}
+		TMap(std::initializer_list<ElementType> InitList,AllocType&& InAlloc) : Super(InAlloc)
 		{
 			this->Reserve((int32)InitList.size());
 			for (const ElementType& Element : InitList)
@@ -475,9 +391,7 @@ namespace Fuko
 		FORCEINLINE TMap(TMap&&) = default;
 
 		// copy construct 
-		FORCEINLINE TMap(const TMap& Other, IAllocator* HashAlloc = DefaultAllocator(),
-			IAllocator* BitArrayAlloc = DefaultAllocator(),
-			IAllocator* ElementAlloc = DefaultAllocator()) :Super(Other, HashAlloc, BitArrayAlloc, ElementAlloc) {}
+		FORCEINLINE TMap(const TMap& Other, AllocType&& InAlloc) :Super(Other, InAlloc) {}
 
 		// assign 
 		FORCEINLINE TMap& operator=(const TMap&) = default;
@@ -540,22 +454,21 @@ namespace Fuko
 // Multi map
 namespace Fuko
 {
-	template<typename KeyType, typename ValueType, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType,ValueType,true>>
-	class TMultiMap : public TMapBase<KeyType, ValueType, KeyFuncs>
+	template<typename KeyType, typename ValueType
+		, template<typename> typename Alloc = TPmrAllocator
+		, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType, ValueType, true>>
+	class TMultiMap : public TMapBase<KeyType, ValueType, Alloc, KeyFuncs>
 	{
 		static_assert(KeyFuncs::bAllowDuplicateKeys, "TMultiMap cannot be instantiated with a KeyFuncs which disallows duplicate keys");
 	public:
-		typedef TMapBase<KeyType, ValueType, KeyFuncs> Super;
+		using Super = TMapBase<KeyType, ValueType, Alloc, KeyFuncs>;
 		using typename Super::ElementType;
+		using typename Super::SizeType;
+		using typename Super::AllocType;
 
 		// construct 
-		FORCEINLINE TMultiMap(IAllocator* HashAlloc = DefaultAllocator(),
-			IAllocator* BitArrayAlloc = DefaultAllocator(),
-			IAllocator* ElementAlloc = DefaultAllocator()) :Super(HashAlloc, BitArrayAlloc, ElementAlloc) {}
-		TMultiMap(std::initializer_list<ElementType> InitList,
-			IAllocator* HashAlloc = DefaultAllocator(),
-			IAllocator* BitArrayAlloc = DefaultAllocator(),
-			IAllocator* ElementAlloc = DefaultAllocator()) :Super(HashAlloc, BitArrayAlloc, ElementAlloc)
+		FORCEINLINE TMultiMap(AllocType&& InAlloc) :Super(InAlloc) {}
+		TMultiMap(std::initializer_list<ElementType> InitList, AllocType&& InAlloc) :Super(InAlloc)
 		{
 			this->Reserve((int32)InitList.size());
 			for (const ElementType& Element : InitList)
@@ -568,9 +481,7 @@ namespace Fuko
 		TMultiMap(TMultiMap&&) = default;
 		
 		// copy construct 
-		TMultiMap(const TMultiMap& Other, IAllocator* HashAlloc = DefaultAllocator(),
-			IAllocator* BitArrayAlloc = DefaultAllocator(),
-			IAllocator* ElementAlloc = DefaultAllocator()) :Super(Other ,HashAlloc, BitArrayAlloc, ElementAlloc) {}
+		TMultiMap(const TMultiMap& Other, AllocType&& InAlloc = AllocType()) :Super(Other , InAlloc) {}
 
 		// assign 
 		TMultiMap& operator=(const TMultiMap&) = default;
@@ -653,7 +564,7 @@ namespace Fuko
 		{
 			// Iterate over pairs with a matching key.
 			int32 NumRemovedPairs = 0;
-			for (typename Super::ElementSetType::TKeyIterator It(Super::Pairs, InKey); It; ++It)
+			for (auto It = Super::m_Pairs.begin(); It; ++It)
 			{
 				// If this pair has a matching value as well, remove it.
 				if (It->Value == InValue)
@@ -668,7 +579,7 @@ namespace Fuko
 		{
 			// Iterate over pairs with a matching key.
 			int32 NumRemovedPairs = 0;
-			for (typename Super::ElementSetType::TKeyIterator It(Super::Pairs, InKey); It; ++It)
+			for (auto It = Super::m_Pairs.begin(); It; ++It)
 			{
 				// If this pair has a matching value as well, remove it.
 				if (It->Value == InValue)
@@ -691,7 +602,7 @@ namespace Fuko
 		ValueType* FindPair(const KeyType& Key, const ValueType& Value)
 		{
 			// Iterate over pairs with a matching key.
-			for (typename Super::ElementSetType::TKeyIterator It(Super::Pairs, Key); It; ++It)
+			for (auto It = Super::m_Pairs.begin(); It; ++It)
 			{
 				// If the pair's value matches, return a pointer to it.
 				if (It->Value == Value)

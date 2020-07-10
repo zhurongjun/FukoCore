@@ -12,6 +12,8 @@ namespace Fuko
 	class IAllocator
 	{
 	public:
+		virtual ~IAllocator() {}
+
 		// alloc 
 		virtual void*	Alloc(size_t InSize, size_t Alignment = DEFAULT_ALIGNMENT) = 0;
 		virtual void*	Realloc(void* InPtr, size_t InSize, size_t Alignment = DEFAULT_ALIGNMENT) = 0;
@@ -48,17 +50,29 @@ namespace Fuko
 {
 	class HeapAllocator : public IAllocator
 	{
+		int	m_Count = 0;
 	public:
+		~HeapAllocator()
+		{
+			check(m_Count == 0);
+		}
 		void* Alloc(size_t InSize, size_t Alignment) override
 		{
+			if (InSize != 0) ++m_Count;
 			return _aligned_malloc(InSize, Alignment);
 		}
 		void* Realloc(void* InPtr, size_t InSize, size_t Alignment) override
 		{
+			if (InSize > 0 && InPtr == nullptr) 
+				++m_Count;
+			else if (InPtr != nullptr && InSize == 0) 
+				--m_Count;
 			return _aligned_realloc(InPtr, InSize, Alignment);
 		}
 		void Free(void* InPtr) override
 		{
+			if (InPtr != nullptr)
+				--m_Count;
 			return _aligned_free(InPtr);
 		}
 		size_t Size(void* Ptr, size_t Alignment) override

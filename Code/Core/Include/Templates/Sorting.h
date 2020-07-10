@@ -16,8 +16,8 @@ struct TDereferenceWrapper
 {
 	const PREDICATE_CLASS& Predicate;
 
-	TDereferenceWrapper(const PREDICATE_CLASS& InPredicate)
-		: Predicate(InPredicate) {}
+	TDereferenceWrapper(PREDICATE_CLASS&& InPredicate)
+		: Predicate(std::move(InPredicate)) {}
 
 	FORCEINLINE bool operator()(T& A, T& B) { return Predicate(A, B); }
 	FORCEINLINE bool operator()(const T& A, const T& B) const { return Predicate(A, B); }
@@ -65,11 +65,11 @@ struct TIsContiguousContainer<TArrayRange<T>>
 };
 
 // 排序
-template<class T, class PREDICATE_CLASS>
-void Sort(T* First, const int32 Num, const PREDICATE_CLASS& Predicate)
+template<class T, class Predicate>
+void Sort(T* First, const int32 Num, Predicate&& Pred)
 {
 	TArrayRange<T> ArrayRange(First, Num);
-	::Fuko::Algo::IntroSort(ArrayRange, TDereferenceWrapper<T, PREDICATE_CLASS>(Predicate));
+	::Fuko::Algo::IntroSort(ArrayRange, TDereferenceWrapper<T, Predicate>(std::move(Pred)));
 }
 template<class T, class PREDICATE_CLASS>
 void Sort(T** First, const int32 Num, const PREDICATE_CLASS& Predicate)
@@ -240,8 +240,8 @@ void StableSortInternal(T* First, const int32 Num, const PREDICATE_CLASS& Predic
 	TMergeSort<TRotationInPlaceMerge<TJugglingRotation<FEuclidDivisionGCD> > >::Sort(First, Num, Predicate);
 }
 
-template<class T, class PREDICATE_CLASS = TLess<>>
-void StableSort(T* First, const int32 Num, const PREDICATE_CLASS& Predicate = TLess<>())
+template<class T, class Predicate = TLess<>>
+void StableSort(T* First, const int32 Num, Predicate&& Pred = TLess<>())
 {
-	StableSortInternal(First, Num, TDereferenceWrapper<T, PREDICATE_CLASS>(Predicate));
+	StableSortInternal(First, Num, TDereferenceWrapper<T, Predicate>(std::move(Pred)));
 }

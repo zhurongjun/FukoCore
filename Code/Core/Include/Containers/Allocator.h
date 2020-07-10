@@ -13,15 +13,14 @@ namespace Fuko
 	public:
 		using SizeType = int32;
 
-		template<int Flag>
-		FORCEINLINE auto		Rebind();
+		template<typename OtherT>
+		FORCEINLINE __AllocTemplate<OtherT>& Rebind();
 
 		FORCEINLINE SizeType	Free(T*& Data);
 		FORCEINLINE SizeType	Reserve(T*& Data, SizeType InMax);
 
 		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax);
 		FORCEINLINE SizeType	GetShrink(SizeType InNum, SizeType InMax);
-		FORCEINLINE SizeType	GetCount(SizeType InNum) const;
 	};
 }
 
@@ -31,7 +30,7 @@ namespace Fuko
 	template<typename T>
 	class TPmrAllocator
 	{
-		IAllocator*	m_Allocator;
+		IAllocator*		m_Allocator;
 	public:
 		using SizeType = int32;
 
@@ -49,25 +48,24 @@ namespace Fuko
 			return *this;
 		}
 
+		template<typename OtherT>
+		FORCEINLINE TPmrAllocator<OtherT>& Rebind() { return (TPmrAllocator<OtherT>&)*this; }
+
 		FORCEINLINE SizeType	Free(T*& Data) { m_Allocator->TFree(Data); Data = nullptr; return 0; }
-		FORCEINLINE SizeType	Reserve(T*& Data,SizeType InMax)
+		FORCEINLINE SizeType	Reserve(T*& Data, SizeType InMax)
 		{
-			if (Data) Data = m_Allocator->TRealloc(Data, InMax);
-			else Data = m_Allocator->TAlloc<T>(InMax);
+			if (Data)
+			{
+				Data = (T*)m_Allocator->TRealloc(Data, InMax);
+			}
+			else
+			{
+				Data = (T*)m_Allocator->TAlloc<T>(InMax);
+			}
 			return InMax;
 		}
-		
-		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax)
-		{
-			return (SizeType)m_Allocator->GetGrow(InNum, InMax, sizeof(T), alignof(T));
-		}
-		FORCEINLINE SizeType	GetShrink(SizeType InNum, SizeType InMax)
-		{
-			return (SizeType)m_Allocator->GetShrink(InNum, InMax, sizeof(T), alignof(T));
-		}
-		FORCEINLINE SizeType	GetCount(SizeType InNum) const
-		{
-			return InNum;
-		}
+
+		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax) { return (SizeType)m_Allocator->GetGrow(InNum, InMax, sizeof(T), alignof(T)); }
+		FORCEINLINE SizeType	GetShrink(SizeType InNum, SizeType InMax) { return (SizeType)m_Allocator->GetShrink(InNum, InMax, sizeof(T), alignof(T)); }
 	};
 }

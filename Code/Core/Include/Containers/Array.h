@@ -11,7 +11,7 @@
 // forward
 namespace Fuko
 {
-	template<typename T,typename Alloc = TPmrAllocator<T>>
+	template<typename T, template<typename> typename Alloc = TPmrAllocator>
 	class TArray;
 }
 
@@ -202,12 +202,12 @@ namespace Fuko
 // Array
 namespace Fuko
 {
-	template<typename T,typename Alloc>
+	template<typename T, template<typename> typename Alloc>
 	class TArray
 	{
 	public:
 		using ElementType = T;
-		using AllocType = Alloc;
+		using AllocType = Alloc<T>;
 		using SizeType = typename AllocType::SizeType;
 	protected:
 		AllocType	m_Allocator;
@@ -227,14 +227,14 @@ namespace Fuko
 		{
 			if (m_Num > m_Max)
 			{
-				m_Max = m_Allocator.GetGrow(m_Num, m_Max);
-				m_Max = m_Allocator.Reserve(m_Data, m_Max);
+				SizeType NewMax = m_Allocator.GetGrow(m_Num, m_Max);
+				m_Max = m_Allocator.Reserve(m_Data, NewMax);
 			}
 		}
 		FORCENOINLINE void ResizeShrink()
 		{
 			auto NewMax = m_Allocator.GetShrink(m_Num, m_Max);
-			if (NewMax < m_Max) m_Max = m_Allocator.Reserve(m_Data, m_Max);
+			if (NewMax < m_Max) m_Max = m_Allocator.Reserve(m_Data, NewMax);
 		}
 		FORCENOINLINE void ResizeTo(SizeType NewMax)
 		{
@@ -260,13 +260,13 @@ namespace Fuko
 		FORCEINLINE TArray(AllocType&& InAlloc = AllocType())
 			: m_Num(0)
 			, m_Data(nullptr)
-			, m_Max(InAlloc.GetCount(0))
+			, m_Max(0)
 			, m_Allocator(std::move(InAlloc))
 		{}
 		FORCEINLINE TArray(const ElementType* Ptr, SizeType Count, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
 			, m_Data(nullptr)
-			, m_Max(InAlloc.GetCount(0))
+			, m_Max(0)
 			, m_Allocator(std::move(InAlloc))
 		{
 			check(Ptr != nullptr || Count == 0);
@@ -275,7 +275,7 @@ namespace Fuko
 		FORCEINLINE TArray(std::initializer_list<ElementType> InitList, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
 			, m_Data(nullptr)
-			, m_Max(InAlloc.GetCount(0))
+			, m_Max(0)
 			, m_Allocator(std::move(InAlloc))
 		{
 			CopyToEmpty(InitList.begin(), (SizeType)InitList.size(), 0);
@@ -286,7 +286,7 @@ namespace Fuko
 		FORCEINLINE explicit TArray(const TArray<OtherElementType>& Other, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
 			, m_Data(nullptr)
-			, m_Max(InAlloc.GetCount(0))
+			, m_Max(0)
 			, m_Allocator(std::move(InAlloc))
 		{
 			CopyToEmpty(Other.GetData(), Other.Num(), 0);
@@ -294,7 +294,7 @@ namespace Fuko
 		FORCEINLINE TArray(const TArray& Other, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
 			, m_Data(nullptr)
-			, m_Max(InAlloc.GetCount(0))
+			, m_Max(0)
 			, m_Allocator(std::move(InAlloc))
 		{
 			CopyToEmpty(Other.GetData(), Other.Num(), 0);
@@ -302,7 +302,7 @@ namespace Fuko
 		FORCEINLINE TArray(const TArray& Other, SizeType ExtraSlack, AllocType&& InAlloc = AllocType())
 			: m_Num(0)
 			, m_Data(nullptr)
-			, m_Max(InAlloc.GetCount(0))
+			, m_Max(0)
 			, m_Allocator(std::move(InAlloc))
 		{
 			CopyToEmpty(Other.GetData(), Other.Num(), ExtraSlack);
@@ -342,8 +342,7 @@ namespace Fuko
 		{
 			if (this == &Other) return *this;
 			
-			// destruct items 
-			DestructItems(GetData(), m_Num);
+			FreeArray();
 
 			// copy info 
 			m_Allocator = std::move(Other.m_Allocator);
@@ -375,20 +374,11 @@ namespace Fuko
 		FORCEINLINE AllocType& GetAllocator() { return m_Allocator; }
 
 		// compare
-		FORCEINLINE bool operator==(const TArray& Rhs) const
-		{
-			return m_Num == Rhs.m_Num && CompareItems(GetData(), Rhs.GetData(), m_Num);
-		}
-		FORCEINLINE bool operator!=(const TArray& OtherArray) const
-		{
-			return !(*this == OtherArray);
-		}
+		FORCEINLINE bool operator==(const TArray& Rhs) const { return m_Num == Rhs.m_Num && CompareItems(GetData(), Rhs.GetData(), m_Num); }
+		FORCEINLINE bool operator!=(const TArray& OtherArray) const { return !(*this == OtherArray); }
 
 		// debug check
-		FORCEINLINE void CheckInvariants() const
-		{
-			check((m_Num >= 0) & (m_Max >= m_Num));
-		}
+		FORCEINLINE void CheckInvariants() const { check((m_Num >= 0) & (m_Max >= m_Num)); }
 		FORCEINLINE void CheckAddress(const ElementType* Addr) const
 		{
 			checkf(Addr < GetData() || Addr >= (GetData() + m_Max),
@@ -1136,58 +1126,58 @@ namespace Fuko
 			HeapSort(TLess<ElementType>());
 		}
 		template <class Predicate>
-		FORCEINLINE void Heapify(const Predicate& Pred)
+		FORCEINLINE void Heapify(Predicate&& Pred)
 		{
-			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(Pred);
+			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(std::move(Pred));
 			::Fuko::Algo::Heapify(*this, PredicateWrapper);
 		}
 		template <class Predicate>
-		SizeType HeapPush(ElementType&& InItem, const Predicate& Pred)
+		SizeType HeapPush(ElementType&& InItem, Predicate&& Pred)
 		{
 			// 在尾部添加元素，然后向上检索堆
 			Add(std::move(InItem));
-			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(Pred);
+			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(std::move(Pred));
 			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
 
 			return Result;
 		}
 		template <class Predicate>
-		SizeType HeapPush(const ElementType& InItem, const Predicate& Pred)
+		SizeType HeapPush(const ElementType& InItem, Predicate&& Pred)
 		{
 			// 在尾部添加元素，然后向上检索堆
 			Add(InItem);
-			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(Pred);
+			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(std::move(Pred));
 			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
 
 			return Result;
 		}
 		template <class Predicate>
-		void HeapPop(ElementType& OutItem, const Predicate& Pred, bool bAllowShrinking = true)
+		void HeapPop(ElementType& OutItem, Predicate&& Pred, bool bAllowShrinking = true)
 		{
 			OutItem = std::move((*this)[0]);
 			RemoveAtSwap(0, 1, bAllowShrinking);
 
-			TDereferenceWrapper< ElementType, Predicate> PredicateWrapper(Pred);
+			TDereferenceWrapper< ElementType, Predicate> PredicateWrapper(std::move(Pred));
 			::Fuko::Algo::Impl::HeapSiftDown(GetData(), 0, Num(), FIdentityFunctor(), PredicateWrapper);
 		}
 		template <class Predicate>
-		void VerifyHeap(const Predicate& Pred)
+		void VerifyHeap(Predicate&& Pred)
 		{
-			check(::Fuko::Algo::IsHeap(*this, Pred));
+			check(::Fuko::Algo::IsHeap(*this, std::move(Pred)));
 		}
 		template <class Predicate>
-		void HeapPopDiscard(const Predicate& Pred, bool bAllowShrinking = true)
+		void HeapPopDiscard(Predicate&& Pred, bool bAllowShrinking = true)
 		{
 			RemoveAtSwap(0, 1, bAllowShrinking);
-			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(Pred);
+			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(std::move(Pred));
 			::Fuko::Algo::Impl::HeapSiftDown(GetData(), 0, Num(), FIdentityFunctor(), PredicateWrapper);
 		}
 		template <class Predicate>
-		void HeapRemoveAt(SizeType Index, const Predicate& Pred, bool bAllowShrinking = true)
+		void HeapRemoveAt(SizeType Index, Predicate& Pred, bool bAllowShrinking = true)
 		{
 			RemoveAtSwap(Index, 1, bAllowShrinking);
 
-			TDereferenceWrapper< ElementType, Predicate> PredicateWrapper(Pred);
+			TDereferenceWrapper< ElementType, Predicate> PredicateWrapper(std::move(Pred));
 			::Fuko::Algo::Impl::HeapSiftDown(GetData(), Index, Num(), FIdentityFunctor(), PredicateWrapper);
 			::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, FMath::Min(Index, Num() - 1), FIdentityFunctor(), PredicateWrapper);
 		}

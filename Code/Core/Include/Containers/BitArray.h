@@ -11,7 +11,7 @@
 // forward
 namespace Fuko
 {
-	template<typename Alloc = TPmrAllocator<uint32>>
+	template<template<typename> typename Alloc = TPmrAllocator>
 	class TBitArray;
 }
 
@@ -64,7 +64,7 @@ namespace Fuko
 		SizeType	m_Index;
 		SizeType	m_DWORDIndex;
 	public:
-		template<typename TAlloc>
+		template<template<typename> typename TAlloc>
 		FORCEINLINE TBitIterator(TBitArray<TAlloc>& InArray, SizeType StartIndex = 0)
 			: m_DWORDIndex(StartIndex >> NumBitsPerDWORDLogTwo)
 			, m_Mask(1 << (StartIndex & (NumBitsPerDWORD - 1)))
@@ -94,6 +94,8 @@ namespace Fuko
 		}
 		FORCEINLINE explicit operator bool() const { return m_Index < m_Num; }
 		FORCEINLINE bool operator !() const { return !(bool)*this; }
+		FORCEINLINE bool operator ==(const TBitIterator& Other) const { return m_Data == Other.m_Data && m_Index == Other.m_Index; }
+		FORCEINLINE bool operator !=(const TBitIterator& Other) const { return !(*this == Other); }
 
 		FORCEINLINE BitReference GetValue() const { return BitReference(m_Data[m_DWORDIndex], m_Mask); }
 		FORCEINLINE SizeType GetIndex() const { return m_Index; }
@@ -107,7 +109,7 @@ namespace Fuko
 		SizeType		m_DWORDIndex;
 		uint32			m_Mask;
 	public:
-		template<typename TAlloc>
+		template<template<typename> typename TAlloc>
 		FORCEINLINE TConstBitIterator(const TBitArray<TAlloc>& InArray, SizeType StartIndex = 0)
 			: m_DWORDIndex(StartIndex >> NumBitsPerDWORDLogTwo)
 			, m_Mask(1 << (StartIndex & (NumBitsPerDWORD - 1)))
@@ -138,6 +140,8 @@ namespace Fuko
 
 		FORCEINLINE explicit operator bool() const { return m_Index < m_Num; }
 		FORCEINLINE bool operator !() const { return !(bool)*this; }
+		FORCEINLINE bool operator ==(const TConstBitIterator& Other) const { return m_Data == Other.m_Data && m_Index == Other.m_Index; }
+		FORCEINLINE bool operator !=(const TConstBitIterator& Other) const { return !(*this == Other); }
 
 		FORCEINLINE ConstBitReference GetValue() const { return ConstBitReference(m_Data[m_DWORDIndex], m_Mask); }
 		FORCEINLINE SizeType GetIndex() const { return m_Index; }
@@ -152,7 +156,7 @@ namespace Fuko
 	{
 		const uint32*	m_Data;
 		SizeType		m_Num;
-		SizeType		m_DWORDIndex;			// current bit index 
+		SizeType		m_DWORDIndex;		// current bit index 
 		uint32			m_Mask;				// current bit mask
 		uint32			m_UnvisitedBitMask;	// mask to skip start bits 
 		SizeType		m_CurrentBitIndex;	// current reach bit index
@@ -191,7 +195,7 @@ namespace Fuko
 			if (m_CurrentBitIndex > ArrayNum) m_CurrentBitIndex = ArrayNum;
 		}
 	public:
-		template<typename TAlloc>
+		template<template<typename> typename TAlloc>
 		TConstSetBitIterator(const TBitArray<TAlloc>& InArray, SizeType StartIndex = 0)
 			: m_DWORDIndex(StartIndex >> NumBitsPerDWORDLogTwo)
 			, m_Mask(1 << (StartIndex & PerDWORDMask))
@@ -239,7 +243,7 @@ namespace Fuko
 		SizeType	m_NumA;
 		SizeType	m_NumB;
 
-		SizeType	m_DWORDIndex;			// current bit index 
+		SizeType	m_DWORDIndex;		// current bit index 
 		uint32		m_Mask;				// current bit mask
 		uint32		m_UnvisitedBitMask;	// mask to skip start bits 
 		SizeType	m_CurrentBitIndex;	// current reach bit index
@@ -276,7 +280,7 @@ namespace Fuko
 			m_CurrentBitIndex = (m_DWORDIndex + 1) * NumBitsPerDWORD - FMath::CountLeadingZeros(m_Mask) - 1;
 		}
 	public:
-		template<typename TAllocA, typename TAllocB>
+		template<template<typename> typename TAllocA, template<typename> typename TAllocB>
 		FORCEINLINE TConstDualSetBitIterator(
 			const TBitArray<TAllocA>& InArrayA,
 			const TBitArray<TAllocB>& InArrayB,
@@ -331,19 +335,20 @@ namespace Fuko
 // TBitArray
 namespace Fuko
 {
-	template<typename Alloc>
+	template<template<typename> typename Alloc>
 	class TBitArray final
 	{
 	public:
-		using SizeType = typename Alloc::SizeType;
-		using AllocType = Alloc;
+		using AllocType = Alloc<uint32>;
+		using SizeType = typename AllocType::SizeType;
 	private:
 		FORCEINLINE void ResizeGrow()
 		{
-			SizeType NewWord;
 			if (m_NumBits > m_MaxBits)
 			{
-				NewWord = m_Allocator.GetGrow((m_NumBits >> NumBitsPerDWORDLogTwo) + 1, m_MaxBits >> NumBitsPerDWORDLogTwo);
+				SizeType NewWord = Algo::CalculateNumWords(m_NumBits);
+				SizeType LastWord = Algo::CalculateNumWords(m_MaxBits);
+				NewWord = m_Allocator.GetGrow(NewWord, LastWord);
 				m_MaxBits = m_Allocator.Reserve(m_Data, NewWord) << NumBitsPerDWORDLogTwo;
 			}
 		}
@@ -375,13 +380,13 @@ namespace Fuko
 			: m_Allocator(std::move(InAlloc))
 			, m_Data(nullptr)
 			, m_NumBits(0)
-			, m_MaxBits(InAlloc.GetCount(0) * NumBitsPerDWORD)
+			, m_MaxBits(0)
 		{}
 		FORCEINLINE explicit TBitArray(bool bValue, int32 InNumBits, AllocType&& InAlloc = AllocType())
 			: m_Allocator(std::move(InAlloc))
 			, m_Data(nullptr)
 			, m_NumBits(0)
-			, m_MaxBits(InAlloc.GetCount(0) * NumBitsPerDWORD)
+			, m_MaxBits(0)
 		{
 			Init(bValue, InNumBits);
 		}
@@ -391,7 +396,7 @@ namespace Fuko
 			: m_Allocator(std::move(InAlloc))
 			, m_Data(nullptr)
 			, m_NumBits(0)
-			, m_MaxBits(InAlloc.GetCount(0) * NumBitsPerDWORD)
+			, m_MaxBits(0)
 		{
 			ResizeTo(Other.m_NumBits);
 			m_NumBits = Other.m_NumBits;
@@ -426,6 +431,7 @@ namespace Fuko
 			Other.m_NumBits = 0;
 			Other.m_MaxBits = 0;
 			Other.m_Data = nullptr;
+			return *this;
 		}
 		FORCEINLINE TBitArray& operator=(const TBitArray& Other)
 		{
