@@ -8,7 +8,7 @@ namespace Fuko::Algo
 	FORCEINLINE SizeType CalculateNumWords(SizeType NumBits)
 	{
 		check(NumBits >= 0);
-		return FMath::DivideAndRoundUp(NumBits, NumBitsPerDWORD);
+		return FMath::DivideAndRoundUp(NumBits, (SizeType)NumBitsPerDWORD);
 	}
 
 	template<typename SizeType>
@@ -65,7 +65,7 @@ namespace Fuko::Algo
 	FORCEINLINE SizeType FindAndSetFirstZeroBit(uint32* Data, SizeType Num, SizeType ConservativeStartIndex)
 	{
 		const SizeType DwordCount = Algo::CalculateNumWords(Num);
-		SizeType DwordIndex = FMath::DivideAndRoundDown(ConservativeStartIndex, NumBitsPerDWORD);
+		SizeType DwordIndex = FMath::DivideAndRoundDown(ConservativeStartIndex, (SizeType)NumBitsPerDWORD);
 		while (DwordIndex < DwordCount && Data[DwordIndex] == (uint32)-1)
 		{
 			++DwordIndex;

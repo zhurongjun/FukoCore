@@ -52,10 +52,5 @@ struct TAlignedBytes
 };
 
 // Element占位符
-template<typename ElementType>
-struct TTypeCompatibleBytes :
-	public TAlignedBytes<
-	sizeof(ElementType),
-	alignof(ElementType)
-	>
-{};
+template<typename T>
+struct TStorage : public TAlignedBytes<sizeof(T), alignof(T)> {};

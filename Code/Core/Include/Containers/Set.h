@@ -11,7 +11,7 @@
 // forward
 namespace Fuko
 {
-	template<typename InElementType, template<typename> typename Alloc = TPmrAllocator, typename KeyFuncs = DefaultKeyFuncs<InElementType>>
+	template<typename InElementType, typename Alloc = PmrAllocator, typename KeyFuncs = DefaultKeyFuncs<InElementType>>
 	class TSet;
 }
 
@@ -75,7 +75,7 @@ namespace Fuko
 // TSet
 namespace Fuko
 {
-	template<typename InElementType, template<typename> typename Alloc,typename KeyFuncs>
+	template<typename InElementType, typename Alloc,typename KeyFuncs>
 	class TSet
 	{
 		// Key and element 
@@ -83,8 +83,7 @@ namespace Fuko
 		using ElementType = InElementType;
 		using SetElementType = TSetElement<ElementType>;
 		using ElementArrayType = TSparseArray<SetElementType, Alloc>;
-		using AllocType = typename ElementArrayType::AllocType;
-		using SizeType = typename AllocType::SizeType;
+		using SizeType = typename Alloc::SizeType;
 
 		// special compare for set element 
 		template <typename Predicate>
@@ -100,7 +99,7 @@ namespace Fuko
 		mutable SizeType		m_HashSize;			// hash bucket size 
 		ElementArrayType		m_Elements;			// elements 
 		//------------------------------Begin helper functions------------------------------
-		static FORCEINLINE SizeType GetNumberOfHashBuckets(SizeType NumHashedElements)
+		static FORCEINLINE SizeType _GetNumberOfHashBuckets(SizeType NumHashedElements)
 		{
 			static constexpr SizeType MinNumberOfHashedElements = 4;
 			static constexpr SizeType BaseNumberOfHashBuckets = 8;
@@ -114,8 +113,7 @@ namespace Fuko
 			return 1;
 		}
 
-		FORCEINLINE Alloc<SetElementId>& HashAllocator() const { return const_cast<TSet*>(this)->m_Elements.GetAllocator().Rebind<SetElementId>(); }
-		FORCEINLINE void CleanBucket()
+		FORCEINLINE void _CleanBucket()
 		{
 			auto Ptr = m_Hash;
 			auto End = m_Hash + m_HashSize;
@@ -126,15 +124,15 @@ namespace Fuko
 		}
 
 		// get index in hash bucket 
-		FORCEINLINE SetElementId& BucketId(uint32 HashIndex) const { return m_Hash[HashIndex & (m_HashSize - 1)]; }
+		FORCEINLINE SetElementId& _BucketId(uint32 HashIndex) const { return m_Hash[HashIndex & (m_HashSize - 1)]; }
 		
 		// rehash, before call it, m_HashSize Must be updated 
-		void Rehash() const
+		void _Rehash() const
 		{
 			check(FMath::IsPowerOfTwo(m_HashSize));
 			
 			// realloc hash
-			m_HashSize = HashAllocator().Reserve(m_Hash, m_HashSize);
+			m_HashSize = const_cast<TSet*>(this)->m_Elements.GetAllocator().Reserve(m_Hash, m_HashSize);
 			
 			if (m_HashSize)
 			{
@@ -147,14 +145,14 @@ namespace Fuko
 				// Add the existing elements to the new hash.
 				for (typename ElementArrayType::TConstIterator ElementIt(m_Elements); ElementIt; ++ElementIt)
 				{
-					HashElement(SetElementId(ElementIt.GetIndex()), *ElementIt);
+					_HashElement(SetElementId(ElementIt.GetIndex()), *ElementIt);
 				}
 			}
 		}
-		bool ConditionalRehash(int32 NumHashedElements, bool bAllowShrinking = false) const
+		bool _ConditionalRehash(int32 NumHashedElements, bool bAllowShrinking = false) const
 		{
 			// Calculate the desired hash size for the specified number of elements.
-			const int32 DesiredHashSize = GetNumberOfHashBuckets(NumHashedElements);
+			const int32 DesiredHashSize = _GetNumberOfHashBuckets(NumHashedElements);
 
 			// If the hash hasn't been created yet, or is smaller than the desired hash size, rehash.
 			if (NumHashedElements > 0 &&	// must have element 
@@ -163,7 +161,7 @@ namespace Fuko
 					(m_HashSize > DesiredHashSize && bAllowShrinking)))	// need shrinking 
 			{
 				m_HashSize = DesiredHashSize;
-				Rehash();
+				_Rehash();
 				return true;
 			}
 			else
@@ -173,7 +171,7 @@ namespace Fuko
 		}
 
 		// link element to hash bucket 
-		FORCEINLINE void LinkElement(SetElementId ElementId, const SetElementType& Element, uint32 KeyHash) const
+		FORCEINLINE void _LinkElement(SetElementId ElementId, const SetElementType& Element, uint32 KeyHash) const
 		{
 			// Compute the hash bucket the element goes in.
 			Element.HashIndex = KeyHash & (m_HashSize - 1);
@@ -185,11 +183,11 @@ namespace Fuko
 		}
 
 		// compute hash and link it to hash bucket 
-		FORCEINLINE void HashElement(SetElementId ElementId, const SetElementType& Element) const { LinkElement(ElementId, Element, KeyFuncs::Hash(KeyFuncs::Key(Element.Value))); }
+		FORCEINLINE void _HashElement(SetElementId ElementId, const SetElementType& Element) const { _LinkElement(ElementId, Element, KeyFuncs::Hash(KeyFuncs::Key(Element.Value))); }
 
 		// implement emplace, before call this function, element has been added to sparse array
 		// we only need check duplicate and link element to bucket 
-		SetElementId EmplaceImpl(uint32 KeyHash, SetElementType& Element, SetElementId ElementId, bool* bIsAlreadyInSetPtr)
+		SetElementId _EmplaceImpl(uint32 KeyHash, SetElementType& Element, SetElementId ElementId, bool* bIsAlreadyInSetPtr)
 		{
 			// if we not support duplicate key, then check whether the key is unique 
 			if constexpr (!KeyFuncs::bAllowDuplicateKeys)
@@ -216,10 +214,10 @@ namespace Fuko
 				if (!bIsAlreadyInSet)
 				{
 					// Check if the hash needs to be resized.
-					if (!ConditionalRehash(m_Elements.Num()))
+					if (!_ConditionalRehash(m_Elements.Num()))
 					{
 						// If the rehash didn't add the new element to the hash, add it.
-						LinkElement(ElementId, Element, KeyHash);
+						_LinkElement(ElementId, Element, KeyHash);
 					}
 				}
 				// return whether the element is in set
@@ -231,10 +229,10 @@ namespace Fuko
 			else
 			{
 				// Check if the hash needs to be resized.
-				if (!ConditionalRehash(m_Elements.Num()))
+				if (!_ConditionalRehash(m_Elements.Num()))
 				{
 					// If the rehash didn't add the new element to the hash, add it.
-					LinkElement(ElementId, Element, KeyHash);
+					_LinkElement(ElementId, Element, KeyHash);
 				}
 				// always add 
 				if (bIsAlreadyInSetPtr)
@@ -247,12 +245,12 @@ namespace Fuko
 
 		// implement remove 
 		template<typename ComparableKey>
-		FORCEINLINE SizeType RemoveImpl(uint32 KeyHash, const ComparableKey& Key)
+		FORCEINLINE SizeType _RemoveImpl(uint32 KeyHash, const ComparableKey& Key)
 		{
 			int32 NumRemovedElements = 0;
 
 			// get the head of hash linked list 
-			SetElementId* Ptr = &BucketId(KeyHash);
+			SetElementId* Ptr = &_BucketId(KeyHash);
 			while (Ptr->IsValid())
 			{
 				auto& Element = m_Elements[*Ptr];
@@ -278,26 +276,26 @@ namespace Fuko
 		//----------------------------End helper functions----------------------------
 	public:
 		// construct 
-		FORCEINLINE TSet(AllocType&& InAlloc = AllocType())
+		FORCEINLINE TSet(Alloc&& InAlloc = Alloc())
 			: m_HashSize(0)
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
 		{ }
-		FORCEINLINE TSet(std::initializer_list<ElementType> InitList, AllocType&& InAlloc = AllocType())
+		FORCEINLINE TSet(std::initializer_list<ElementType> InitList, Alloc&& InAlloc = Alloc())
 			: m_HashSize(0)
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
 		{
 			*this += (InitList);
 		}
-		FORCEINLINE explicit TSet(const TArray<ElementType>& InArray, AllocType&& InAlloc = AllocType())
+		FORCEINLINE explicit TSet(const TArray<ElementType>& InArray, Alloc&& InAlloc = Alloc())
 			: m_HashSize(0)
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
 		{
 			*this += (InArray);
 		}
-		FORCEINLINE explicit TSet(TArray<ElementType>&& InArray, AllocType&& InAlloc = AllocType())
+		FORCEINLINE explicit TSet(TArray<ElementType>&& InArray, Alloc&& InAlloc = Alloc())
 			: m_HashSize(0)
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
@@ -306,7 +304,7 @@ namespace Fuko
 		}
 
 		// copy construct 
-		FORCEINLINE TSet(const TSet& Other, AllocType&& InAlloc = AllocType())
+		FORCEINLINE TSet(const TSet& Other, Alloc&& InAlloc = Alloc())
 			: m_HashSize(0)
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
@@ -327,7 +325,7 @@ namespace Fuko
 		// destructor 
 		~TSet()
 		{
-			if (m_Hash) m_HashSize = HashAllocator().Free(m_Hash);
+			if (m_Hash) m_HashSize = m_Elements.GetAllocator().Free(m_Hash);
 		}
 
 		// assign 
@@ -335,7 +333,7 @@ namespace Fuko
 		{
 			if (this == &Copy) return *this;
 			// copy hash bucket 
-			m_HashSize = HashAllocator().Reserve(m_Hash, Copy.m_HashSize);
+			m_HashSize = m_Elements.GetAllocator().Reserve(m_Hash, Copy.m_HashSize);
 			ConstructItems(m_Hash, Copy.m_Hash, Copy.m_HashSize);
 
 			// copy other info 
@@ -356,7 +354,7 @@ namespace Fuko
 			if (this == &Other) return *this;
 			
 			// free memory 
-			if (m_Hash) m_HashSize = HashAllocator().Free(m_Hash);
+			if (m_Hash) m_HashSize = m_Elements.GetAllocator().Free(m_Hash);
 
 			// move data 
 			m_Elements = std::move(Other.m_Elements);
@@ -373,20 +371,20 @@ namespace Fuko
 		FORCEINLINE SizeType Num() const { return m_Elements.Num(); }
 		FORCEINLINE SizeType GetMaxIndex() const { return m_Elements.GetMaxIndex(); }
 		FORCEINLINE SizeType Max() const { return m_Elements.Max(); }
-		FORCEINLINE AllocType& GetAllocator() { return m_Elements.GetAllocator(); }
-		FORCEINLINE const AllocType& GetAllocator() const { return m_Elements.GetAllocator(); }
+		FORCEINLINE Alloc& GetAllocator() { return m_Elements.GetAllocator(); }
+		FORCEINLINE const Alloc& GetAllocator() const { return m_Elements.GetAllocator(); }
 
 		// empty & reset & shrink & reserve 
 		FORCEINLINE void Empty(SizeType ExpectedNumElements = 0)
 		{
 			m_Elements.Empty(ExpectedNumElements);
-			if (!ConditionalRehash(ExpectedNumElements, true))  CleanBucket();
+			if (!_ConditionalRehash(ExpectedNumElements, true))  _CleanBucket();
 		}
 		FORCEINLINE void Reset(SizeType ExpectedNumElements = 0)
 		{
 			if (Num() == 0) return;
 			m_Elements.Reset(ExpectedNumElements);
-			CleanBucket();
+			_CleanBucket();
 		}
 		FORCEINLINE void Shrink()
 		{
@@ -397,20 +395,20 @@ namespace Fuko
 		{
 			if (ExpectedNumElements <= m_Elements.Num()) return;
 			m_Elements.Reserve(ExpectedNumElements);
-			const SizeType NewHashSize = GetNumberOfHashBuckets(ExpectedNumElements);
+			const SizeType NewHashSize = _GetNumberOfHashBuckets(ExpectedNumElements);
 			if (!m_HashSize || m_HashSize < NewHashSize)
 			{
 				m_HashSize = NewHashSize;
-				Rehash();
+				_Rehash();
 			}
 		}
 
 		// compact 
-		FORCEINLINE void Compact() { if (m_Elements.Compact()) Rehash(); }
-		FORCEINLINE void CompactStable() { if (m_Elements.CompactStable()) Rehash(); }
+		FORCEINLINE void Compact() { if (m_Elements.Compact()) _Rehash(); }
+		FORCEINLINE void CompactStable() { if (m_Elements.CompactStable()) _Rehash(); }
 
 		// relax, the element will symmetrical distribution 
-		FORCEINLINE void Relax() { ConditionalRehash(m_Elements.Num(), true); }
+		FORCEINLINE void Relax() { _ConditionalRehash(m_Elements.Num(), true); }
 
 		// check is valid 
 		FORCEINLINE bool IsValid(SetElementId Id) const { return Id.IsValid() && Id < m_Elements.IsValidIndex(Id); }
@@ -431,13 +429,13 @@ namespace Fuko
 		{
 			// Create a new element.
 			auto ElementAllocation = m_Elements.AddUninitialized();
-			SetElementType& Element = *new (ElementAllocation) SetElementType(std::forward<ArgsType>(Args));
+			SetElementType& Element = *new (ElementAllocation.Pointer) SetElementType(std::forward<ArgsType>(Args));
 
 			// compute hash 
 			uint32 KeyHash = KeyFuncs::Hash(KeyFuncs::Key(Element.Value));
 			
 			// perform emplace 
-			return EmplaceImpl(KeyHash, Element, ElementAllocation.Index, bIsAlreadyInSetPtr);
+			return _EmplaceImpl(KeyHash, Element, ElementAllocation.Index, bIsAlreadyInSetPtr);
 		}
 		template <typename ArgsType>
 		SetElementId EmplaceByHash(uint32 KeyHash, ArgsType&& Args, bool* bIsAlreadyInSetPtr = nullptr)
@@ -446,7 +444,7 @@ namespace Fuko
 			auto ElementAllocation = m_Elements.AddUninitialized();
 			SetElementType& Element = *new (ElementAllocation) SetElementType(std::forward<ArgsType>(Args));
 
-			return EmplaceImpl(KeyHash, Element, ElementAllocation.Index, bIsAlreadyInSetPtr);
+			return _EmplaceImpl(KeyHash, Element, ElementAllocation.Index, bIsAlreadyInSetPtr);
 		}
 
 		// append 
@@ -506,7 +504,7 @@ namespace Fuko
 				const auto& ElementBeingRemoved = m_Elements[ElementId];
 
 				// Remove the element from the hash bucket 
-				for (SetElementId* NextElementId = &BucketId(ElementBeingRemoved.HashIndex);
+				for (SetElementId* NextElementId = &_BucketId(ElementBeingRemoved.HashIndex);
 					NextElementId->IsValid();
 					NextElementId = &m_Elements[*NextElementId].HashNextId)
 				{
@@ -524,14 +522,14 @@ namespace Fuko
 		}
 		SizeType Remove(const KeyType& Key)
 		{
-			if (m_Elements.Num()) return RemoveImpl(KeyFuncs::Hash(Key), Key); 
+			if (m_Elements.Num()) return _RemoveImpl(KeyFuncs::Hash(Key), Key); 
 			return 0;
 		}
 		template<typename ComparableKey>
 		SizeType RemoveByHash(uint32 KeyHash, const ComparableKey& Key)
 		{
 			check(KeyHash == KeyFuncs::Hash(Key));
-			if (m_Elements.Num()) return RemoveImpl(KeyHash, Key); 
+			if (m_Elements.Num()) return _RemoveImpl(KeyHash, Key); 
 			return 0;
 		}
 
@@ -540,7 +538,7 @@ namespace Fuko
 		{
 			if (m_Elements.Num())
 			{
-				for (SetElementId ElementId = BucketId(KeyFuncs::Hash(Key));
+				for (SetElementId ElementId = _BucketId(KeyFuncs::Hash(Key));
 					ElementId.IsValid();
 					ElementId = m_Elements[ElementId].HashNextId)
 				{
@@ -559,7 +557,7 @@ namespace Fuko
 			{
 				check(KeyHash == KeyFuncs::Hash(Key));
 
-				for (SetElementId ElementId = BucketId(KeyHash);
+				for (SetElementId ElementId = _BucketId(KeyHash);
 					ElementId.IsValid();
 					ElementId = m_Elements[ElementId].HashNextId)
 				{
@@ -616,13 +614,13 @@ namespace Fuko
 		void Sort(Predicate&& Pred = TLess<ElementType>())
 		{
 			m_Elements.Sort(FElementCompareClass<Predicate>(std::forward<Predicate>(Pred)));
-			Rehash();
+			_Rehash();
 		}
 		template <typename Predicate = TLess<ElementType>>
 		void StableSort(Predicate&& Pred = TLess<ElementType>())
 		{
 			m_Elements.StableSort(FElementCompareClass<Predicate>(std::forward<Predicate>(Pred)));
-			Rehash();
+			_Rehash();
 		}
 
 		// iterate over all elements for the hash entry of the given key, and verify that the ids are valid
@@ -631,7 +629,7 @@ namespace Fuko
 			bool bResult = true;
 			if (m_Elements.Num())
 			{
-				SetElementId ElementId = BucketId(KeyFuncs::Hash(Key));
+				SetElementId ElementId = _BucketId(KeyFuncs::Hash(Key));
 				while (ElementId.IsValid())
 				{
 					if (!IsValid(ElementId))
@@ -726,7 +724,7 @@ namespace Fuko
 		// To Array 
 		TArray<ElementType> Array() const
 		{
-			TArray<ElementType> Result(std::move(const_cast<TSet*>(this)->GetAllocator().Rebind<ElementType>()));
+			TArray<ElementType> Result(GetAllocator());
 			Result.Reserve(Num());
 			for (TConstIterator SetIt(*this); SetIt; ++SetIt)
 			{

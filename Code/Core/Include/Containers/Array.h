@@ -12,211 +12,24 @@
 // forward
 namespace Fuko
 {
-	template<typename T, template<typename> typename Alloc = TPmrAllocator>
+	template<typename T, typename Alloc = PmrAllocator>
 	class TArray;
-}
-
-// 迭代器
-namespace Fuko
-{
-	// 通用迭代器
-	template< typename ContainerType, typename ElementType, typename SizeType>
-	class TIndexedContainerIterator
-	{
-	public:
-		TIndexedContainerIterator(ContainerType& InContainer, SizeType StartIndex = 0)
-			: Container(InContainer)
-			, Index(StartIndex)
-		{
-		}
-
-		/** Advances iterator to the next element in the container. */
-		TIndexedContainerIterator& operator++()
-		{
-			++Index;
-			return *this;
-		}
-		TIndexedContainerIterator operator++(int)
-		{
-			TIndexedContainerIterator Tmp(*this);
-			++Index;
-			return Tmp;
-		}
-
-		TIndexedContainerIterator& operator--()
-		{
-			--Index;
-			return *this;
-		}
-		TIndexedContainerIterator operator--(int)
-		{
-			TIndexedContainerIterator Tmp(*this);
-			--Index;
-			return Tmp;
-		}
-
-		TIndexedContainerIterator& operator+=(SizeType Offset)
-		{
-			Index += Offset;
-			return *this;
-		}
-
-		TIndexedContainerIterator operator+(SizeType Offset) const
-		{
-			TIndexedContainerIterator Tmp(*this);
-			return Tmp += Offset;
-		}
-
-		TIndexedContainerIterator& operator-=(SizeType Offset)
-		{
-			return *this += -Offset;
-		}
-
-		TIndexedContainerIterator operator-(SizeType Offset) const
-		{
-			TIndexedContainerIterator Tmp(*this);
-			return Tmp -= Offset;
-		}
-
-		ElementType& operator* () const
-		{
-			return Container[Index];
-		}
-
-		ElementType* operator->() const
-		{
-			return &Container[Index];
-		}
-
-		FORCEINLINE explicit operator bool() const
-		{
-			return Container.IsValidIndex(Index);
-		}
-
-		SizeType GetIndex() const
-		{
-			return Index;
-		}
-
-		void Reset()
-		{
-			Index = 0;
-		}
-
-		void SetToEnd()
-		{
-			Index = Container.Num();
-		}
-
-		void RemoveCurrent()
-		{
-			Container.RemoveAt(Index);
-			Index--;
-		}
-
-		FORCEINLINE friend bool operator==(const TIndexedContainerIterator& Lhs, const TIndexedContainerIterator& Rhs) { return &Lhs.Container == &Rhs.Container && Lhs.Index == Rhs.Index; }
-		FORCEINLINE friend bool operator!=(const TIndexedContainerIterator& Lhs, const TIndexedContainerIterator& Rhs) { return &Lhs.Container != &Rhs.Container || Lhs.Index != Rhs.Index; }
-
-	private:
-
-		ContainerType& Container;
-		SizeType      Index;
-	};
-	// 重载+  
-	template <typename ContainerType, typename ElementType, typename SizeType>
-	FORCEINLINE TIndexedContainerIterator<ContainerType, ElementType, SizeType> operator+(SizeType Offset, TIndexedContainerIterator<ContainerType, ElementType, SizeType> RHS)
-	{
-		return RHS + Offset;
-	}
-
-	// 检测迭代期间是否发生改变
-#if FUKO_DEBUG
-	template <typename ElementType, typename SizeType>
-	struct TCheckedPointerIterator
-	{
-		explicit TCheckedPointerIterator(const SizeType& InNum, ElementType* InPtr)
-			: Ptr(InPtr)
-			, CurrentNum(InNum)
-			, InitialNum(InNum)
-		{
-		}
-
-		FORCEINLINE ElementType& operator*() const
-		{
-			return *Ptr;
-		}
-
-		FORCEINLINE TCheckedPointerIterator& operator++()
-		{
-			++Ptr;
-			return *this;
-		}
-
-		FORCEINLINE TCheckedPointerIterator& operator--()
-		{
-			--Ptr;
-			return *this;
-		}
-
-	private:
-		ElementType*    Ptr;
-		const SizeType& CurrentNum;
-		SizeType        InitialNum;
-
-		FORCEINLINE friend bool operator!=(const TCheckedPointerIterator& Lhs, const TCheckedPointerIterator& Rhs)
-		{
-			ensuref(Lhs.CurrentNum == Lhs.InitialNum, TEXT("Array has changed during ranged-for iteration!"));
-			return Lhs.Ptr != Rhs.Ptr;
-		}
-	};
-#endif
-	// 自动解引用的迭代器
-	template <typename ElementType, typename IteratorType>
-	struct TDereferencingIterator
-	{
-		explicit TDereferencingIterator(IteratorType InIter)
-			: Iter(InIter)
-		{
-		}
-
-		FORCEINLINE ElementType& operator*() const
-		{
-			return *(ElementType*)*Iter;
-		}
-
-		FORCEINLINE TDereferencingIterator& operator++()
-		{
-			++Iter;
-			return *this;
-		}
-
-	private:
-		IteratorType Iter;
-
-		FORCEINLINE friend bool operator!=(const TDereferencingIterator& Lhs, const TDereferencingIterator& Rhs)
-		{
-			return Lhs.Iter != Rhs.Iter;
-		}
-	};
 }
 
 // Array
 namespace Fuko
 {
-	template<typename T, template<typename> typename Alloc>
+	template<typename T, typename Alloc>
 	class TArray
 	{
-	public:
-		using ElementType = T;
-		using AllocType = Alloc<T>;
-		using SizeType = typename AllocType::SizeType;
+		using SizeType = typename Alloc::USizeType;
 	protected:
-		AllocType	m_Allocator;
+		Alloc		m_Allocator;
 		T*			m_Data;
 		SizeType	m_Num;
 		SizeType	m_Max;
 
-		static constexpr SizeType ElementSize = (SizeType)sizeof(ElementType);
+		static constexpr SizeType ElementSize = (SizeType)sizeof(T);
 	private:
 		FORCENOINLINE void _FreeArray()
 		{
@@ -241,8 +54,8 @@ namespace Fuko
 		{
 			if (m_Max != NewMax) m_Max = m_Allocator.Reserve(m_Data, NewMax);
 		}
-		template <typename T>
-		void _CopyToEmpty(const T* OtherData, SizeType OtherNum, SizeType ExtraSlack)
+		template <typename T2>
+		void _CopyToEmpty(const T2* OtherData, SizeType OtherNum, SizeType ExtraSlack)
 		{
 			check(ExtraSlack >= 0);
 
@@ -253,38 +66,38 @@ namespace Fuko
 				SizeType NewMax = OtherNum + ExtraSlack;
 				
 				if (NewMax > m_Max) _ResizeTo(NewMax);
-				ConstructItems<ElementType>(GetData(), OtherData, OtherNum);
+				ConstructItems<T>(GetData(), OtherData, OtherNum);
 			}
 		}
 	public:
 		// construct 
-		FORCEINLINE TArray(AllocType&& InAlloc = AllocType())
+		FORCEINLINE TArray(const Alloc& InAlloc = Alloc())
 			: m_Num(0)
 			, m_Data(nullptr)
 			, m_Max(0)
-			, m_Allocator(std::move(InAlloc))
+			, m_Allocator(InAlloc)
 		{}
-		FORCEINLINE TArray(const ElementType* Ptr, SizeType Count, AllocType&& InAlloc = AllocType())
+		FORCEINLINE TArray(const T* Ptr, SizeType Count, const Alloc& InAlloc = Alloc())
 			: m_Num(0)
 			, m_Data(nullptr)
 			, m_Max(0)
-			, m_Allocator(std::move(InAlloc))
+			, m_Allocator(InAlloc)
 		{
 			check(Ptr != nullptr || Count == 0);
 			_CopyToEmpty(Ptr, Count, 0);
 		}
-		FORCEINLINE TArray(std::initializer_list<ElementType> InitList, AllocType&& InAlloc = AllocType())
+		FORCEINLINE TArray(std::initializer_list<T> InitList, const Alloc& InAlloc = Alloc())
 			: m_Num(0)
 			, m_Data(nullptr)
 			, m_Max(0)
-			, m_Allocator(std::move(InAlloc))
+			, m_Allocator(InAlloc)
 		{
 			_CopyToEmpty(InitList.begin(), (SizeType)InitList.size(), 0);
 		}
 
 		// copy construct 
-		template <typename OtherElementType>
-		FORCEINLINE explicit TArray(const TArray<OtherElementType>& Other, AllocType&& InAlloc = AllocType())
+		template <typename TOther>
+		FORCEINLINE TArray(const TArray<TOther>& Other, const Alloc& InAlloc = Alloc())
 			: m_Num(0)
 			, m_Data(nullptr)
 			, m_Max(0)
@@ -292,7 +105,7 @@ namespace Fuko
 		{
 			_CopyToEmpty(Other.GetData(), Other.Num(), 0);
 		}
-		FORCEINLINE TArray(const TArray& Other, AllocType&& InAlloc = AllocType())
+		FORCEINLINE TArray(const TArray& Other, const Alloc& InAlloc = Alloc())
 			: m_Num(0)
 			, m_Data(nullptr)
 			, m_Max(0)
@@ -300,7 +113,7 @@ namespace Fuko
 		{
 			_CopyToEmpty(Other.GetData(), Other.Num(), 0);
 		}
-		FORCEINLINE TArray(const TArray& Other, SizeType ExtraSlack, AllocType&& InAlloc = AllocType())
+		FORCEINLINE TArray(const TArray& Other, SizeType ExtraSlack, Alloc&& InAlloc = Alloc())
 			: m_Num(0)
 			, m_Data(nullptr)
 			, m_Max(0)
@@ -310,7 +123,7 @@ namespace Fuko
 		}
 
 		// assign operator 
-		FORCEINLINE TArray& operator=(std::initializer_list<ElementType> InitList)
+		FORCEINLINE TArray& operator=(std::initializer_list<T> InitList)
 		{
 			DestructItems(GetData(), m_Num);
 			_CopyToEmpty(InitList.begin(), (SizeType)InitList.size(), 0);
@@ -361,14 +174,14 @@ namespace Fuko
 		FORCEINLINE ~TArray() { _FreeArray(); }
 		
 		// get infomation 
-		FORCEINLINE ElementType* GetData() { return m_Data; }
-		FORCEINLINE const ElementType* GetData() const { return m_Data; }
+		FORCEINLINE T* GetData() { return m_Data; }
+		FORCEINLINE const T* GetData() const { return m_Data; }
 		FORCEINLINE uint32 GetTypeSize() const { return ElementSize; }
 		FORCEINLINE SizeType Num() const { return m_Num; }
 		FORCEINLINE SizeType Max() const { return m_Max; }
 		FORCEINLINE SizeType Slack() const { return m_Max - m_Num; }
-		FORCEINLINE const AllocType& GetAllocator() const { return m_Allocator; }
-		FORCEINLINE AllocType& GetAllocator() { return m_Allocator; }
+		FORCEINLINE const Alloc& GetAllocator() const { return m_Allocator; }
+		FORCEINLINE Alloc& GetAllocator() { return m_Allocator; }
 
 		// compare
 		FORCEINLINE bool operator==(const TArray& Rhs) const { return m_Num == Rhs.m_Num && CompareItems(GetData(), Rhs.GetData(), m_Num); }
@@ -376,7 +189,7 @@ namespace Fuko
 
 		// debug check
 		FORCEINLINE void CheckInvariants() const { check((m_Num >= 0) & (m_Max >= m_Num)); }
-		FORCEINLINE void CheckAddress(const ElementType* Addr) const
+		FORCEINLINE void CheckAddress(const T* Addr) const
 		{
 			checkf(Addr < GetData() || Addr >= (GetData() + m_Max),
 				TEXT("Attempting to use a container element (%p) which already comes from the container being modified (%p, m_Max: %d, m_Num: %d, SizeofElement: %d)!")
@@ -392,39 +205,39 @@ namespace Fuko
 		FORCEINLINE bool IsValidIndex(SizeType Index) const { return Index >= 0 && Index < m_Num; }
 
 		// operator []
-		FORCEINLINE ElementType& operator[](SizeType Index)
+		FORCEINLINE T& operator[](SizeType Index)
 		{
 			RangeCheck(Index);
 			return GetData()[Index];
 		}
-		FORCEINLINE const ElementType& operator[](SizeType Index) const
+		FORCEINLINE const T& operator[](SizeType Index) const
 		{
 			RangeCheck(Index);
 			return GetData()[Index];
 		}
 
 		// get element 
-		FORCEINLINE ElementType& Last(SizeType IndexFromTheEnd = 0)
+		FORCEINLINE T& Last(SizeType IndexFromTheEnd = 0)
 		{
 			RangeCheck(m_Num - IndexFromTheEnd - 1);
 			return GetData()[m_Num - IndexFromTheEnd - 1];
 		}
-		FORCEINLINE const ElementType& Last(SizeType IndexFromTheEnd = 0) const
+		FORCEINLINE const T& Last(SizeType IndexFromTheEnd = 0) const
 		{
 			RangeCheck(m_Num - IndexFromTheEnd - 1);
 			return GetData()[m_Num - IndexFromTheEnd - 1];
 		}
 
 		// pop & push 
-		FORCEINLINE ElementType Pop(bool bAllowShrinking = true)
+		FORCEINLINE T Pop(bool bAllowShrinking = true)
 		{
 			RangeCheck(0);
-			ElementType Result = std::move(GetData()[m_Num - 1]);
+			T Result = std::move(GetData()[m_Num - 1]);
 			RemoveAt(m_Num - 1, 1, bAllowShrinking);
 			return Result;
 		}
-		FORCEINLINE void Push(ElementType&& Item) { Emplace(std::move(Item)); }
-		FORCEINLINE void Push(const ElementType& Item) { Emplace(Item); }
+		FORCEINLINE void Push(T&& Item) { Emplace(std::move(Item)); }
+		FORCEINLINE void Push(const T& Item) { Emplace(Item); }
 
 		// shrink & reserve 
 		FORCEINLINE void Shrink()
@@ -469,7 +282,7 @@ namespace Fuko
 			{
 				const SizeType Diff = NewNum - m_Num;
 				const SizeType Index = AddUninitialized(Diff);
-				DefaultConstructItems<ElementType>(GetData() + Index, Diff);
+				DefaultConstructItems<T>(GetData() + Index, Diff);
 			}
 			else if (NewNum < Num())
 			{
@@ -501,39 +314,39 @@ namespace Fuko
 
 		// find 
 		template<typename KeyType>
-		ElementType* Find(const KeyType& Item) { return Algo::Find(m_Data, m_Num, Item); }
+		T* Find(const KeyType& Item) { return Algo::Find(m_Data, m_Num, Item); }
 		template<typename KeyType>
-		ElementType* FindLast(const KeyType& Item) { return Algo::FindLast(m_Data, m_Num, Item); }
+		T* FindLast(const KeyType& Item) { return Algo::FindLast(m_Data, m_Num, Item); }
 		template<typename TPred>
-		ElementType* FindBy(TPred&& Pred) { return Algo::FindBy(m_Data, m_Num, std::forward<TPred>(Pred)); }
+		T* FindBy(TPred&& Pred) { return Algo::FindBy(m_Data, m_Num, std::forward<TPred>(Pred)); }
 		template<typename TPred>
-		ElementType* FindLastBy(TPred&& Pred) { return Algo::FindLastBy(m_Data, m_Num, std::forward<TPred>(Pred)); }
+		T* FindLastBy(TPred&& Pred) { return Algo::FindLastBy(m_Data, m_Num, std::forward<TPred>(Pred)); }
 		template<typename KeyType>
-		FORCEINLINE const ElementType* Find(const KeyType& Item) const { return const_cast<TArray*>(this)->Find(Item); }
+		FORCEINLINE const T* Find(const KeyType& Item) const { return const_cast<TArray*>(this)->Find(Item); }
 		template<typename KeyType>
-		FORCEINLINE const ElementType* FindLast(const KeyType& Item)const { return const_cast<TArray*>(this)->FindLast(Item); }
+		FORCEINLINE const T* FindLast(const KeyType& Item)const { return const_cast<TArray*>(this)->FindLast(Item); }
 		template<typename Predicate>
-		FORCEINLINE const ElementType* FindBy(Predicate&& Pred) const { return const_cast<TArray*>(this)->FindBy(std::forward<Predicate>(Pred)); }
+		FORCEINLINE const T* FindBy(Predicate&& Pred) const { return const_cast<TArray*>(this)->FindBy(std::forward<Predicate>(Pred)); }
 		template<typename Predicate>
-		FORCEINLINE const ElementType* FindLastBy(Predicate&& Pred) const { return const_cast<TArray*>(this)->FindLastBy(std::forward<Predicate>(Pred)); }
+		FORCEINLINE const T* FindLastBy(Predicate&& Pred) const { return const_cast<TArray*>(this)->FindLastBy(std::forward<Predicate>(Pred)); }
 
 		// filter item 
 		template<typename Predicate>
-		void FilterBy(Predicate&& Pred, TArray<ElementType>& OutArray) const
+		void FilterBy(Predicate&& Pred, TArray<T>& OutArray) const
 		{
-			const ElementType* RESTRICT Ptr = GetData();
-			const ElementType* RESTRICT End = GetData() + m_Num;
+			const T* RESTRICT Ptr = GetData();
+			const T* RESTRICT End = GetData() + m_Num;
 			for (; Ptr != End; ++Ptr)
 			{
 				if (Pred(*Ptr)) OutArray.Emplace(*Ptr);
 			}
 		}
 		template<typename Predicate>
-		TArray<ElementType> FilterBy(Predicate&& Pred) const
+		TArray<T> FilterBy(Predicate&& Pred) const
 		{
-			TArray<ElementType> OutArray;
-			const ElementType* RESTRICT Ptr = GetData();
-			const ElementType* RESTRICT End = GetData() + m_Num;
+			TArray<T> OutArray;
+			const T* RESTRICT Ptr = GetData();
+			const T* RESTRICT End = GetData() + m_Num;
 			for (; Ptr != End; ++Ptr)
 			{
 				if (Pred(*Ptr)) OutArray.Emplace(*Ptr);
@@ -557,87 +370,87 @@ namespace Fuko
 			m_Num += Count;
 			_ResizeGrow();
 
-			ElementType* Ptr = GetData() + Index;
-			RelocateConstructItems<ElementType>(Ptr + Count, Ptr, OldNum - Index);
+			T* Ptr = GetData() + Index;
+			RelocateConstructItems<T>(Ptr + Count, Ptr, OldNum - Index);
 		}
 		FORCEINLINE void InsertZeroed(SizeType Index, SizeType Count = 1)
 		{
 			InsertUninitialized(Index, Count);
 			Memzero(GetData() + Index, Count * ElementSize);
 		}
-		FORCEINLINE ElementType& InsertZeroed_GetRef(SizeType Index)
+		FORCEINLINE T& InsertZeroed_GetRef(SizeType Index)
 		{
 			InsertUninitialized(Index, 1);
-			ElementType* Ptr = GetData()+ Index;
+			T* Ptr = GetData()+ Index;
 			Memzero(Ptr, ElementSize);
 			return *Ptr;
 		}
 		FORCEINLINE void InsertDefaulted(SizeType Index, SizeType Count = 1)
 		{
 			InsertUninitialized(Index, Count);
-			DefaultConstructItems<ElementType>(GetData() + Index, Count);
+			DefaultConstructItems<T>(GetData() + Index, Count);
 		}
-		FORCEINLINE ElementType& InsertDefaulted_GetRef(SizeType Index)
+		FORCEINLINE T& InsertDefaulted_GetRef(SizeType Index)
 		{
 			InsertUninitialized(Index, 1);
-			ElementType* Ptr = GetData() + Index;
-			DefaultConstructItems<ElementType>(Ptr, 1);
+			T* Ptr = GetData() + Index;
+			DefaultConstructItems<T>(Ptr, 1);
 			return *Ptr;
 		}
 
 		// insert 
-		FORCEINLINE void Insert(std::initializer_list<ElementType> InitList, const SizeType InIndex)
+		FORCEINLINE void Insert(std::initializer_list<T> InitList, const SizeType InIndex)
 		{
 			InsertUninitialized(InIndex, InitList.size());
-			ConstructItems<ElementType>(GetData() + InIndex, InitList.begin(), InitList.size());
+			ConstructItems<T>(GetData() + InIndex, InitList.begin(), InitList.size());
 		}
 		FORCEINLINE void Insert(const TArray& Items, const SizeType InIndex)
 		{
 			check(this != &Items);
 			InsertUninitialized(InIndex, Items.m_Num);
-			ConstructItems<ElementType>(GetData() + InIndex, Items.GetData(), Items.m_Num);
+			ConstructItems<T>(GetData() + InIndex, Items.GetData(), Items.m_Num);
 		}
 		FORCEINLINE void Insert(TArray&& Items, const SizeType InIndex)
 		{
 			check(this != &Items);
 			InsertUninitialized(InIndex, Items.Num());
-			MoveConstructItems<ElementType>(GetData() + InIndex, Items.GetData(), Items.m_Num);
+			MoveConstructItems<T>(GetData() + InIndex, Items.GetData(), Items.m_Num);
 			Items.m_Num = 0;
 		}
-		FORCEINLINE void Insert(const ElementType* Ptr, SizeType Count, SizeType Index)
+		FORCEINLINE void Insert(const T* Ptr, SizeType Count, SizeType Index)
 		{
 			check(Ptr != nullptr);
 			InsertUninitialized(Index, Count);
-			ConstructItems<ElementType>(GetData() + Index, Ptr, Count);
+			ConstructItems<T>(GetData() + Index, Ptr, Count);
 		}
-		FORCEINLINE void Insert(ElementType&& Item, SizeType Index)
+		FORCEINLINE void Insert(T&& Item, SizeType Index)
 		{
 			CheckAddress(&Item);
 			InsertUninitialized(Index, 1);
-			new(GetData() + Index) ElementType(std::move(Item));
+			new(GetData() + Index) T(std::move(Item));
 		}
-		FORCEINLINE void Insert(const ElementType& Item, SizeType Index)
+		FORCEINLINE void Insert(const T& Item, SizeType Index)
 		{
 			CheckAddress(&Item);
 			InsertUninitialized(Index, 1);
-			new(GetData() + Index) ElementType(Item);
+			new(GetData() + Index) T(Item);
 		}
-		FORCEINLINE ElementType& Insert_GetRef(ElementType&& Item, SizeType Index)
+		FORCEINLINE T& Insert_GetRef(T&& Item, SizeType Index)
 		{
 			CheckAddress(&Item);
 
 			InsertUninitialized(Index, 1);
-			ElementType* Ptr = GetData() + Index;
-			new(Ptr) ElementType(std::move(Item));
+			T* Ptr = GetData() + Index;
+			new(Ptr) T(std::move(Item));
 			return *Ptr;
 		}
-		FORCEINLINE ElementType& Insert_GetRef(const ElementType& Item, SizeType Index)
+		FORCEINLINE T& Insert_GetRef(const T& Item, SizeType Index)
 		{
 			CheckAddress(&Item);
 
 			InsertUninitialized(Index, 1);
-			ElementType* Ptr = GetData() + Index;
-			new(Ptr) ElementType(Item);
+			T* Ptr = GetData() + Index;
+			new(Ptr) T(Item);
 			return *Ptr;
 		}
 
@@ -653,22 +466,22 @@ namespace Fuko
 			_ResizeGrow();
 			return OldNum;
 		}
-		FORCEINLINE SizeType Add(ElementType&& Item)
+		FORCEINLINE SizeType Add(T&& Item)
 		{
 			CheckAddress(&Item);
 			return Emplace(std::move(Item));
 		}
-		FORCEINLINE SizeType Add(const ElementType& Item)
+		FORCEINLINE SizeType Add(const T& Item)
 		{
 			CheckAddress(&Item);
 			return Emplace(Item);
 		}
-		FORCEINLINE ElementType& Add_GetRef(ElementType&& Item)
+		FORCEINLINE T& Add_GetRef(T&& Item)
 		{
 			CheckAddress(&Item);
 			return Emplace_GetRef(std::move(Item));
 		}
-		FORCEINLINE ElementType& Add_GetRef(const ElementType& Item)
+		FORCEINLINE T& Add_GetRef(const T& Item)
 		{
 			CheckAddress(&Item);
 			return Emplace_GetRef(Item);
@@ -676,14 +489,14 @@ namespace Fuko
 		FORCEINLINE SizeType AddN(SizeType Count = 1)
 		{
 			const SizeType Index = AddUninitialized(Count);
-			DefaultConstructItems<ElementType>(GetData() + Index, Count);
+			DefaultConstructItems<T>(GetData() + Index, Count);
 			return Index;
 		}
-		FORCEINLINE ElementType& Add_GetRef()
+		FORCEINLINE T& Add_GetRef()
 		{
 			const SizeType Index = AddUninitialized(1);
-			ElementType* Ptr = GetData() + Index;
-			DefaultConstructItems<ElementType>(Ptr, 1);
+			T* Ptr = GetData() + Index;
+			DefaultConstructItems<T>(Ptr, 1);
 			return *Ptr;
 		}
 		FORCEINLINE SizeType AddZeroed(SizeType Count = 1)
@@ -692,10 +505,10 @@ namespace Fuko
 			Memzero(GetData() + Index, Count * ElementSize);
 			return Index;
 		}
-		FORCEINLINE ElementType& AddZeroed_GetRef()
+		FORCEINLINE T& AddZeroed_GetRef()
 		{
 			const SizeType Index = AddUninitialized(1);
-			ElementType* Ptr = GetData() + Index;
+			T* Ptr = GetData() + Index;
 			Memzero(Ptr, ElementSize);
 			return *Ptr;
 		}
@@ -705,42 +518,42 @@ namespace Fuko
 		FORCEINLINE SizeType Emplace(ArgsType&&... Args)
 		{
 			const SizeType Index = AddUninitialized();
-			new(GetData() + Index) ElementType(std::forward<ArgsType>(Args)...);
+			new(GetData() + Index) T(std::forward<ArgsType>(Args)...);
 			return Index;
 		}
 		template <typename... ArgsType>
-		FORCEINLINE ElementType& Emplace_GetRef(ArgsType&&... Args)
+		FORCEINLINE T& Emplace_GetRef(ArgsType&&... Args)
 		{
 			const SizeType Index = AddUninitialized();
-			ElementType* Ptr = GetData() + Index;
-			new(Ptr) ElementType(std::forward<ArgsType>(Args)...);
+			T* Ptr = GetData() + Index;
+			new(Ptr) T(std::forward<ArgsType>(Args)...);
 			return *Ptr;
 		}
 		template <typename... ArgsType>
 		FORCEINLINE void EmplaceAt(SizeType Index, ArgsType&&... Args)
 		{
 			InsertUninitialized(Index);
-			new(GetData() + Index) ElementType(std::forward<ArgsType>(Args)...);
+			new(GetData() + Index) T(std::forward<ArgsType>(Args)...);
 		}
 		template <typename... ArgsType>
-		FORCEINLINE ElementType& EmplaceAt_GetRef(SizeType Index, ArgsType&&... Args)
+		FORCEINLINE T& EmplaceAt_GetRef(SizeType Index, ArgsType&&... Args)
 		{
 			InsertUninitialized(Index);
-			ElementType* Ptr = GetData() + Index;
-			new(Ptr) ElementType(std::forward<ArgsType>(Args)...);
+			T* Ptr = GetData() + Index;
+			new(Ptr) T(std::forward<ArgsType>(Args)...);
 			return *Ptr;
 		}
 
 		// add unique 
-		FORCEINLINE SizeType AddUnique(ElementType&& Item) 
+		FORCEINLINE SizeType AddUnique(T&& Item) 
 		{
-			ElementType* Element = Find(Item);
+			T* Element = Find(Item);
 			if (Element != nullptr) return Element - GetData();
 			return Add(std::move(Item));
 		}
-		FORCEINLINE SizeType AddUnique(const ElementType& Item) 
+		FORCEINLINE SizeType AddUnique(const T& Item) 
 		{
-			ElementType* Element = Find(Item);
+			T* Element = Find(Item);
 			if (Element != nullptr) return Element - GetData();
 			return Add(Item);
 		}
@@ -753,8 +566,8 @@ namespace Fuko
 				check((Count >= 0) & (Index >= 0) & (Index + Count <= m_Num));
 				CheckInvariants();
 
-				ElementType* HoleBegin = GetData() + Index;
-				ElementType* HoleEnd = HoleBegin + Count;
+				T* HoleBegin = GetData() + Index;
+				T* HoleEnd = HoleBegin + Count;
 
 				// destruct 
 				DestructItems(HoleBegin, Count);
@@ -785,7 +598,7 @@ namespace Fuko
 					Memcpy(
 						GetData() + Index,
 						GetData() + (m_Num - NumElementsToMoveIntoHole),
-						NumElementsToMoveIntoHole * sizeof(ElementType)
+						NumElementsToMoveIntoHole * sizeof(T)
 					);
 				}
 				m_Num -= Count;
@@ -795,12 +608,12 @@ namespace Fuko
 		}
 		
 		// remove
-		SizeType Remove(const ElementType& Item)
+		SizeType Remove(const T& Item)
 		{
 			CheckAddress(&Item);
-			return RemoveBy([&Item](ElementType& Element) { return Element == Item; });
+			return RemoveBy([&Item](T& Element) { return Element == Item; });
 		}
-		SizeType RemoveSwap(const ElementType& Item)
+		SizeType RemoveSwap(const T& Item)
 		{
 			CheckAddress(&Item);
 
@@ -837,7 +650,7 @@ namespace Fuko
 					// this was a non-matching run, we need to move it
 					if (WriteIndex != RunStartIndex)
 					{
-						Memmove(&GetData()[WriteIndex], &GetData()[RunStartIndex], sizeof(ElementType)* RunLength);
+						Memmove(&GetData()[WriteIndex], &GetData()[RunStartIndex], sizeof(T)* RunLength);
 					}
 					WriteIndex += RunLength;
 				}
@@ -869,9 +682,9 @@ namespace Fuko
 			}
 			return OriginalNum - m_Num;
 		}
-		SizeType RemoveSingle(const ElementType& Item)
+		SizeType RemoveSingle(const T& Item)
 		{
-			ElementType* Element = Find(Item);
+			T* Element = Find(Item);
 			if (Element == nullptr) return 0;
 
 			auto* RemovePtr = GetData() + Index;
@@ -879,14 +692,14 @@ namespace Fuko
 			DestructItems(RemovePtr, 1);
 			SizeType Index = Element - GetData();
 			const SizeType NextIndex = Index + 1;
-			RelocateConstructItems<ElementType>(RemovePtr, RemovePtr + 1, m_Num - (Index + 1));
+			RelocateConstructItems<T>(RemovePtr, RemovePtr + 1, m_Num - (Index + 1));
 
 			--m_Num;
 			return 1;
 		}
-		SizeType RemoveSingleSwap(const ElementType& Item, bool bAllowShrinking = true)
+		SizeType RemoveSingleSwap(const T& Item, bool bAllowShrinking = true)
 		{
-			ElementType* Element = Find(Item);
+			T* Element = Find(Item);
 			if (Element == nullptr) return 0;
 
 			RemoveAtSwap(Element - GetData(), 1, bAllowShrinking);
@@ -895,65 +708,43 @@ namespace Fuko
 		}
 
 		// append 
-		template <typename OtherElementType>
-		FORCEINLINE void Append(const TArray<OtherElementType>& Source)
+		template <typename TOther>
+		FORCEINLINE TArray& operator+=(const TArray<TOther>& Source)
 		{
 			check((void*)this != (void*)&Source);
 
-			if (!Source.Num()) return;
+			if (!Source.Num()) return this;
 
 			SizeType Pos = AddUninitialized(Source.Num());
-			ConstructItems<ElementType>(GetData() + Pos, Source.GetData(), Source.Num());
+			ConstructItems<T>(GetData() + Pos, Source.GetData(), Source.Num());
+			return *this;
 		}
-		template <typename OtherElementType>
-		FORCEINLINE void Append(TArray<OtherElementType>&& Source)
+		template <typename TOther>
+		FORCEINLINE TArray& operator+=(TArray<TOther>&& Source)
 		{
 			check((void*)this != (void*)&Source);
 
-			if (!Source.Num()) return;
+			if (!Source.Num()) return *this;
 
 			SizeType Pos = AddUninitialized(Source.Num());
 			RelocateConstructItems(GetData() + Pos, Source.GetData(), Source.Num());
 			Source.Empty();
+			return *this;
 		}
-		FORCEINLINE void Append(const ElementType* Ptr, SizeType Count)
-		{
-			check(Ptr != nullptr || Count == 0);
-
-			SizeType Pos = AddUninitialized(Count);
-			ConstructItems<ElementType>(GetData() + Pos, Ptr, Count);
-		}
-		FORCEINLINE void Append(std::initializer_list<ElementType> InitList)
+		FORCEINLINE TArray& operator+=(std::initializer_list<T> InitList)
 		{
 			SizeType Count = (SizeType)InitList.size();
 
 			SizeType Pos = AddUninitialized(Count);
-			ConstructItems<ElementType>(GetData() + Pos, InitList.begin(), Count);
-		}
-		FORCEINLINE TArray& operator+=(TArray&& Other)
-		{
-			Append(std::move(Other));
-			return *this;
-		}
-		FORCEINLINE TArray& operator+=(const TArray& Other)
-		{
-			Append(Other);
-			return *this;
-		}
-		FORCEINLINE TArray& operator+=(std::initializer_list<ElementType> InitList)
-		{
-			Append(InitList);
+			ConstructItems<T>(GetData() + Pos, InitList.begin(), Count);
 			return *this;
 		}
 
 		// Init 
-		void Init(const ElementType& Element, SizeType Number)
+		void Init(const T& Element, SizeType Number)
 		{
 			Empty(Number);
-			for (SizeType Index = 0; Index < Number; ++Index)
-			{
-				new(*this) ElementType(Element);
-			}
+			for (SizeType Index = 0; Index < Number; ++Index) Emplace(Element);
 		}
 
 		// swap 
@@ -963,7 +754,7 @@ namespace Fuko
 			check((m_Num > FirstIndexToSwap) && (m_Num > SecondIndexToSwap));
 			if (FirstIndexToSwap != SecondIndexToSwap)
 			{
-				Memswap(GetData() + FirstIndexToSwap, GetData() + SecondIndexToSwap, sizeof(ElementType));
+				Memswap(GetData() + FirstIndexToSwap, GetData() + SecondIndexToSwap, sizeof(T));
 			}
 		}
 
@@ -987,88 +778,76 @@ namespace Fuko
 			::StableSort(GetData(), Num(), Pred);
 		}
 
-		// Iterators
-		typedef TIndexedContainerIterator<      TArray, ElementType, SizeType> TIterator;
-		typedef TIndexedContainerIterator<const TArray, const ElementType, SizeType> TConstIterator;
-		TIterator CreateIterator()
-		{
-			return TIterator(*this);
-		}
-		TConstIterator CreateConstIterator() const
-		{
-			return TConstIterator(*this);
-		}
-
 		// support heap 
 		void Heapify()
 		{
-			Heapify(TLess<ElementType>());
+			Heapify(TLess<T>());
 		}
-		SizeType HeapPush(ElementType&& InItem)
+		SizeType HeapPush(T&& InItem)
 		{
-			return HeapPush(std::move(InItem), TLess<ElementType>());
+			return HeapPush(std::move(InItem), TLess<T>());
 		}
-		SizeType HeapPush(const ElementType& InItem)
+		SizeType HeapPush(const T& InItem)
 		{
-			return HeapPush(InItem, TLess<ElementType>());
+			return HeapPush(InItem, TLess<T>());
 		}
-		void HeapPop(ElementType& OutItem, bool bAllowShrinking = true)
+		void HeapPop(T& OutItem, bool bAllowShrinking = true)
 		{
-			HeapPop(OutItem, TLess<ElementType>(), bAllowShrinking);
+			HeapPop(OutItem, TLess<T>(), bAllowShrinking);
 		}
 		void HeapPopDiscard(bool bAllowShrinking = true)
 		{
-			HeapPopDiscard(TLess<ElementType>(), bAllowShrinking);
+			HeapPopDiscard(TLess<T>(), bAllowShrinking);
 		}
-		const ElementType& HeapTop() const
+		const T& HeapTop() const
 		{
 			return (*this)[0];
 		}
-		ElementType& HeapTop()
+		T& HeapTop()
 		{
 			return (*this)[0];
 		}
 		void HeapRemoveAt(SizeType Index, bool bAllowShrinking = true)
 		{
-			HeapRemoveAt(Index, TLess< ElementType >(), bAllowShrinking);
+			HeapRemoveAt(Index, TLess< T >(), bAllowShrinking);
 		}
 		void HeapSort()
 		{
-			HeapSort(TLess<ElementType>());
+			HeapSort(TLess<T>());
 		}
 		template <class Predicate>
 		FORCEINLINE void Heapify(Predicate&& Pred)
 		{
-			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(std::move(Pred));
+			TDereferenceWrapper<T, Predicate> PredicateWrapper(std::move(Pred));
 			::Fuko::Algo::Heapify(*this, PredicateWrapper);
 		}
 		template <class Predicate>
-		SizeType HeapPush(ElementType&& InItem, Predicate&& Pred)
+		SizeType HeapPush(T&& InItem, Predicate&& Pred)
 		{
 			// 在尾部添加元素，然后向上检索堆
 			Add(std::move(InItem));
-			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(std::move(Pred));
+			TDereferenceWrapper<T, Predicate> PredicateWrapper(std::move(Pred));
 			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
 
 			return Result;
 		}
 		template <class Predicate>
-		SizeType HeapPush(const ElementType& InItem, Predicate&& Pred)
+		SizeType HeapPush(const T& InItem, Predicate&& Pred)
 		{
 			// 在尾部添加元素，然后向上检索堆
 			Add(InItem);
-			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(std::move(Pred));
+			TDereferenceWrapper<T, Predicate> PredicateWrapper(std::move(Pred));
 			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
 
 			return Result;
 		}
 		template <class Predicate>
-		void HeapPop(ElementType& OutItem, Predicate&& Pred, bool bAllowShrinking = true)
+		void HeapPop(T& OutItem, Predicate&& Pred, bool bAllowShrinking = true)
 		{
 			OutItem = std::move((*this)[0]);
 			RemoveAtSwap(0, 1, bAllowShrinking);
 
-			TDereferenceWrapper< ElementType, Predicate> PredicateWrapper(std::move(Pred));
+			TDereferenceWrapper< T, Predicate> PredicateWrapper(std::move(Pred));
 			::Fuko::Algo::Impl::HeapSiftDown(GetData(), 0, Num(), FIdentityFunctor(), PredicateWrapper);
 		}
 		template <class Predicate>
@@ -1080,7 +859,7 @@ namespace Fuko
 		void HeapPopDiscard(Predicate&& Pred, bool bAllowShrinking = true)
 		{
 			RemoveAtSwap(0, 1, bAllowShrinking);
-			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(std::move(Pred));
+			TDereferenceWrapper<T, Predicate> PredicateWrapper(std::move(Pred));
 			::Fuko::Algo::Impl::HeapSiftDown(GetData(), 0, Num(), FIdentityFunctor(), PredicateWrapper);
 		}
 		template <class Predicate>
@@ -1088,31 +867,21 @@ namespace Fuko
 		{
 			RemoveAtSwap(Index, 1, bAllowShrinking);
 
-			TDereferenceWrapper< ElementType, Predicate> PredicateWrapper(std::move(Pred));
+			TDereferenceWrapper< T, Predicate> PredicateWrapper(std::move(Pred));
 			::Fuko::Algo::Impl::HeapSiftDown(GetData(), Index, Num(), FIdentityFunctor(), PredicateWrapper);
 			::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, FMath::Min(Index, Num() - 1), FIdentityFunctor(), PredicateWrapper);
 		}
 		template <class Predicate>
 		void HeapSort(const Predicate& Pred)
 		{
-			TDereferenceWrapper<ElementType, Predicate> PredicateWrapper(Pred);
+			TDereferenceWrapper<T, Predicate> PredicateWrapper(Pred);
 			::Fuko::Algo::HeapSort(*this, PredicateWrapper);
 		}
 
-		// support foreach 
-#if FUKO_DEBUG
-		typedef TCheckedPointerIterator<      ElementType, SizeType> RangedForIteratorType;
-		typedef TCheckedPointerIterator<const ElementType, SizeType> RangedForConstIteratorType;
-		FORCEINLINE RangedForIteratorType      begin() { return RangedForIteratorType(m_Num, GetData()); }
-		FORCEINLINE RangedForConstIteratorType begin() const { return RangedForConstIteratorType(m_Num, GetData()); }
-		FORCEINLINE RangedForIteratorType      end() { return RangedForIteratorType(m_Num, GetData() + Num()); }
-		FORCEINLINE RangedForConstIteratorType end() const { return RangedForConstIteratorType(m_Num, GetData() + Num()); }
-#else
-		FORCEINLINE ElementType*      	begin() { return GetData(); }
-		FORCEINLINE const ElementType* 	begin() const { return GetData(); }
-		FORCEINLINE ElementType*      	end() { return GetData() + Num(); }
-		FORCEINLINE const ElementType* 	end() const { return GetData() + Num(); }
-#endif		
+		FORCEINLINE T*      	begin()			{ return GetData(); }
+		FORCEINLINE const T* 	begin() const	{ return GetData(); }
+		FORCEINLINE T*      	end()			{ return GetData() + Num(); }
+		FORCEINLINE const T* 	end() const		{ return GetData() + Num(); }
 	};
 }
 
@@ -1122,17 +891,3 @@ struct TIsContiguousContainer<Fuko::TArray<T>>
 {
 	enum { value = true };
 };
-
-// Operater new
-template <typename T> void* operator new(size_t Size, Fuko::TArray<T>& Array)
-{
-	check(Size == sizeof(T));
-	const auto Index = Array.AddUninitialized(1);
-	return &Array[Index];
-}
-template <typename T> void* operator new(size_t Size, Fuko::TArray<T>& Array, typename Fuko::TArray<T>::SizeType Index)
-{
-	check(Size == sizeof(T));
-	Array.InsertUninitialized(Index);
-	return &Array[Index];
-}

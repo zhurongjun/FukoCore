@@ -26,19 +26,19 @@ namespace Fuko
 // Base map
 namespace Fuko
 {
-	template <typename KeyType, typename ValueType, template<typename> typename Alloc,typename KeyFuncs>
+	template <typename KeyType, typename ValueType, typename Alloc,typename KeyFuncs>
 	class TMapBase
 	{
 		//-----------------------------begin help function-----------------------------
 		// implement find or add 
 		template <typename InitKeyType>
-		ValueType& FindOrAddImpl(uint32 KeyHash, InitKeyType&& Key)
+		ValueType& _FindOrAddImpl(uint32 KeyHash, InitKeyType&& Key)
 		{
 			if (auto* Pair = m_Pairs.FindByHash(KeyHash, Key)) return Pair->Value;
 			return AddByHash(KeyHash, std::forward<InitKeyType>(Key));
 		}
 		template <typename InitKeyType, typename InitValueType>
-		ValueType& FindOrAddImpl(uint32 KeyHash, InitKeyType&& Key, InitValueType&& Value)
+		ValueType& _FindOrAddImpl(uint32 KeyHash, InitKeyType&& Key, InitValueType&& Value)
 		{
 			if (auto* Pair = m_Pairs.FindByHash(KeyHash, Key)) return Pair->Value;
 			return AddByHash(KeyHash, std::forward<InitKeyType>(Key), std::forward<InitValueType>(Value));
@@ -47,8 +47,7 @@ namespace Fuko
 	public:
 		using ElementType = TPair<KeyType, ValueType>;
 		using ElementSetType = TSet<ElementType, Alloc, KeyFuncs>;
-		using AllocType = typename ElementSetType::AllocType;
-		using SizeType = typename AllocType::SizeType;
+		using SizeType = typename Alloc::SizeType;
 
 		// special predicate for compare key
 		template<typename Predicate>
@@ -79,11 +78,11 @@ namespace Fuko
 		ElementSetType	m_Pairs;
 
 		// construct 
-		FORCEINLINE TMapBase(AllocType&& InAlloc)
+		FORCEINLINE TMapBase(const Alloc& InAlloc)
 			: m_Pairs(std::move(InAlloc)) {}
 		
 		// copy construct
-		FORCEINLINE TMapBase(const TMapBase& Other, AllocType&& InAlloc)
+		FORCEINLINE TMapBase(const TMapBase& Other, const Alloc& InAlloc)
 			: m_Pairs(Other.m_Pairs, std::move(InAlloc)) {}
 		
 		// move construct 
@@ -221,20 +220,20 @@ namespace Fuko
 		}
 
 		// find or add key only 
-		FORCEINLINE ValueType& FindOrAdd(const KeyType& Key) { return FindOrAddImpl(KeyFuncs::Hash(Key), Key); }
-		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key) { return FindOrAddImpl(KeyFuncs::Hash(Key), std::move(Key)); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType& Key) { return FindOrAddImpl(KeyHash, Key); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key) { return FindOrAddImpl(KeyHash, std::move(Key)); }
+		FORCEINLINE ValueType& FindOrAdd(const KeyType& Key) { return _FindOrAddImpl(KeyFuncs::Hash(Key), Key); }
+		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key) { return _FindOrAddImpl(KeyFuncs::Hash(Key), std::move(Key)); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType& Key) { return _FindOrAddImpl(KeyHash, Key); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key) { return _FindOrAddImpl(KeyHash, std::move(Key)); }
 
 		// find or add by key and value 
-		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, const ValueType&  Value) { return FindOrAddImpl(KeyFuncs::Hash(Key), Key, Value); }
-		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, ValueType&&       Value) { return FindOrAddImpl(KeyFuncs::Hash(Key), Key, std::move(Value)); }
-		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, const ValueType&  Value) { return FindOrAddImpl(KeyFuncs::Hash(Key), std::move(Key), Value); }
-		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, ValueType&&       Value) { return FindOrAddImpl(KeyFuncs::Hash(Key), std::move(Key), std::move(Value)); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key, const ValueType&  Value) { return FindOrAddImpl(KeyHash, Key, Value); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key, ValueType&& Value) { return FindOrAddImpl(KeyHash, Key, std::move(Value)); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, const ValueType&  Value) { return FindOrAddImpl(KeyHash, std::move(Key), Value); }
-		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, ValueType&& Value) { return FindOrAddImpl(KeyHash, std::move(Key), std::move(Value)); }
+		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, const ValueType&  Value) { return _FindOrAddImpl(KeyFuncs::Hash(Key), Key, Value); }
+		FORCEINLINE ValueType& FindOrAdd(const KeyType&  Key, ValueType&&       Value) { return _FindOrAddImpl(KeyFuncs::Hash(Key), Key, std::move(Value)); }
+		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, const ValueType&  Value) { return _FindOrAddImpl(KeyFuncs::Hash(Key), std::move(Key), Value); }
+		FORCEINLINE ValueType& FindOrAdd(KeyType&& Key, ValueType&&       Value) { return _FindOrAddImpl(KeyFuncs::Hash(Key), std::move(Key), std::move(Value)); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key, const ValueType&  Value) { return _FindOrAddImpl(KeyHash, Key, Value); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, const KeyType&  Key, ValueType&& Value) { return _FindOrAddImpl(KeyHash, Key, std::move(Value)); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, const ValueType&  Value) { return _FindOrAddImpl(KeyHash, std::move(Key), Value); }
+		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, ValueType&& Value) { return _FindOrAddImpl(KeyHash, std::move(Key), std::move(Value)); }
 
 		// find with check instead of return a nullprt
 		FORCEINLINE const ValueType& FindChecked(const KeyType& Key) const
@@ -365,7 +364,7 @@ namespace Fuko
 namespace Fuko
 {
 	template<typename KeyType, typename ValueType
-		, template<typename> typename Alloc = TPmrAllocator
+		, typename Alloc = PmrAllocator
 		, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType, ValueType, false>>
 	class TMap : public TMapBase<KeyType, ValueType, Alloc, KeyFuncs>
 	{
@@ -374,11 +373,10 @@ namespace Fuko
 		using Super = TMapBase<KeyType, ValueType, Alloc, KeyFuncs>;
 		using typename Super::ElementType;
 		using typename Super::SizeType;
-		using typename Super::AllocType;
 
 		// construct 
-		FORCEINLINE TMap(AllocType&& InAlloc) :Super(InAlloc) {}
-		TMap(std::initializer_list<ElementType> InitList,AllocType&& InAlloc) : Super(InAlloc)
+		FORCEINLINE TMap(const Alloc& InAlloc = Alloc()) :Super(InAlloc) {}
+		TMap(std::initializer_list<ElementType> InitList, const Alloc& InAlloc) : Super(InAlloc)
 		{
 			this->Reserve((int32)InitList.size());
 			for (const ElementType& Element : InitList)
@@ -391,7 +389,7 @@ namespace Fuko
 		FORCEINLINE TMap(TMap&&) = default;
 
 		// copy construct 
-		FORCEINLINE TMap(const TMap& Other, AllocType&& InAlloc) :Super(Other, InAlloc) {}
+		FORCEINLINE TMap(const TMap& Other, const Alloc& InAlloc) :Super(Other, InAlloc) {}
 
 		// assign 
 		FORCEINLINE TMap& operator=(const TMap&) = default;
@@ -455,7 +453,7 @@ namespace Fuko
 namespace Fuko
 {
 	template<typename KeyType, typename ValueType
-		, template<typename> typename Alloc = TPmrAllocator
+		, typename Alloc = PmrAllocator
 		, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType, ValueType, true>>
 	class TMultiMap : public TMapBase<KeyType, ValueType, Alloc, KeyFuncs>
 	{
@@ -464,11 +462,10 @@ namespace Fuko
 		using Super = TMapBase<KeyType, ValueType, Alloc, KeyFuncs>;
 		using typename Super::ElementType;
 		using typename Super::SizeType;
-		using typename Super::AllocType;
 
 		// construct 
-		FORCEINLINE TMultiMap(AllocType&& InAlloc) :Super(InAlloc) {}
-		TMultiMap(std::initializer_list<ElementType> InitList, AllocType&& InAlloc) :Super(InAlloc)
+		FORCEINLINE TMultiMap(const Alloc& InAlloc) :Super(InAlloc) {}
+		TMultiMap(std::initializer_list<ElementType> InitList, const Alloc& InAlloc) :Super(InAlloc)
 		{
 			this->Reserve((int32)InitList.size());
 			for (const ElementType& Element : InitList)
@@ -481,7 +478,7 @@ namespace Fuko
 		TMultiMap(TMultiMap&&) = default;
 		
 		// copy construct 
-		TMultiMap(const TMultiMap& Other, AllocType&& InAlloc = AllocType()) :Super(Other , InAlloc) {}
+		TMultiMap(const TMultiMap& Other, const Alloc& InAlloc = Alloc()) :Super(Other , InAlloc) {}
 
 		// assign 
 		TMultiMap& operator=(const TMultiMap&) = default;

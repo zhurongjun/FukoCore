@@ -246,7 +246,7 @@ void TestArray()
 		check(A.AddUnique(15) == 15);
 		check(A.Num() == 16);
 		TArray<int> C = { 16,17,18,19 };
-		A.Append(std::move(C));
+		A += std::move(C);
 		check(C.Num() == 0);
 		check(C.Max() == 0);
 		check(C.GetData() == nullptr);

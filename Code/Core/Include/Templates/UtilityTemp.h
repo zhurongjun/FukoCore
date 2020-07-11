@@ -69,7 +69,7 @@ inline typename void Swap(T& A, T& B)
 	{
 		if (&A != &B)
 		{
-			TTypeCompatibleBytes<T> Temp;
+			TStorage<T> Temp;
 			::Fuko::Memcpy(&Temp, &A, sizeof(T));
 			::Fuko::Memcpy(&A, &B, sizeof(T));
 			::Fuko::Memcpy(&B, &Temp, sizeof(T));

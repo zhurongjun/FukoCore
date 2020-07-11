@@ -9,7 +9,7 @@
 // forward
 namespace Fuko
 {
-	template<typename T,template<typename> typename Alloc = TPmrAllocator>
+	template<typename T,typename Alloc = PmrAllocator>
 	class TSparseArray;
 }
 
@@ -23,10 +23,10 @@ namespace Fuko
 		void* Pointer;
 	};
 
-	template<typename ElementType,typename SizeType>
+	template<typename T,typename SizeType>
 	union TElementOrFreeList
 	{
-		ElementType ElementData;
+		T ElementData;
 		struct
 		{
 			SizeType Last;
@@ -38,15 +38,13 @@ namespace Fuko
 // TSparseArray
 namespace Fuko
 {
-	template<typename T, template<typename> typename Alloc>
+	template<typename T,typename Alloc>
 	class TSparseArray final
 	{
 	public:
-		using ElementType = T;
 		// 使用占位符来避免TArray实例化冗余的元素(防止Free部分的元素依旧被调用构造) 
-		using SizeType = typename Alloc<T>::SizeType;
-		using ElementOrFreeListLink = TElementOrFreeList<TAlignedBytes<sizeof(ElementType), alignof(ElementType)>,SizeType>;		
-		using AllocType = Alloc<ElementOrFreeListLink>;
+		using SizeType = typename Alloc::SizeType;
+		using ElementOrFreeListLink = TElementOrFreeList<TStorage<T>,SizeType>;		
 		using SparseArrayAllocationInfo = TSparseArrayAllocationInfo<SizeType>;
 		using DataArrayType = TArray<ElementOrFreeListLink, Alloc>;
 	private:
@@ -69,34 +67,34 @@ namespace Fuko
 
 			bool operator()(const ElementOrFreeListLink& A, const ElementOrFreeListLink& B) const
 			{
-				return Pred((const ElementType&)A.ElementData, (const ElementType&)B.ElementData);
+				return Pred((const T&)A.ElementData, (const T&)B.ElementData);
 			}
 		};
 
 		//---------------------------------Begin help functions---------------------------------
-		FORCEINLINE uint32* GetBitArray() const { return m_BitArray; }
-		FORCEINLINE uint32* GetBitArray() { return m_BitArray; }
-		FORCEINLINE void SetBit(SizeType Index, bool Value) { Algo::SetBit(GetBitArray(), Index, Value); }
-		FORCEINLINE bool GetBit(SizeType Index) const { return Algo::GetBit(GetBitArray(), Index); }
-		FORCEINLINE void SetBitRange(SizeType Index, bool Value, SizeType Count) { Algo::SetBitRange(GetBitArray(), Index, Count, Value); }
+		FORCEINLINE uint32* _GetBitArray() const { return m_BitArray; }
+		FORCEINLINE uint32* _GetBitArray() { return m_BitArray; }
+		FORCEINLINE void _SetBit(SizeType Index, bool Value) { Algo::SetBit(_GetBitArray(), Index, Value); }
+		FORCEINLINE bool _GetBit(SizeType Index) const { return Algo::GetBit(_GetBitArray(), Index); }
+		FORCEINLINE void _SetBitRange(SizeType Index, bool Value, SizeType Count) { Algo::SetBitRange(_GetBitArray(), Index, Count, Value); }
 
-		FORCEINLINE void ResizeBitArray()
+		FORCEINLINE void _ResizeBitArray()
 		{
 			if (m_BitArraySize / NumBitsPerDWORD == m_Data.Max() / NumBitsPerDWORD) return;
 			// resize
-			auto& BitAlloc = m_Data.GetAllocator().Rebind<uint32>();
+			auto& BitAlloc = m_Data.GetAllocator();
 			SizeType OldSize = Algo::CalculateNumWords(m_BitArraySize);
 			SizeType NewSize = Algo::CalculateNumWords(m_Data.Max());
 			NewSize = BitAlloc.Reserve(m_BitArray, NewSize);
-			// clean memeory 
+			// clean memory 
 			if (NewSize > OldSize) Algo::SetWords(m_BitArray + OldSize, NewSize - OldSize, false);
 			m_BitArraySize = NewSize * NumBitsPerDWORD;
 		}
-		FORCEINLINE void GrowBitArray()
+		FORCEINLINE void _GrowBitArray()
 		{
 			if (m_BitArraySize >= m_Data.Max()) return;
 			// grow
-			auto& BitAlloc = m_Data.GetAllocator().Rebind<uint32>();
+			auto& BitAlloc = m_Data.GetAllocator();
 			SizeType OldSize = Algo::CalculateNumWords(m_BitArraySize);
 			SizeType NewSize = BitAlloc.GetGrow(Algo::CalculateNumWords(m_Data.Max()), Algo::CalculateNumWords(m_BitArraySize));
 			NewSize = BitAlloc.Reserve(m_BitArray, NewSize);
@@ -104,15 +102,15 @@ namespace Fuko
 			if(NewSize > OldSize) Algo::SetWords(m_BitArray + OldSize, NewSize - OldSize, false);
 			m_BitArraySize = NewSize * NumBitsPerDWORD;
 		}
-		FORCEINLINE void FreeBitArray()
+		FORCEINLINE void _FreeBitArray()
 		{
-			if (m_BitArray) m_BitArraySize = m_Data.GetAllocator().Rebind<uint32>().Free(m_BitArray) * NumBitsPerDWORD;
+			if (m_BitArray) m_BitArraySize = m_Data.GetAllocator().Free(m_BitArray) * NumBitsPerDWORD;
 		}
 		//----------------------------------End help functions----------------------------------
 	public:
 		// construct 
-		TSparseArray(AllocType&& InAlloc = AllocType())
-			: m_Data(std::move(InAlloc))
+		TSparseArray(const Alloc& InAlloc = Alloc())
+			: m_Data(InAlloc)
 			, m_BitArray(nullptr)
 			, m_BitArraySize(0)
 			, m_FirstFreeIndex(INDEX_NONE)
@@ -120,8 +118,8 @@ namespace Fuko
 		{}
 
 		// copy construct 
-		TSparseArray(const TSparseArray& InCopy, AllocType&& InAlloc = AllocType())
-			: m_Data(InCopy.m_Data, std::move(InAlloc))
+		TSparseArray(const TSparseArray& InCopy, const Alloc& InAlloc = Alloc())
+			: m_Data(InCopy.m_Data, InAlloc)
 			, m_BitArray(nullptr)
 			, m_BitArraySize(0)
 			, m_FirstFreeIndex(INDEX_NONE)
@@ -154,13 +152,13 @@ namespace Fuko
 			// Reallocate the array.
 			Empty(SrcMax);
 			m_Data.AddUninitialized(SrcMax);
-			ResizeBitArray();
+			_ResizeBitArray();
 
 			// Copy the other array's element allocation state.
 			m_FirstFreeIndex = Other.m_FirstFreeIndex;
 			m_NumFreeIndices = Other.m_NumFreeIndices;
 
-			if constexpr (!std::is_trivially_copy_constructible_v<ElementType>)
+			if constexpr (!std::is_trivially_copy_constructible_v<T>)
 			{
 				ElementOrFreeListLink* DestData = (ElementOrFreeListLink*)m_Data.GetData();
 				const ElementOrFreeListLink* SrcData = (ElementOrFreeListLink*)Other.m_Data.GetData();
@@ -172,7 +170,7 @@ namespace Fuko
 					if (Other.IsAllocated(Index))
 					{
 						// call copy construct
-						::new((uint8*)&DestElement.ElementData) ElementType(*(const ElementType*)&SrcElement.ElementData);
+						::new((uint8*)&DestElement.ElementData) T(*(const T*)&SrcElement.ElementData);
 					}
 					else
 					{
@@ -197,14 +195,14 @@ namespace Fuko
 			if (this != &Other)
 			{
 				// Destruct the allocated elements.
-				if constexpr (!std::is_trivially_destructible_v<ElementType>)
+				if constexpr (!std::is_trivially_destructible_v<T>)
 				{
-					for (ElementType& Element : *this)
+					for (T& Element : *this)
 					{
 						DestructItems(&Element);
 					}
 				}
-				FreeBitArray();
+				_FreeBitArray();
 
 				// move data 
 				m_Data = std::move(Other.m_Data);
@@ -227,12 +225,12 @@ namespace Fuko
 
 		// get information 
 		bool IsCompact() const { return m_NumFreeIndices == 0; }
-		bool IsAllocated(SizeType Index) const { return GetBit(Index); }
+		bool IsAllocated(SizeType Index) const { return _GetBit(Index); }
 		SizeType GetMaxIndex() const { return m_Data.Num(); }
 		SizeType Num() const { return m_Data.Num() - m_NumFreeIndices; }
 		SizeType Max() const { return m_Data.Max(); }
-		AllocType& GetAllocator() { return m_Data.GetAllocator(); }
-		const AllocType& GetAllocator() const { return m_Data.GetAllocator(); }
+		Alloc& GetAllocator() { return m_Data.GetAllocator(); }
+		const Alloc& GetAllocator() const { return m_Data.GetAllocator(); }
 
 		// allocate index, set the index as allocated, but won't call construct and remove from free list
 		SparseArrayAllocationInfo AllocateIndex(SizeType Index)
@@ -242,7 +240,7 @@ namespace Fuko
 			check(!IsAllocated(Index));
 
 			// Flag the element as allocated.
-			SetBit(Index, true);
+			_SetBit(Index, true);
 
 			// Set the allocation info.
 			SparseArrayAllocationInfo Result;
@@ -270,7 +268,7 @@ namespace Fuko
 			{
 				// Add a new element.
 				Index = m_Data.AddUninitialized(1);
-				GrowBitArray();
+				_GrowBitArray();
 			}
 
 			return AllocateIndex(Index);
@@ -280,7 +278,7 @@ namespace Fuko
 			SizeType Index;
 			if (m_NumFreeIndices)
 			{
-				Index = Algo::FindBit(GetBitArray(), m_Data.Num(), false);
+				Index = Algo::FindBit(_GetBitArray(), m_Data.Num(), false);
 				LowestFreeIndexSearchStart = Index + 1;
 
 				auto& IndexData = m_Data[Index];
@@ -298,29 +296,29 @@ namespace Fuko
 			{
 				// Add a new element.
 				Index = m_Data.AddUninitialized(1);
-				GrowBitArray();
+				_GrowBitArray();
 			}
 
 			return AllocateIndex(Index);
 		}
 
 		// add
-		SizeType Add(const ElementType& Element)
+		SizeType Add(const T& Element)
 		{
 			SparseArrayAllocationInfo Allocation = AddUninitialized();
-			new(Allocation) ElementType(Element);
+			new(Allocation.Pointer) T(Element);
 			return Allocation.Index;
 		}
-		SizeType Add(ElementType&& Element)
+		SizeType Add(T&& Element)
 		{
 			SparseArrayAllocationInfo Allocation = AddUninitialized();
-			new(Allocation) ElementType(std::move(Element));
+			new(Allocation.Pointer) T(std::move(Element));
 			return Allocation.Index;
 		}
-		SizeType AddAtLowestFreeIndex(const ElementType& Element, SizeType& LowestFreeIndexSearchStart)
+		SizeType AddAtLowestFreeIndex(const T& Element, SizeType& LowestFreeIndexSearchStart)
 		{
 			SparseArrayAllocationInfo Allocation = AddUninitializedAtLowestFreeIndex(LowestFreeIndexSearchStart);
-			new(Allocation) ElementType(Element);
+			new(Allocation) T(Element);
 			return Allocation.Index;
 		}
 
@@ -343,9 +341,9 @@ namespace Fuko
 
 			return AllocateIndex(Index);
 		}
-		void Insert(SizeType Index, const ElementType& Element)
+		void Insert(SizeType Index, const T& Element)
 		{
-			new(InsertUninitialized(Index)) ElementType(Element);
+			new(InsertUninitialized(Index)) T(Element);
 		}
 
 		// remove
@@ -369,17 +367,17 @@ namespace Fuko
 				++m_NumFreeIndices;
 
 				// make allocation flag 
-				SetBit(Index, false);
+				_SetBit(Index, false);
 				++Index;
 			}
 		}
 		void RemoveAt(SizeType Index, SizeType Count = 1)
 		{
-			if constexpr (!std::is_trivially_destructible_v<ElementType>)
+			if constexpr (!std::is_trivially_destructible_v<T>)
 			{
 				for (SizeType It = Index, ItCount = Count; ItCount; ++It, --ItCount)
 				{
-					((ElementType&)m_Data[It].ElementData).~ElementType();
+					((T&)m_Data[It].ElementData).~T();
 				}
 			}
 			RemoveAtUninitialized(Index, Count);
@@ -389,38 +387,38 @@ namespace Fuko
 		void Empty(SizeType ExpectedNumElements = 0)
 		{
 			// Destruct the allocated elements.
-			if constexpr (!std::is_trivially_destructible_v<ElementType>)
+			if constexpr (!std::is_trivially_destructible_v<T>)
 			{
 				for (TIterator It(*this); It; ++It)
 				{
-					ElementType& Element = *It;
-					Element.~ElementType();
+					T& Element = *It;
+					Element.~T();
 				}
 			}
 
 			// Free the allocated elements.
-			if (GetBitArray()) Algo::SetWords(GetBitArray(), Algo::CalculateNumWords(m_BitArraySize), false);
+			if (_GetBitArray()) Algo::SetWords(_GetBitArray(), Algo::CalculateNumWords(m_BitArraySize), false);
 			m_Data.Empty(ExpectedNumElements);
-			ResizeBitArray();
+			_ResizeBitArray();
 			m_FirstFreeIndex = INDEX_NONE;
 			m_NumFreeIndices = 0;
 		}
 		void Reset(SizeType ExpectedNumElements = 0)
 		{
 			// Destruct the allocated elements.
-			if constexpr (!std::is_trivially_destructible_v<ElementType>)
+			if constexpr (!std::is_trivially_destructible_v<T>)
 			{
 				for (TIterator It(*this); It; ++It)
 				{
-					ElementType& Element = *It;
-					Element.~ElementType();
+					T& Element = *It;
+					Element.~T();
 				}
 			}
 
 			// Free the allocated elements.
-			if (GetBitArray()) Algo::SetWords(GetBitArray(), Algo::CalculateNumWords(m_BitArraySize), false);
+			if (_GetBitArray()) Algo::SetWords(_GetBitArray(), Algo::CalculateNumWords(m_BitArraySize), false);
 			m_Data.Reset(ExpectedNumElements);
-			ResizeBitArray();
+			_ResizeBitArray();
 			m_FirstFreeIndex = INDEX_NONE;
 			m_NumFreeIndices = 0;
 		}
@@ -429,12 +427,12 @@ namespace Fuko
 			if (ExpectedNumElements < m_Data.Num()) return;
 			
 			m_Data.Reserve(ExpectedNumElements);
-			ResizeBitArray();
+			_ResizeBitArray();
 		}
 		void Shrink()
 		{
 			// Determine the highest allocated index in the data array.
-			SizeType MaxAllocatedIndex = Algo::FindLastBit(GetBitArray(), m_Data.Num(), true);
+			SizeType MaxAllocatedIndex = Algo::FindLastBit(_GetBitArray(), m_Data.Num(), true);
 
 			const SizeType FirstIndexToRemove = MaxAllocatedIndex + 1;
 			if (FirstIndexToRemove < m_Data.Num())
@@ -469,8 +467,8 @@ namespace Fuko
 				// Truncate unallocated elements at the end of the data array.
 				SizeType NumRemove = m_Data.Num() - FirstIndexToRemove;
 				m_Data.RemoveAt(FirstIndexToRemove, NumRemove);
-				SetBitRange(FirstIndexToRemove, false, NumRemove);
-				ResizeBitArray();
+				_SetBitRange(FirstIndexToRemove, false, NumRemove);
+				_ResizeBitArray();
 			}
 
 			// Shrink the data array.
@@ -502,7 +500,7 @@ namespace Fuko
 
 					// move element to the hole 
 					RelocateConstructItems(ElementData + FreeIndex, ElementData + EndIndex, 1);
-					SetBit(FreeIndex, true);
+					_SetBit(FreeIndex, true);
 					bResult = true;
 				}
 				FreeIndex = NextIndex;
@@ -510,8 +508,8 @@ namespace Fuko
 
 			// remove unused data 
 			m_Data.RemoveAt(TargetIndex, NumFree);
-			SetBitRange(TargetIndex, false, NumFree);
-			ResizeBitArray();
+			_SetBitRange(TargetIndex, false, NumFree);
+			_ResizeBitArray();
 			m_NumFreeIndices = 0;
 			m_FirstFreeIndex = INDEX_NONE;
 			return bResult;
@@ -539,7 +537,7 @@ namespace Fuko
 				while (ReadIndex != EndIndex && IsAllocated(ReadIndex))
 				{
 					RelocateConstructItems(ElementData + WriteIndex, ElementData + ReadIndex, 1);
-					SetBit(WriteIndex, true);
+					_SetBit(WriteIndex, true);
 					++WriteIndex;
 					++ReadIndex;
 				}
@@ -547,8 +545,8 @@ namespace Fuko
 
 			// remove unused data 
 			m_Data.RemoveAt(TargetIndex, NumFree);
-			SetBitRange(TargetIndex, false, NumFree);
-			ResizeBitArray();
+			_SetBitRange(TargetIndex, false, NumFree);
+			_ResizeBitArray();
 			m_NumFreeIndices = 0;
 			m_FirstFreeIndex = INDEX_NONE;
 			return bResult;
@@ -557,7 +555,7 @@ namespace Fuko
 		// sort 
 		void Sort()
 		{
-			Sort(TLess<ElementType>());
+			Sort(TLess<T>());
 		}
 		template<typename Predicate>
 		void Sort(Predicate&& Pred)
@@ -573,7 +571,7 @@ namespace Fuko
 		}
 		void StableSort()
 		{
-			StableSort(TLess<ElementType>());
+			StableSort(TLess<T>());
 		}
 		template<typename Predicate>
 		void StableSort(Predicate&& Pred)
@@ -615,21 +613,21 @@ namespace Fuko
 		friend bool operator!=(const TSparseArray& A, const TSparseArray& B) { return !(A == B); }
 
 		// accessor
-		ElementType& operator[](SizeType Index)
+		T& operator[](SizeType Index)
 		{
 			check(Index >= 0 && Index < m_Data.Num());
-			return (ElementType&)m_Data[Index].ElementData;
+			return (T&)m_Data[Index].ElementData;
 		}
-		const ElementType& operator[](SizeType Index) const
+		const T& operator[](SizeType Index) const
 		{
 			check(Index >= 0 && Index < m_Data.Num());
-			return (const ElementType&)m_Data[Index].ElementData;
+			return (const T&)m_Data[Index].ElementData;
 		}
 				
 		// check 
 		bool IsValidIndex(SizeType Index) const { return  m_Data.IsValidIndex(Index) && IsAllocated(Index); }
 		// debug check 
-		FORCEINLINE void CheckAddress(const ElementType* Addr) const { m_Data.CheckAddress(Addr); }
+		FORCEINLINE void CheckAddress(const T* Addr) const { m_Data.CheckAddress(Addr); }
 
 		// append 
 		TSparseArray& operator+=(const TSparseArray& OtherArray)
@@ -641,7 +639,7 @@ namespace Fuko
 			}
 			return *this;
 		}
-		TSparseArray& operator+=(const TArray<ElementType>& OtherArray)
+		TSparseArray& operator+=(const TArray<T>& OtherArray)
 		{
 			this->Reserve(this->Num() + OtherArray.Num());
 			for (SizeType Idx = 0; Idx < OtherArray.Num(); Idx++)
@@ -662,7 +660,7 @@ namespace Fuko
 		public:
 			explicit TIterator(TSparseArray& InArray, SizeType StartIndex = 0)
 				: m_Array(InArray)
-				, m_BitArrayIt(m_Array.GetBitArray(), m_Array.GetMaxIndex(), StartIndex)
+				, m_BitArrayIt(m_Array._GetBitArray(), m_Array.GetMaxIndex(), StartIndex)
 #if FUKO_DEBUG
 				, m_InitialNum(InArray.Num())
 #endif
@@ -684,8 +682,8 @@ namespace Fuko
 			}
 			FORCEINLINE explicit operator bool() const { return !!m_BitArrayIt; }
 			FORCEINLINE bool operator !() const { return !(bool)*this; }
-			FORCEINLINE ElementType& operator*() const { return m_Array[GetIndex()]; }
-			FORCEINLINE ElementType* operator->() const { return &m_Array[GetIndex()]; }
+			FORCEINLINE T& operator*() const { return m_Array[GetIndex()]; }
+			FORCEINLINE T* operator->() const { return &m_Array[GetIndex()]; }
 			void RemoveCurrent() { this->m_Array.RemoveAt(this->GetIndex()); }
 		};
 		class TConstIterator
@@ -698,7 +696,7 @@ namespace Fuko
 		public:
 			explicit TConstIterator(const TSparseArray& InArray, SizeType StartIndex = 0)
 				: m_Array(InArray)
-				, m_BitArrayIt(m_Array.GetBitArray(), m_Array.GetMaxIndex())
+				, m_BitArrayIt(m_Array._GetBitArray(), m_Array.GetMaxIndex())
 #if FUKO_DEBUG
 				, m_InitialNum(InArray.Num())
 #endif
@@ -721,8 +719,8 @@ namespace Fuko
 			}
 			FORCEINLINE explicit operator bool() const { return !!m_BitArrayIt; }
 			FORCEINLINE bool operator !() const { return !(bool)*this; }
-			FORCEINLINE const ElementType& operator*() const { return m_Array[GetIndex()]; }
-			FORCEINLINE const ElementType* operator->() const { return &m_Array[GetIndex()]; }
+			FORCEINLINE const T& operator*() const { return m_Array[GetIndex()]; }
+			FORCEINLINE const T* operator->() const { return &m_Array[GetIndex()]; }
 		};
 		FORCEINLINE TIterator      begin()			{ return TIterator(*this); }
 		FORCEINLINE TConstIterator begin() const	{ return TConstIterator(*this); }
@@ -730,12 +728,3 @@ namespace Fuko
 		FORCEINLINE TConstIterator end() const		{ return TConstIterator(*this, GetMaxIndex()); }
 	};
 }
-
-// operator new
-template<typename SizeType>
-inline void* operator new(size_t Size, const Fuko::TSparseArrayAllocationInfo<SizeType>& Allocation)
-{
-	check(Allocation.Pointer);
-	return Allocation.Pointer;
-}
-

@@ -11,7 +11,7 @@
 // forward
 namespace Fuko
 {
-	template<template<typename> typename Alloc = TPmrAllocator>
+	template<typename Alloc = PmrAllocator>
 	class TBitArray;
 }
 
@@ -64,7 +64,7 @@ namespace Fuko
 		SizeType	m_Index;
 		SizeType	m_DWORDIndex;
 	public:
-		template<template<typename> typename TAlloc>
+		template<typename TAlloc>
 		FORCEINLINE TBitIterator(TBitArray<TAlloc>& InArray, SizeType StartIndex = 0)
 			: m_DWORDIndex(StartIndex >> NumBitsPerDWORDLogTwo)
 			, m_Mask(1 << (StartIndex & (NumBitsPerDWORD - 1)))
@@ -109,7 +109,7 @@ namespace Fuko
 		SizeType		m_DWORDIndex;
 		uint32			m_Mask;
 	public:
-		template<template<typename> typename TAlloc>
+		template<typename TAlloc>
 		FORCEINLINE TConstBitIterator(const TBitArray<TAlloc>& InArray, SizeType StartIndex = 0)
 			: m_DWORDIndex(StartIndex >> NumBitsPerDWORDLogTwo)
 			, m_Mask(1 << (StartIndex & (NumBitsPerDWORD - 1)))
@@ -195,7 +195,7 @@ namespace Fuko
 			if (m_CurrentBitIndex > ArrayNum) m_CurrentBitIndex = ArrayNum;
 		}
 	public:
-		template<template<typename> typename TAlloc>
+		template<typename TAlloc>
 		TConstSetBitIterator(const TBitArray<TAlloc>& InArray, SizeType StartIndex = 0)
 			: m_DWORDIndex(StartIndex >> NumBitsPerDWORDLogTwo)
 			, m_Mask(1 << (StartIndex & PerDWORDMask))
@@ -280,7 +280,7 @@ namespace Fuko
 			m_CurrentBitIndex = (m_DWORDIndex + 1) * NumBitsPerDWORD - FMath::CountLeadingZeros(m_Mask) - 1;
 		}
 	public:
-		template<template<typename> typename TAllocA, template<typename> typename TAllocB>
+		template<typename TAllocA, template<typename> typename TAllocB>
 		FORCEINLINE TConstDualSetBitIterator(
 			const TBitArray<TAllocA>& InArrayA,
 			const TBitArray<TAllocB>& InArrayB,
@@ -335,14 +335,13 @@ namespace Fuko
 // TBitArray
 namespace Fuko
 {
-	template<template<typename> typename Alloc>
+	template<typename Alloc>
 	class TBitArray final
 	{
 	public:
-		using AllocType = Alloc<uint32>;
-		using SizeType = typename AllocType::SizeType;
+		using SizeType = typename Alloc::USizeType;
 	private:
-		FORCEINLINE void ResizeGrow()
+		FORCEINLINE void _ResizeGrow()
 		{
 			if (m_NumBits > m_MaxBits)
 			{
@@ -352,7 +351,7 @@ namespace Fuko
 				m_MaxBits = m_Allocator.Reserve(m_Data, NewWord) << NumBitsPerDWORDLogTwo;
 			}
 		}
-		FORCEINLINE void ResizeTo(SizeType InNum)
+		FORCEINLINE void _ResizeTo(SizeType InNum)
 		{
 			const SizeType PrevNumDWORDs = Algo::CalculateNumWords(m_MaxBits);
 			SizeType MaxDWORDs = Algo::CalculateNumWords(InNum);
@@ -367,7 +366,7 @@ namespace Fuko
 			m_MaxBits = MaxDWORDs * NumBitsPerDWORD;
 		}
 	private:
-		AllocType	m_Allocator;
+		Alloc		m_Allocator;
 		uint32*		m_Data;
 		SizeType	m_NumBits;
 		SizeType	m_MaxBits;
@@ -376,14 +375,14 @@ namespace Fuko
 		friend class ConstDualSetBitIterator;
 
 		// construct 
-		TBitArray(AllocType&& InAlloc = AllocType())
-			: m_Allocator(std::move(InAlloc))
+		FORCEINLINE TBitArray(const Alloc& InAlloc = Alloc())
+			: m_Allocator(InAlloc)
 			, m_Data(nullptr)
 			, m_NumBits(0)
 			, m_MaxBits(0)
 		{}
-		FORCEINLINE explicit TBitArray(bool bValue, int32 InNumBits, AllocType&& InAlloc = AllocType())
-			: m_Allocator(std::move(InAlloc))
+		FORCEINLINE TBitArray(bool bValue, SizeType InNumBits, const Alloc& InAlloc = Alloc())
+			: m_Allocator(InAlloc)
 			, m_Data(nullptr)
 			, m_NumBits(0)
 			, m_MaxBits(0)
@@ -392,13 +391,13 @@ namespace Fuko
 		}
 
 		// copy construct 
-		FORCEINLINE TBitArray(const TBitArray& Other, AllocType&& InAlloc = AllocType())
-			: m_Allocator(std::move(InAlloc))
+		FORCEINLINE TBitArray(const TBitArray& Other, const Alloc& InAlloc = Alloc())
+			: m_Allocator(InAlloc)
 			, m_Data(nullptr)
 			, m_NumBits(0)
 			, m_MaxBits(0)
 		{
-			ResizeTo(Other.m_NumBits);
+			_ResizeTo(Other.m_NumBits);
 			m_NumBits = Other.m_NumBits;
 			
 			// copy data 
@@ -407,7 +406,7 @@ namespace Fuko
 
 		// move construct 
 		FORCEINLINE TBitArray(TBitArray&& Other)
-			: m_Allocator(std::move(Other.m_Allocator))
+			: m_Allocator(Other.m_Allocator)
 			, m_Data(Other.m_Data)
 			, m_NumBits(Other.m_NumBits)
 			, m_MaxBits(Other.m_MaxBits)
@@ -437,7 +436,7 @@ namespace Fuko
 		{
 			if (this == &Other) return *this;
 
-			ResizeTo(Other.Num());
+			_ResizeTo(Other.Num());
 			m_NumBits = Other.m_NumBits;
 			if (m_NumBits) Memcpy(GetData(), Other.GetData(), Algo::CalculateNumWords(m_NumBits) * sizeof(uint32));
 			return *this;
@@ -483,29 +482,29 @@ namespace Fuko
 		FORCEINLINE const uint32* GetData() const { return m_Data; }
 		FORCEINLINE SizeType Num() const { return m_NumBits; }
 		FORCEINLINE SizeType Max() const { return m_MaxBits; }
-		FORCENOINLINE AllocType& GetAllocator() { return m_Allocator; }
-		FORCENOINLINE const AllocType& GetAllocator() const { return m_Allocator; }
+		FORCENOINLINE Alloc& GetAllocator() { return m_Allocator; }
+		FORCENOINLINE const Alloc& GetAllocator() const { return m_Allocator; }
 
 		// set num & empty & reserve 
 		void Empty(SizeType ExpectedNumBits = 0)
 		{
 			m_NumBits = 0;
-			if (ExpectedNumBits != m_MaxBits) ResizeTo(ExpectedNumBits);
+			if (ExpectedNumBits != m_MaxBits) _ResizeTo(ExpectedNumBits);
 		}
 		void Reserve(SizeType Number)
 		{
-			if (Number > m_MaxBits) ResizeTo(Number);
+			if (Number > m_MaxBits) _ResizeTo(Number);
 		}
 		void Reset(SizeType ExpectedNumBits = 0)
 		{
 			Algo::SetWords(GetData(), Algo::CalculateNumWords(m_NumBits), false);
-			if (ExpectedNumBits > m_MaxBits) ResizeTo(ExpectedNumBits);
+			if (ExpectedNumBits > m_MaxBits) _ResizeTo(ExpectedNumBits);
 			m_NumBits = 0;
 		}
 		void SetNumUninitialized(SizeType InNumBits)
 		{
 			m_NumBits = InNumBits;
-			ResizeGrow();
+			_ResizeGrow();
 		}
 
 		// operator []
@@ -532,7 +531,7 @@ namespace Fuko
 			const SizeType Index = m_NumBits;
 			
 			++m_NumBits;
-			ResizeGrow();
+			_ResizeGrow();
 
 			(*this)[Index] = Value;
 			return Index;
@@ -544,7 +543,7 @@ namespace Fuko
 			if (NumToAdd > 0)
 			{
 				m_NumBits += NumToAdd;
-				ResizeGrow();
+				_ResizeGrow();
 
 				for (SizeType It = Index, End = It + NumToAdd; It != End; ++It)
 				{
@@ -566,7 +565,7 @@ namespace Fuko
 			if (NumWords > MaxWords)
 			{
 				// Realloc 
-				ResizeTo(NumWords * NumBitsPerDWORD);
+				_ResizeTo(NumWords * NumBitsPerDWORD);
 
 				uint32* Words = GetData();
 				Algo::SetWords(Words, NumWords, bValue);
