@@ -166,7 +166,7 @@ void TestArray()
 			check(D[i] == i + 1);
 			check(D.Last(i) == 10 - i);
 		}
-		check(D.Top() == 10);
+		check(D.Last() == 10);
 		for (int i = 0; i < 5; i++)
 		{
 			check(D.Pop() == 10 - i);
@@ -214,15 +214,6 @@ void TestArray()
 		check(Arr.FindLastBy([](int n)->bool {return n == 1; }) == &Arr.Last());
 		check(Arr.FindBy([](int n)->bool {return n > 5; }) == nullptr);
 		check(Arr.FindLastBy([](int n)->bool {return n > 5; }) == nullptr);
-
-		check(Arr.IndexOf(1) == 0);
-		check(Arr.IndexOfLast(1) == 8);
-		check(Arr.IndexOf(100) == INDEX_NONE);
-		check(Arr.IndexOfLast(100) == INDEX_NONE);
-		check(Arr.IndexOfBy([](int n)->bool {return n == 1; }) == 0);
-		check(Arr.IndexOfLastBy([](int n)->bool {return n == 1; }) == 8);
-		check(Arr.IndexOfBy([](int n)->bool {return n > 5; }) == INDEX_NONE);
-		check(Arr.IndexOfLastBy([](int n)->bool {return n > 5; }) == INDEX_NONE);
 
 		auto out = Arr.FilterBy([](int n)->bool {return n < 4; });
 		check(out.Num() == 6);

@@ -12,6 +12,56 @@ struct FIdentityFunctor
 	}
 };
 
+// 元素map方式
+struct NoMap
+{
+	template<typename T>
+	FORCEINLINE constexpr decltype(auto) operator()(T&& Val) const { return std::forward<T>(Val); }
+};
+struct MapDeref
+{
+	template<typename T>
+	FORCEINLINE constexpr auto& operator()(T&& Val) const
+	{
+		if constexpr (std::is_pointer_v<T>)
+			return *Val;
+		else
+			return Val;
+	}
+};
+struct MapKey
+{
+	template<typename T>
+	FORCEINLINE constexpr auto& operator()(T&& Val) const { return Val.Key; }
+};
+struct MapValue
+{
+	template<typename T>
+	FORCEINLINE constexpr auto& operator()(T&& Val) const { return Val.Value; }
+};
+struct MapKeyDeref
+{
+	template<typename T>
+	FORCEINLINE constexpr auto& operator()(T&& Val) const 
+	{
+		if constexpr (std::is_pointer_v<decltype(Val.Key)>)
+			return *Val.Key;
+		else
+			return Val.Key;
+	}
+};
+struct MapValueDeref
+{
+	template<typename T>
+	FORCEINLINE constexpr auto& operator()(T&& Val) const
+	{
+		if constexpr (std::is_pointer_v<decltype(Val.Value)>)
+			return *Val.Value;
+		else
+			return Val.Value;
+	}
+};
+
 // Less
 template <typename T = void>
 struct TLess

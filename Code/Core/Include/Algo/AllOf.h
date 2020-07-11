@@ -4,22 +4,13 @@
 
 namespace Fuko::Algo
 {
-	/**
-	 * @fn template <typename RangeType> FORCEINLINE bool AllOf(const RangeType& Range)
-	 *
-	 * @brief 判断是否所有的数组元素都是True
-	 *
-	 * @tparam 数组类型
-	 * @param  数组
-	 *
-	 * @returns 是否所有元素都是True
-	 */
-	template <typename RangeType>
-	FORCEINLINE bool AllOf(const RangeType& Range)
+	// 所有元素都是true 
+	template <typename TRang, typename TProj = NoMap>
+	FORCEINLINE bool AllOf(const TRang& Input, TProj&& Proj = TProj())
 	{
-		for (const auto& Element : Range)
+		for (const auto& Elem : Input)
 		{
-			if (!Element)
+			if (!(bool)Proj(Elem))
 			{
 				return false;
 			}
@@ -27,22 +18,13 @@ namespace Fuko::Algo
 		return true;
 	}
 
-	/**
-	 * @fn template <typename RangeType> FORCEINLINE bool NoneOf(const RangeType& Range)
-	 *
-	 * @brief 判断是否所有数组元素都是false
-	 *
-	 * @tparam 数组类型
-	 * @param  数组
-	 *
-	 * @returns 是否所有元素都是false
-	 */
-	template <typename RangeType>
-	FORCEINLINE bool NoneOf(const RangeType& Range)
+	// 所有元素都是false 
+	template <typename TRang, typename TProj = NoMap>
+	FORCEINLINE bool NoneOf(const TRang& Input, TProj&& Proj = TProj())
 	{
-		for (const auto& Element : Range)
+		for (const auto& Elem : Input)
 		{
-			if (Element)
+			if ((bool)Proj(Elem))
 			{
 				return false;
 			}
@@ -51,19 +33,10 @@ namespace Fuko::Algo
 		return true;
 	}
 
-	/**
-	 * @fn template <typename RangeType> FORCEINLINE bool AnyOf(const RangeType& Range)
-	 *
-	 * @brief 判断数组中是否有任意一个True
-	 *
-	 * @tparam 数组类型
-	 * @param  数组
-	 *
-	 * @returns 是否有任意一个元素是true
-	 */
-	template <typename RangeType>
-	FORCEINLINE bool AnyOf(const RangeType& Range)
-	{
-		return !Algo::NoneOf(Range);
+	// 任意一元素是true
+	template <typename TRang, typename TProj = NoMap>
+	FORCEINLINE bool AnyOf(const TRang& Input, TProj&& Proj = TProj()) 
+	{ 
+		return !NoneOf(Range,std::forward<TProj>(Proj)); 
 	}
 }
