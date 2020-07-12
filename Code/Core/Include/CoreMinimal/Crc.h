@@ -5,26 +5,15 @@
 
 namespace Fuko::Crc
 {
-	/** lookup table with precalculated CRC values - slicing by 8 implementation */
 	CORE_API extern uint32 CRCTablesSB8[8][256];
 
-	/** initializes the CRC lookup table. Must be called before any of the
-		CRC functions are used. */
-	static void Init();
+	uint32 CORE_API MemCrc32(const void* Data, int32 Length, uint32 CRC = 0);
 
-	/** generates CRC hash of the memory area */
-	static uint32 MemCrc32(const void* Data, int32 Length, uint32 CRC = 0);
-
-	/** generates CRC hash of the element */
 	template <typename T>
-	static uint32 TypeCrc32(const T& Data, uint32 CRC = 0)
-	{
-		return MemCrc32(&Data, sizeof(T), CRC);
-	}
+	uint32 TypeCrc32(const T& Data, uint32 CRC = 0) { return MemCrc32(&Data, sizeof(T), CRC); }
 
-	/** String CRC. */
 	template <typename CharType>
-	static uint32 StrCrc32(const CharType* Data, uint32 CRC = 0)
+	uint32 StrCrc32(const CharType* Data, uint32 CRC = 0)
 	{
 		if constexpr (sizeof(CharType) == 1)
 		{

@@ -339,7 +339,7 @@ namespace Fuko
 	class TBitArray final
 	{
 	public:
-		using SizeType = typename Alloc::USizeType;
+		using SizeType = typename Alloc::SizeType;
 	private:
 		FORCEINLINE void _ResizeGrow()
 		{

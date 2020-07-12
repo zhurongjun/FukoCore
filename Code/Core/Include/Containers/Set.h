@@ -11,7 +11,7 @@
 // forward
 namespace Fuko
 {
-	template<typename InElementType, typename Alloc = PmrAllocator, typename KeyFuncs = DefaultKeyFuncs<InElementType>>
+	template<typename T, typename Alloc = PmrAllocator, typename KeyFuncs = DefaultKeyFuncs<T>>
 	class TSet;
 }
 
@@ -22,82 +22,68 @@ namespace Fuko
 	struct DefaultKeyFuncs
 	{
 		using KeyType = T;
-		using ElementType = T;
 
 		static constexpr bool bAllowDuplicateKeys = bInAllowDuplicateKeys;
 		
-		static FORCEINLINE const KeyType& Key(const ElementType& Element) { return Element; }
-		template<typename ComparableKey>
-		static FORCEINLINE bool Matches(const KeyType& A, ComparableKey B) { return A == B; }
-		template<typename ComparableKey>
-		static FORCEINLINE uint32 Hash(ComparableKey Key) { return GetTypeHash(Key); }
-	};
-}
-
-// Set Element
-namespace Fuko
-{
-	class SetElementId
-	{
-		int32 Index;
-	public:
-		FORCEINLINE SetElementId(int32 InIndex = INDEX_NONE) : Index(InIndex) {}
-		FORCEINLINE bool IsValid() const { return Index != INDEX_NONE; }
-		FORCEINLINE operator int32() const { return Index; }
-		FORCEINLINE friend bool operator==(const SetElementId& A, const SetElementId& B) { return A.Index == B.Index; }
-		FORCEINLINE void Reset() { Index = INDEX_NONE; }
-	};
-
-	template <typename InElementType>
-	class TSetElement
-	{
-	public:
-		using ElementType = InElementType;
-
-		ElementType Value;
-		mutable int32 HashIndex;
-		mutable SetElementId HashNextId;
-	public:
-		FORCEINLINE TSetElement() = default;
-		FORCEINLINE TSetElement(TSetElement&&) = default;
-		FORCEINLINE TSetElement(const TSetElement&) = default;
-		FORCEINLINE TSetElement& operator=(TSetElement&&) = default;
-		FORCEINLINE TSetElement& operator=(const TSetElement&) = default;
-
-		template <typename...Ts>
-		explicit FORCEINLINE TSetElement(Ts&&...Args) : Value(std::forward<Ts>(Args)...), HashIndex(0), HashNextId() {}
-
-		FORCEINLINE bool operator==(const TSetElement& Other) const { return this->Value == Other.Value; }
-		FORCEINLINE bool operator!=(const TSetElement& Other) const { return this->Value != Other.Value; }
+		static FORCEINLINE const KeyType& Key(const T& Element) { return Element; }
+		static FORCEINLINE bool Matches(const KeyType& A, const KeyType& B) { return A == B; }
+		static FORCEINLINE uint32 Hash(KeyType Key) { return GetTypeHash(Key); }
 	};
 }
 
 // TSet
 namespace Fuko
 {
-	template<typename InElementType, typename Alloc,typename KeyFuncs>
+	template<typename T, typename Alloc,typename KeyFuncs>
 	class TSet
 	{
-		// Key and element 
+	public:
 		using KeyType = typename KeyFuncs::KeyType;
-		using ElementType = InElementType;
-		using SetElementType = TSetElement<ElementType>;
-		using ElementArrayType = TSparseArray<SetElementType, Alloc>;
 		using SizeType = typename Alloc::SizeType;
+		
+		class SetElementId
+		{
+			SizeType Index;
+		public:
+			FORCEINLINE SetElementId(SizeType InIndex = INDEX_NONE) : Index(InIndex) {}
+			FORCEINLINE bool IsValid() const { return Index != INDEX_NONE; }
+			FORCEINLINE operator SizeType() const { return Index; }
+			FORCEINLINE friend bool operator==(const SetElementId& A, const SetElementId& B) { return A.Index == B.Index; }
+			FORCEINLINE void Reset() { Index = INDEX_NONE; }
+		};
+		class SetElement
+		{
+		public:
+			T						Value;
+			mutable uint32			Hash;
+			mutable SetElementId	HashNextId;
+		public:
+			FORCEINLINE SetElement() = default;
+			FORCEINLINE SetElement(SetElement&&) = default;
+			FORCEINLINE SetElement(const SetElement&) = default;
+			FORCEINLINE SetElement& operator=(SetElement&&) = default;
+			FORCEINLINE SetElement& operator=(const SetElement&) = default;
+
+			template <typename...Ts>
+			explicit FORCEINLINE SetElement(Ts&&...Args) : Value(std::forward<Ts>(Args)...), Hash(0), HashNextId() {}
+
+			FORCEINLINE bool operator==(const SetElement& Other) const { return this->Value == Other.Value; }
+			FORCEINLINE bool operator!=(const SetElement& Other) const { return this->Value != Other.Value; }
+		};
 
 		// special compare for set element 
 		template <typename Predicate>
 		class FElementCompareClass
 		{
-			TDereferenceWrapper<ElementType, Predicate> Pred;
+			TDereferenceWrapper<T, Predicate> Pred;
 		public:
 			FORCEINLINE FElementCompareClass(Predicate&& InPredicate) : Pred(std::move(InPredicate)) {}
-			FORCEINLINE bool operator()(const SetElementType& A, const SetElementType& B) const { return Pred(A.Value, B.Value); }
+			FORCEINLINE bool operator()(const SetElement& A, const SetElement& B) const { return Pred(A.Value, B.Value); }
 		};
 
-		mutable SetElementId*	m_Hash;				// hash bucket 
-		mutable SizeType		m_HashSize;			// hash bucket size 
-		ElementArrayType		m_Elements;			// elements 
+		mutable SetElementId*			m_Hash;				// hash bucket 
+		mutable SizeType				m_HashSize;			// hash bucket size 
+		TSparseArray<SetElement, Alloc>	m_Elements;			// elements 
 		//------------------------------Begin helper functions------------------------------
 		static FORCEINLINE SizeType _GetNumberOfHashBuckets(SizeType NumHashedElements)
 		{
@@ -143,9 +129,11 @@ namespace Fuko
 				}
 
 				// Add the existing elements to the new hash.
-				for (typename ElementArrayType::TConstIterator ElementIt(m_Elements); ElementIt; ++ElementIt)
+				for (auto It = m_Elements.begin(); It; ++It)
 				{
-					_HashElement(SetElementId(ElementIt.GetIndex()), *ElementIt);
+					SetElementId& IdRef = _BucketId(It->Hash);
+					It->HashNextId = IdRef;
+					IdRef = It.GetIndex();
 				}
 			}
 		}
@@ -171,24 +159,22 @@ namespace Fuko
 		}
 
 		// link element to hash bucket 
-		FORCEINLINE void _LinkElement(SetElementId ElementId, const SetElementType& Element, uint32 KeyHash) const
+		FORCEINLINE void _LinkElement(SetElementId ElementId, const SetElement& Element, uint32 KeyHash) const
 		{
 			// Compute the hash bucket the element goes in.
-			Element.HashIndex = KeyHash & (m_HashSize - 1);
+			Element.Hash = KeyHash;
 
 			// Link the element into the hash bucket.
-			SetElementId& IdRef = m_Hash[Element.HashIndex];
+			SetElementId& IdRef = _BucketId(KeyHash);
 			Element.HashNextId = IdRef;
 			IdRef = ElementId;
 		}
 
-		// compute hash and link it to hash bucket 
-		FORCEINLINE void _HashElement(SetElementId ElementId, const SetElementType& Element) const { _LinkElement(ElementId, Element, KeyFuncs::Hash(KeyFuncs::Key(Element.Value))); }
-
 		// implement emplace, before call this function, element has been added to sparse array
 		// we only need check duplicate and link element to bucket 
-		SetElementId _EmplaceImpl(uint32 KeyHash, SetElementType& Element, SetElementId ElementId, bool* bIsAlreadyInSetPtr)
+		SetElementId _EmplaceImpl(uint32 KeyHash, SetElement& Element, SetElementId ElementId, bool* bIsAlreadyInSetPtr)
 		{
+			Element.Hash = KeyHash;
 			// if we not support duplicate key, then check whether the key is unique 
 			if constexpr (!KeyFuncs::bAllowDuplicateKeys)
 			{
@@ -201,7 +187,7 @@ namespace Fuko
 					if (bIsAlreadyInSet)
 					{
 						// cover the old element 
-						Memmove(&m_Elements[ExistingId].Value, &Element.Value, sizeof(SetElementType));
+						Memmove(&m_Elements[ExistingId].Value, &Element.Value, sizeof(SetElement));
 
 						// Then remove the new element.
 						m_Elements.RemoveAtUninitialized(ElementId);
@@ -244,8 +230,7 @@ namespace Fuko
 		}
 
 		// implement remove 
-		template<typename ComparableKey>
-		FORCEINLINE SizeType _RemoveImpl(uint32 KeyHash, const ComparableKey& Key)
+		FORCEINLINE SizeType _RemoveImpl(uint32 KeyHash, const KeyType& Key)
 		{
 			int32 NumRemovedElements = 0;
 
@@ -281,21 +266,21 @@ namespace Fuko
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
 		{ }
-		FORCEINLINE TSet(std::initializer_list<ElementType> InitList, Alloc&& InAlloc = Alloc())
+		FORCEINLINE TSet(std::initializer_list<T> InitList, Alloc&& InAlloc = Alloc())
 			: m_HashSize(0)
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
 		{
 			*this += (InitList);
 		}
-		FORCEINLINE explicit TSet(const TArray<ElementType>& InArray, Alloc&& InAlloc = Alloc())
+		FORCEINLINE explicit TSet(const TArray<T>& InArray, Alloc&& InAlloc = Alloc())
 			: m_HashSize(0)
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
 		{
 			*this += (InArray);
 		}
-		FORCEINLINE explicit TSet(TArray<ElementType>&& InArray, Alloc&& InAlloc = Alloc())
+		FORCEINLINE explicit TSet(TArray<T>&& InArray, Alloc&& InAlloc = Alloc())
 			: m_HashSize(0)
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
@@ -323,10 +308,7 @@ namespace Fuko
 		}
 
 		// destructor 
-		~TSet()
-		{
-			if (m_Hash) m_HashSize = m_Elements.GetAllocator().Free(m_Hash);
-		}
+		~TSet() { if (m_Hash) m_HashSize = m_Elements.GetAllocator().Free(m_Hash); }
 
 		// assign 
 		TSet& operator=(const TSet& Copy)
@@ -341,7 +323,7 @@ namespace Fuko
 			m_Elements = Copy.m_Elements;
 			return *this;
 		}
-		TSet& operator=(std::initializer_list<ElementType> InitList)
+		TSet& operator=(std::initializer_list<T> InitList)
 		{
 			Reset();
 			Append(InitList);
@@ -414,14 +396,14 @@ namespace Fuko
 		FORCEINLINE bool IsValid(SetElementId Id) const { return Id.IsValid() && Id < m_Elements.IsValidIndex(Id); }
 
 		// accessor
-		FORCEINLINE ElementType& operator[](SetElementId Id) { return m_Elements[Id].Value; }
-		FORCEINLINE const ElementType& operator[](SetElementId Id) const { return m_Elements[Id].Value; }
+		FORCEINLINE T& operator[](SetElementId Id) { return m_Elements[Id].Value; }
+		FORCEINLINE const T& operator[](SetElementId Id) const { return m_Elements[Id].Value; }
 
 		// add 
-		FORCEINLINE SetElementId Add(const InElementType& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return Emplace(InElement, bIsAlreadyInSetPtr); }
-		FORCEINLINE SetElementId Add(InElementType&& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return Emplace(std::move(InElement), bIsAlreadyInSetPtr); }
-		FORCEINLINE SetElementId AddByHash(uint32 KeyHash, const InElementType& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return EmplaceByHash(KeyHash, InElement, bIsAlreadyInSetPtr); }
-		FORCEINLINE SetElementId AddByHash(uint32 KeyHash, InElementType&& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return EmplaceByHash(KeyHash, std::move(InElement), bIsAlreadyInSetPtr); }
+		FORCEINLINE SetElementId Add(const T& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return Emplace(InElement, bIsAlreadyInSetPtr); }
+		FORCEINLINE SetElementId Add(T&& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return Emplace(std::move(InElement), bIsAlreadyInSetPtr); }
+		FORCEINLINE SetElementId AddByHash(uint32 KeyHash, const T& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return EmplaceByHash(KeyHash, InElement, bIsAlreadyInSetPtr); }
+		FORCEINLINE SetElementId AddByHash(uint32 KeyHash, T&& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return EmplaceByHash(KeyHash, std::move(InElement), bIsAlreadyInSetPtr); }
 
 		// emplace 
 		template <typename ArgsType>
@@ -429,7 +411,7 @@ namespace Fuko
 		{
 			// Create a new element.
 			auto ElementAllocation = m_Elements.AddUninitialized();
-			SetElementType& Element = *new (ElementAllocation.Pointer) SetElementType(std::forward<ArgsType>(Args));
+			SetElement& Element = *new (ElementAllocation.Pointer) SetElement(std::forward<ArgsType>(Args));
 
 			// compute hash 
 			uint32 KeyHash = KeyFuncs::Hash(KeyFuncs::Key(Element.Value));
@@ -442,25 +424,25 @@ namespace Fuko
 		{
 			// Create a new element.
 			auto ElementAllocation = m_Elements.AddUninitialized();
-			SetElementType& Element = *new (ElementAllocation) SetElementType(std::forward<ArgsType>(Args));
+			SetElement& Element = *new (ElementAllocation.Pointer) SetElement(std::forward<ArgsType>(Args));
 
 			return _EmplaceImpl(KeyHash, Element, ElementAllocation.Index, bIsAlreadyInSetPtr);
 		}
 
 		// append 
-		TSet& operator+=(const TArray<ElementType>& InElements)
+		TSet& operator+=(const TArray<T>& InElements)
 		{
 			Reserve(m_Elements.Num() + InElements.Num());
-			for (const ElementType& Element : InElements)
+			for (const T& Element : InElements)
 			{
 				Add(Element);
 			}
 			return *this;
 		}
-		TSet& operator+=(TArray<ElementType>&& InElements)
+		TSet& operator+=(TArray<T>&& InElements)
 		{
 			Reserve(m_Elements.Num() + InElements.Num());
-			for (ElementType& Element : InElements)
+			for (T& Element : InElements)
 			{
 				Add(std::move(Element));
 			}
@@ -470,7 +452,7 @@ namespace Fuko
 		TSet& operator+=(const TSet& OtherSet)
 		{
 			Reserve(m_Elements.Num() + OtherSet.Num());
-			for (const ElementType& Element : OtherSet)
+			for (const T& Element : OtherSet)
 			{
 				Add(Element);
 			}
@@ -479,17 +461,17 @@ namespace Fuko
 		TSet& operator+=(TSet&& OtherSet)
 		{
 			Reserve(m_Elements.Num() + OtherSet.Num());
-			for (ElementType& Element : OtherSet)
+			for (T& Element : OtherSet)
 			{
 				Add(std::move(Element));
 			}
 			OtherSet.Reset();
 			return *this;
 		}
-		TSet& operator+=(std::initializer_list<ElementType> InitList)
+		TSet& operator+=(std::initializer_list<T> InitList)
 		{
 			Reserve(m_Elements.Num() + (int32)InitList.size());
-			for (const ElementType& Element : InitList)
+			for (const T& Element : InitList)
 			{
 				Add(Element);
 			}
@@ -504,7 +486,7 @@ namespace Fuko
 				const auto& ElementBeingRemoved = m_Elements[ElementId];
 
 				// Remove the element from the hash bucket 
-				for (SetElementId* NextElementId = &_BucketId(ElementBeingRemoved.HashIndex);
+				for (SetElementId* NextElementId = &_BucketId(ElementBeingRemoved.Hash);
 					NextElementId->IsValid();
 					NextElementId = &m_Elements[*NextElementId].HashNextId)
 				{
@@ -525,8 +507,7 @@ namespace Fuko
 			if (m_Elements.Num()) return _RemoveImpl(KeyFuncs::Hash(Key), Key); 
 			return 0;
 		}
-		template<typename ComparableKey>
-		SizeType RemoveByHash(uint32 KeyHash, const ComparableKey& Key)
+		SizeType RemoveByHash(uint32 KeyHash, const KeyType& Key)
 		{
 			check(KeyHash == KeyFuncs::Hash(Key));
 			if (m_Elements.Num()) return _RemoveImpl(KeyHash, Key); 
@@ -550,8 +531,7 @@ namespace Fuko
 			}
 			return SetElementId();
 		}
-		template<typename ComparableKey>
-		SetElementId FindIdByHash(uint32 KeyHash, const ComparableKey& Key) const
+		SetElementId FindIdByHash(uint32 KeyHash, const KeyType& Key) const
 		{
 			if (m_Elements.Num())
 			{
@@ -569,7 +549,7 @@ namespace Fuko
 			}
 			return SetElementId();
 		}
-		FORCEINLINE ElementType* Find(const KeyType& Key)
+		FORCEINLINE T* Find(const KeyType& Key)
 		{
 			SetElementId ElementId = FindId(Key);
 			if (ElementId.IsValid())
@@ -581,12 +561,11 @@ namespace Fuko
 				return nullptr;
 			}
 		}
-		FORCEINLINE const ElementType* Find(const KeyType& Key) const
+		FORCEINLINE const T* Find(const KeyType& Key) const
 		{
 			return const_cast<TSet*>(this)->Find(Key);
 		}
-		template<typename ComparableKey>
-		ElementType* FindByHash(uint32 KeyHash, const ComparableKey& Key)
+		T* FindByHash(uint32 KeyHash, const KeyType& Key)
 		{
 			SetElementId ElementId = FindIdByHash(KeyHash, Key);
 			if (ElementId.IsValid())
@@ -598,26 +577,24 @@ namespace Fuko
 				return nullptr;
 			}
 		}
-		template<typename ComparableKey>
-		const ElementType* FindByHash(uint32 KeyHash, const ComparableKey& Key) const
+		const T* FindByHash(uint32 KeyHash, const KeyType& Key) const
 		{
 			return const_cast<TSet*>(this)->FindByHash(KeyHash, Key);
 		}
 
 		// contains 
 		FORCEINLINE bool Contains(const KeyType& Key) const { return FindId(Key).IsValid(); }
-		template<typename ComparableKey>
-		FORCEINLINE bool ContainsByHash(uint32 KeyHash, const ComparableKey& Key) const { return FindIdByHash(KeyHash, Key).IsValid(); }
+		FORCEINLINE bool ContainsByHash(uint32 KeyHash, const KeyType& Key) const { return FindIdByHash(KeyHash, Key).IsValid(); }
 
 		// sort 
-		template <typename Predicate = TLess<ElementType>>
-		void Sort(Predicate&& Pred = TLess<ElementType>())
+		template <typename Predicate = TLess<T>>
+		void Sort(Predicate&& Pred = TLess<T>())
 		{
 			m_Elements.Sort(FElementCompareClass<Predicate>(std::forward<Predicate>(Pred)));
 			_Rehash();
 		}
-		template <typename Predicate = TLess<ElementType>>
-		void StableSort(Predicate&& Pred = TLess<ElementType>())
+		template <typename Predicate = TLess<T>>
+		void StableSort(Predicate&& Pred = TLess<T>())
 		{
 			m_Elements.StableSort(FElementCompareClass<Predicate>(std::forward<Predicate>(Pred)));
 			_Rehash();
@@ -722,9 +699,9 @@ namespace Fuko
 		}
 
 		// To Array 
-		TArray<ElementType> Array() const
+		TArray<T> Array() const
 		{
-			TArray<ElementType> Result(GetAllocator());
+			TArray<T> Result(GetAllocator());
 			Result.Reserve(Num());
 			for (TConstIterator SetIt(*this); SetIt; ++SetIt)
 			{
@@ -734,12 +711,12 @@ namespace Fuko
 		}
 
 		// Debug check 
-		FORCEINLINE void CheckAddress(const ElementType* Addr) const { m_Elements.CheckAddress(Addr); }
+		FORCEINLINE void CheckAddress(const T* Addr) const { m_Elements.CheckAddress(Addr); }
 
 		//-----------------------------------------------iterators-----------------------------------------------
 		class TIterator
 		{
-			using ElementItType = typename ElementArrayType::TIterator;
+			using ElementItType = typename TSparseArray<SetElement, Alloc>::TIterator;
 			ElementItType	m_ElementIt;
 			TSet&			m_Set;
 		public:
@@ -749,18 +726,18 @@ namespace Fuko
 			FORCEINLINE explicit operator bool() const { return !!m_ElementIt; }
 			FORCEINLINE bool operator !() const { return !(bool)*this; }
 
-			FORCEINLINE ElementType* operator->() const { return &m_ElementIt->Value; }
-			FORCEINLINE ElementType& operator*() const { return m_ElementIt->Value; }
+			FORCEINLINE T* operator->() const { return &m_ElementIt->Value; }
+			FORCEINLINE T& operator*() const { return m_ElementIt->Value; }
 
 			FORCEINLINE friend bool operator==(const TIterator& Lhs, const TIterator& Rhs) { return Lhs.m_ElementIt == Rhs.m_ElementIt; }
 			FORCEINLINE friend bool operator!=(const TIterator& Lhs, const TIterator& Rhs) { return Lhs.m_ElementIt != Rhs.m_ElementIt; }
 
 			FORCEINLINE SetElementId GetId() const { return m_ElementIt.GetIndex(); }
-			FORCEINLINE void RemoveCurrent() 	{ Set.Remove(TBaseIterator<false>::GetId()); }
+			FORCEINLINE void RemoveCurrent() 	{ Set.Remove(GetId); }
 		};
 		class TConstIterator
 		{
-			using ElementItType = typename ElementArrayType::TConstIterator;
+			using ElementItType = typename TSparseArray<SetElement, Alloc>::TConstIterator;
 			ElementItType	m_ElementIt;
 		public:
 			FORCEINLINE TConstIterator(const TSet& InSet, SizeType StartIndex = 0) : m_ElementIt(InSet.m_Elements, StartIndex) {}
@@ -769,8 +746,8 @@ namespace Fuko
 			FORCEINLINE explicit operator bool() const { return !!m_ElementIt; }
 			FORCEINLINE bool operator !() const { return !(bool)*this; }
 
-			FORCEINLINE const ElementType* operator->() const { return &m_ElementIt->Value; }
-			FORCEINLINE const ElementType& operator*() const { return m_ElementIt->Value; }
+			FORCEINLINE const T* operator->() const { return &m_ElementIt->Value; }
+			FORCEINLINE const T& operator*() const { return m_ElementIt->Value; }
 
 			FORCEINLINE friend bool operator==(const TConstIterator& Lhs, const TConstIterator& Rhs) { return Lhs.m_ElementIt == Rhs.m_ElementIt; }
 			FORCEINLINE friend bool operator!=(const TConstIterator& Lhs, const TConstIterator& Rhs) { return Lhs.m_ElementIt != Rhs.m_ElementIt; }

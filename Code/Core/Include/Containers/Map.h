@@ -16,10 +16,8 @@ namespace Fuko
 		static constexpr bool bAllowDuplicateKeys = bInAllowDuplicateKeys;
 
 		static FORCEINLINE const KeyType& Key(const ElementType& Element) { return Element.Key; }
-		template<typename ComparableKey>
-		static FORCEINLINE bool Matches(const KeyType& A, ComparableKey B) { return A == B; }
-		template<typename ComparableKey>
-		static FORCEINLINE uint32 Hash(ComparableKey Key) { return GetTypeHash(Key); }
+		static FORCEINLINE bool Matches(const KeyType& A, const KeyType& B) { return A == B; }
+		static FORCEINLINE uint32 Hash(KeyType Key) { return GetTypeHash(Key); }
 	};
 }
 
@@ -48,32 +46,6 @@ namespace Fuko
 		using ElementType = TPair<KeyType, ValueType>;
 		using ElementSetType = TSet<ElementType, Alloc, KeyFuncs>;
 		using SizeType = typename Alloc::SizeType;
-
-		// special predicate for compare key
-		template<typename Predicate>
-		class FKeyComparisonClass
-		{
-			TDereferenceWrapper<KeyType, Predicate> Pred;
-		public:
-			FORCEINLINE FKeyComparisonClass(Predicate&& InPredicate) : Pred(std::move(InPredicate)) {}
-			FORCEINLINE bool operator()(const ElementType& A, const ElementType& B) const
-			{
-				return Pred(A.Key, B.Key);
-			}
-		};
-
-		// special predicate for compare value 
-		template<typename Predicate>
-		class FValueComparisonClass
-		{
-			TDereferenceWrapper< ValueType, Predicate> Pred;
-		public:
-			FORCEINLINE FValueComparisonClass(const Predicate& InPredicate) : Pred(InPredicate) {}
-			FORCEINLINE bool operator()(const typename ElementType& A, const typename ElementType& B) const
-			{
-				return Pred(A.Value, B.Value);
-			}
-		};
 	protected:
 		ElementSetType	m_Pairs;
 
@@ -153,32 +125,31 @@ namespace Fuko
 		template <typename InitKeyType, typename InitValueType>
 		ValueType& Emplace(InitKeyType&& InKey, InitValueType&& InValue)
 		{
-			const SetElementId PairId = m_Pairs.Emplace(ElementType(std::forward<InitKeyType>(InKey), std::forward<InitValueType>(InValue)));
+			auto PairId = m_Pairs.Emplace(ElementType(std::forward<InitKeyType>(InKey), std::forward<InitValueType>(InValue)));
 			return m_Pairs[PairId].Value;
 		}
 		template <typename InitKeyType, typename InitValueType>
 		ValueType& EmplaceByHash(uint32 KeyHash, InitKeyType&& InKey, InitValueType&& InValue)
 		{
-			const SetElementId PairId = m_Pairs.EmplaceByHash(KeyHash, ElementType(std::forward<InitKeyType>(InKey), std::forward<InitValueType>(InValue)));
+			auto PairId = m_Pairs.EmplaceByHash(KeyHash, ElementType(std::forward<InitKeyType>(InKey), std::forward<InitValueType>(InValue)));
 			return m_Pairs[PairId].Value;
 		}
 		template <typename InitKeyType>
 		ValueType& Emplace(InitKeyType&& InKey)
 		{
-			const SetElementId PairId = m_Pairs.Emplace(ElementType(std::forward<InitKeyType>(InKey)));
+			auto PairId = m_Pairs.Emplace(ElementType(std::forward<InitKeyType>(InKey)));
 			return m_Pairs[PairId].Value;
 		}
 		template <typename InitKeyType>
 		ValueType& EmplaceByHash(uint32 KeyHash, InitKeyType&& InKey)
 		{
-			const SetElementId PairId = m_Pairs.EmplaceByHash(KeyHash, ElementType(std::forward<InitKeyType>(InKey)));
+			auto PairId = m_Pairs.EmplaceByHash(KeyHash, ElementType(std::forward<InitKeyType>(InKey)));
 			return m_Pairs[PairId].Value;
 		}
 
 		// remove 
 		FORCEINLINE int32 Remove(const KeyType& InKey) { return m_Pairs.Remove(InKey); }
-		template<typename ComparableKey>
-		FORCEINLINE int32 RemoveByHash(uint32 KeyHash, const ComparableKey& Key) { return m_Pairs.RemoveByHash(KeyHash, Key); }
+		FORCEINLINE int32 RemoveByHash(uint32 KeyHash, const KeyType& Key) { return m_Pairs.RemoveByHash(KeyHash, Key); }
 
 		// Find 
 		const KeyType* FindKey(const ValueType& Value) const
@@ -204,8 +175,7 @@ namespace Fuko
 		{
 			return const_cast<TMapBase*>(this)->Find(Key);
 		}
-		template<typename ComparableKey>
-		FORCEINLINE ValueType* FindByHash(uint32 KeyHash, const ComparableKey& Key)
+		FORCEINLINE ValueType* FindByHash(uint32 KeyHash, const KeyType& Key)
 		{
 			if (auto* Pair = m_Pairs.FindByHash(KeyHash, Key))
 			{
@@ -213,8 +183,7 @@ namespace Fuko
 			}
 			return nullptr;
 		}
-		template<typename ComparableKey>
-		FORCEINLINE const ValueType* FindByHash(uint32 KeyHash, const ComparableKey& Key) const
+		FORCEINLINE const ValueType* FindByHash(uint32 KeyHash, const KeyType& Key) const
 		{
 			return const_cast<TMapBase*>(this)->FindByHash(KeyHash, Key);
 		}
@@ -235,35 +204,9 @@ namespace Fuko
 		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, const ValueType&  Value) { return _FindOrAddImpl(KeyHash, std::move(Key), Value); }
 		FORCEINLINE ValueType& FindOrAddByHash(uint32 KeyHash, KeyType&& Key, ValueType&& Value) { return _FindOrAddImpl(KeyHash, std::move(Key), std::move(Value)); }
 
-		// find with check instead of return a nullprt
-		FORCEINLINE const ValueType& FindChecked(const KeyType& Key) const
-		{
-			const auto* Pair = m_Pairs.Find(Key);
-			check(Pair != nullptr);
-			return m_Pairs->Value;
-		}
-		FORCEINLINE ValueType& FindChecked(const KeyType& Key)
-		{
-			auto* Pair = m_Pairs.Find(Key);
-			check(Pair != nullptr);
-			return Pair->Value;
-		}
-		
-		// find, return a reference 
-		FORCEINLINE ValueType FindRef(const KeyType& Key) const
-		{
-			if (const auto* Pair = m_Pairs.Find(Key))
-			{
-				return Pair->Value;
-			}
-
-			return ValueType();
-		}
-
 		// Contains 
 		FORCEINLINE bool Contains(const KeyType& Key) const { return m_Pairs.Contains(Key); }
-		template<typename ComparableKey>
-		FORCEINLINE bool ContainsByHash(uint32 KeyHash, const ComparableKey& Key) const { return m_Pairs.ContainsByHash(KeyHash, Key); }
+		FORCEINLINE bool ContainsByHash(uint32 KeyHash, const KeyType& Key) const { return m_Pairs.ContainsByHash(KeyHash, Key); }
 
 		// Generate key & value array 
 		void GenerateKeyArray(TArray<KeyType>& OutArray) const
@@ -284,15 +227,31 @@ namespace Fuko
 		}
 
 		// Sort 
-		template<typename Predicate>
-		FORCEINLINE void KeySort(const Predicate& Pred) { m_Pairs.Sort(FKeyComparisonClass<Predicate>(Pred)); }
-		template<typename Predicate>
-		FORCEINLINE void KeyStableSort(const Predicate& Pred) { m_Pairs.StableSort(FKeyComparisonClass<Predicate>(Pred)); }
+		template<typename TPred>
+		FORCEINLINE void KeySort(TPred&& Pred) 
+		{
+			m_Pairs.Sort([&](auto& A, auto& B)->bool
+				{ return Pred(A.Key, B.Key); });
+		}
+		template<typename TPred>
+		FORCEINLINE void KeyStableSort(TPred&& Pred) 
+		{
+			m_Pairs.StableSort([&](auto& A, auto& B)->bool
+				{ return Pred(A.Key, B.Key); });
+		}
 
-		template<typename Predicate>
-		FORCEINLINE void ValueSort(const Predicate& Pred) { m_Pairs.Sort(FValueComparisonClass<Predicate>(Pred)); }
-		template<typename Predicate>
-		FORCEINLINE void ValueStableSort(const Predicate& Pred) { m_Pairs.StableSort(FValueComparisonClass<Predicate>(Pred)); }
+		template<typename TPred>
+		FORCEINLINE void ValueSort(TPred&& Pred) 
+		{
+			m_Pairs.Sort([&](auto& A, auto& B)->bool
+				{ return Pred(A.Value, B.Value); });
+		}
+		template<typename TPred>
+		FORCEINLINE void ValueStableSort(TPred&& Pred) 
+		{
+			m_Pairs.StableSort([&](auto& A, auto& B)->bool
+				{ return Pred(A.Value, B.Value); });
+		}
 
 		//----------------------------------------iterators----------------------------------------
 		class TIterator
@@ -319,6 +278,7 @@ namespace Fuko
 
 			FORCEINLINE KeyType&   Key()   const { return m_SetIt->Key; }
 			FORCEINLINE ValueType& Value() const { return m_SetIt->Value; }
+			FORCEINLINE SizeType   GetIndex() const { return m_SetIt.GetId(); }
 
 			FORCEINLINE ElementType& operator* () const { return  *m_SetIt; }
 			FORCEINLINE ElementType* operator->() const { return &*m_SetIt; }
@@ -346,8 +306,9 @@ namespace Fuko
 			FORCEINLINE friend bool operator==(const TConstIterator& Lhs, const TConstIterator& Rhs) { return Lhs.m_SetIt == Rhs.m_SetIt; }
 			FORCEINLINE friend bool operator!=(const TConstIterator& Lhs, const TConstIterator& Rhs) { return Lhs.m_SetIt != Rhs.m_SetIt; }
 
-			FORCEINLINE const KeyType&   Key()   const { return m_SetIt->Key; }
-			FORCEINLINE const ValueType& Value() const { return m_SetIt->Value; }
+			FORCEINLINE const KeyType&   Key()   const	{ return m_SetIt->Key; }
+			FORCEINLINE const ValueType& Value() const	{ return m_SetIt->Value; }
+			FORCEINLINE SizeType   GetIndex() const		{ return m_SetIt.GetId(); }
 
 			FORCEINLINE const ElementType& operator* () const { return  *m_SetIt; }
 			FORCEINLINE const ElementType* operator->() const { return &*m_SetIt; }

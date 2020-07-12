@@ -162,38 +162,8 @@ FORCEINLINE uint32 ReverseBits(uint32 Bits)
 	return Bits;
 }
 
-void Fuko::Crc::Init()
+uint32 Fuko::Crc::MemCrc32(const void* InData, int32 Length, uint32 CRC)
 {
-#if FUKO_DEBUG
-	uint32 RCrc32Poly = ReverseBits((uint32)Crc32Poly);
-
-	for (uint32 i = 0; i != 256; ++i)
-	{
-		uint32 CRC = i;
-		for (uint32 j = 8; j; --j)
-		{
-			CRC = (CRC & 1) ? (CRC >> 1) ^ RCrc32Poly : (CRC >> 1);
-		}
-		check(CRCTablesSB8[0][i] == CRC);
-	}
-
-	for (uint32 i = 0; i != 256; ++i)
-	{
-		uint32 CRC = CRCTablesSB8[0][i];
-		for (uint32 j = 1; j != 8; ++j)
-		{
-			CRC = CRCTablesSB8[0][CRC & 0xFF] ^ (CRC >> 8);
-			check(CRCTablesSB8[j][i] == CRC);
-		}
-	}
-#endif // !UE_BUILD_SHIPPING
-}
-
-uint32 Fuko::Crc::MemCrc32(const void* InData, int32 Length, uint32 CRC/*=0 */)
-{
-	// Based on the Slicing-by-8 implementation found here:
-	// http://slicing-by-8.sourceforge.net/
-
 	CRC = ~CRC;
 
 	const uint8* __restrict Data = (uint8*)InData;

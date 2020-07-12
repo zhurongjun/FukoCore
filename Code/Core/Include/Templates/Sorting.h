@@ -14,21 +14,21 @@
 template<typename T, class PREDICATE_CLASS>
 struct TDereferenceWrapper
 {
-	const PREDICATE_CLASS& Predicate;
+	PREDICATE_CLASS Predicate;
 
 	TDereferenceWrapper(PREDICATE_CLASS&& InPredicate)
-		: Predicate(std::move(InPredicate)) {}
+		: Predicate(std::forward<PREDICATE_CLASS>(InPredicate)) {}
 
-	FORCEINLINE bool operator()(T& A, T& B) { return Predicate(A, B); }
+	FORCEINLINE bool operator()(T&& A, T&& B) { return Predicate(A, B); }
 	FORCEINLINE bool operator()(const T& A, const T& B) const { return Predicate(A, B); }
 };
 template<typename T, class PREDICATE_CLASS>
 struct TDereferenceWrapper<T*, PREDICATE_CLASS>
 {
-	const PREDICATE_CLASS& Predicate;
+	PREDICATE_CLASS Predicate;
 
-	TDereferenceWrapper(const PREDICATE_CLASS& InPredicate)
-		: Predicate(InPredicate) {}
+	TDereferenceWrapper(PREDICATE_CLASS&& InPredicate)
+		: Predicate(std::forward<PREDICATE_CLASS>(InPredicate)) {}
 
 	FORCEINLINE bool operator()(T* A, T* B) const
 	{
