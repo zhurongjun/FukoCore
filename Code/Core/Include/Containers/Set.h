@@ -71,16 +71,6 @@ namespace Fuko
 			FORCEINLINE bool operator!=(const SetElement& Other) const { return this->Value != Other.Value; }
 		};
 
-		// special compare for set element 
-		template <typename Predicate>
-		class FElementCompareClass
-		{
-			TDereferenceWrapper<T, Predicate> Pred;
-		public:
-			FORCEINLINE FElementCompareClass(Predicate&& InPredicate) : Pred(std::move(InPredicate)) {}
-			FORCEINLINE bool operator()(const SetElement& A, const SetElement& B) const { return Pred(A.Value, B.Value); }
-		};
-
 		mutable SetElementId*			m_Hash;				// hash bucket 
 		mutable SizeType				m_HashSize;			// hash bucket size 
 		TSparseArray<SetElement, Alloc>	m_Elements;			// elements 
@@ -587,16 +577,16 @@ namespace Fuko
 		FORCEINLINE bool ContainsByHash(uint32 KeyHash, const KeyType& Key) const { return FindIdByHash(KeyHash, Key).IsValid(); }
 
 		// sort 
-		template <typename Predicate = TLess<T>>
-		void Sort(Predicate&& Pred = TLess<T>())
+		template <typename TPred = TLess<T>>
+		void Sort(TPred&& Pred = TLess<T>())
 		{
-			m_Elements.Sort(FElementCompareClass<Predicate>(std::forward<Predicate>(Pred)));
+			m_Elements.Sort([&](const SetElement& A, const SetElement& B)->bool { return Pred(A.Value, B.Value); });
 			_Rehash();
 		}
-		template <typename Predicate = TLess<T>>
-		void StableSort(Predicate&& Pred = TLess<T>())
+		template <typename TPred = TLess<T>>
+		void StableSort(TPred&& Pred = TLess<T>())
 		{
-			m_Elements.StableSort(FElementCompareClass<Predicate>(std::forward<Predicate>(Pred)));
+			m_Elements.StableSort([&](const SetElement& A, const SetElement& B)->bool { return Pred(A.Value, B.Value); });
 			_Rehash();
 		}
 

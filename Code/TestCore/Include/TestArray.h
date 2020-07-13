@@ -2,6 +2,7 @@
 #include <Containers/Array.h>
 #include <Templates/Functor.h>
 #include <Templates/Pair.h>
+#include <iostream>
 
 using Fuko::TArray;
 using Fuko::TPair;
@@ -312,9 +313,9 @@ void TestArray()
 	// heap
 	{
 		TArray<int> A = { 1,2,3,4,5,6,7,8,9,10 };
-		A.VerifyHeap(TLess<>());
+		check(A.IsHeap(TLess<>()));
 		A.Heapify(TGreater<>());
-		A.VerifyHeap(TGreater<>());
+		check(A.IsHeap(TGreater<>()));
 		check(A.HeapTop() == 10);
 		int a;
 		A.HeapPop(a,TGreater<>());

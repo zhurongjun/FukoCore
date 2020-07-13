@@ -5,92 +5,49 @@
 #include <Algo/Rotate.h>
 #include <Templates/Functor.h>
 
-namespace Fuko::Algo::Impl
+namespace Fuko::Algo
 {
-	/**
-	 * @fn template <typename T, typename ProjectionType, typename PredicateType> void Merge(T* First, int32 Mid, int32 Num, ProjectionType Projection, PredicateType Predicate)
-	 *
-	 * @brief 归并排序的归并算法
-	 *
-	 * @param [in]	   First	  排序范围的起点
-	 * @param 		   Mid		  归并排序的中点(组长)
-	 * @param 		   Num		  执行排序的元素数量
-	 * @param 		   Projection 映射函数
-	 * @param 		   Predicate  谓语
-	 */
-	template <typename T, typename ProjectionType, typename PredicateType>
-	void Merge(T* First, int32 Mid, int32 Num, ProjectionType Projection, PredicateType Predicate)
+	template <class T, class TSize, class TPred>
+	void Merge(T* First, const TSize Mid, const TSize Num, TPred&& Pred)
 	{
-		// 归并的子序列都是已经有序的
-		int32 AStart = 0;		// 左侧序列的节点
-		int32 BStart = Mid;		// 右侧序列的起点
+		TSize AStart = 0;
+		TSize BStart = Mid;
 
 		while (AStart < BStart && BStart < Num)
 		{
-			// 在A中寻找适合B插入的位置
-			int32 NewAOffset = UpperBoundInternal(First + AStart, BStart - AStart, std::invoke(Projection, First[BStart]), Projection, Predicate);
-			
-			// |xxxxxxxA---|-----------|
-			// 更新A的起点，NewAOffset的左侧已经是有序序列 
+			// Index after the last value == First[BStart]
+			TSize NewAOffset = Impl::UpperBoundInternal(First + AStart, BStart - AStart, First[BStart], NoMap(), std::forward<TPred>(Pred));
 			AStart += NewAOffset;
 
-			if (AStart >= BStart)	// 无需排序，整个序列已经是有序的
-			{
-				return;
-			}
+			if (AStart >= BStart) // done
+				break;
 
-			// |xxxxxxxA***|####B------|
-			// 从B序列中寻找正好可以插入A的位置
-			int32 NewBOffset = LowerBoundInternal(First + BStart, Num - BStart, std::invoke(Projection, First[AStart]), Projection, Predicate);
-			
-			// |xxxxxxxA###|#***B------|
-			// 交换两个区域
-			RotateInternal(First + AStart, NewBOffset + BStart - AStart, BStart - AStart);
-
-			// |xxxxxxxxxxx|xA------B--|
-			//  xxxxxxxxxxx x|------|--|
-			//               |------|--|
-			// 更新有序区
+			// Index of the first value == First[AStart]
+			TSize NewBOffset = Impl::LowerBoundInternal(First + BStart, Num - BStart, First[AStart], NoMap(), std::forward<TPred>(Pred));
+			Rotate(First, AStart, BStart + NewBOffset, NewBOffset);
 			BStart += NewBOffset;
 			AStart += NewBOffset + 1;
 		}
 	}
 
-	constexpr int32 MinMergeSubgroupSize = 2;
-
-	/**
-	 * @fn template <typename T, typename ProjectionType, typename PredicateType> void StableSortInternal(T* First, int32 Num, ProjectionType Projection, PredicateType Predicate)
-	 *
-	 * @brief 归并排序，是稳定的
-	 *
-	 * @param [in]     First	  数组起点
-	 * @param 		   Num		  数组长度
-	 * @param 		   Projection 映射函数
-	 * @param 		   Predicate  谓语
-	 */
-	template <typename T, typename ProjectionType, typename PredicateType>
-	void StableSortInternal(T* First, int32 Num, ProjectionType Projection, PredicateType Predicate)
+	template<class T, class TSize, class TPred, int MinMergeSubgroupSize = 2>
+	void StableSort(T* First, const TSize Num, TPred&& Pred)
 	{
-		int32 SubgroupStart = 0;	// 子序列起点
+		TSize SubgroupStart = 0;
 
 		if constexpr (MinMergeSubgroupSize > 1)
 		{
 			if constexpr (MinMergeSubgroupSize > 2)
 			{
-				// 对最小组进行bubble排序
+				// First pass with simple bubble-sort.
 				do
 				{
-					int32 GroupEnd = SubgroupStart + MinMergeSubgroupSize;
-					if (Num < GroupEnd)		// 校正尾部
-					{
-						GroupEnd = Num;
-					}
-					// 对单组进行冒泡排序
+					TSize GroupEnd = FMath::Min(SubgroupStart + MinMergeSubgroupSize, Num);
 					do
 					{
-						for (int32 It = SubgroupStart; It < GroupEnd - 1; ++It)	
+						for (TSize It = SubgroupStart; It < GroupEnd - 1; ++It)
 						{
-							if (std::invoke(Predicate, std::invoke(Projection, First[It + 1]), std::invoke(Projection, First[It])))
+							if (Pred(First[It + 1], First[It]))
 							{
 								Swap(First[It], First[It + 1]);
 							}
@@ -98,15 +55,14 @@ namespace Fuko::Algo::Impl
 						GroupEnd--;
 					} while (GroupEnd - SubgroupStart > 1);
 
-					// 更新组 
 					SubgroupStart += MinMergeSubgroupSize;
 				} while (SubgroupStart < Num);
 			}
 			else
 			{
-				for (int32 Subgroup = 0; Subgroup < Num; Subgroup += 2)
+				for (TSize Subgroup = 0; Subgroup < Num; Subgroup += 2)
 				{
-					if (Subgroup + 1 < Num && std::invoke(Predicate, std::invoke(Projection, First[Subgroup + 1]), std::invoke(Projection, First[Subgroup])))
+					if (Subgroup + 1 < Num && Pred(First[Subgroup + 1], First[Subgroup]))
 					{
 						Swap(First[Subgroup], First[Subgroup + 1]);
 					}
@@ -114,85 +70,21 @@ namespace Fuko::Algo::Impl
 			}
 		}
 
-		int32 SubgroupSize = MinMergeSubgroupSize;	// 小子序列的大小 
+		TSize SubgroupSize = MinMergeSubgroupSize;
 		while (SubgroupSize < Num)
 		{
-			SubgroupStart = 0;	// 重置起点 
+			SubgroupStart = 0;
 			do
 			{
-				int32 MergeNum = SubgroupSize << 1;		// 合并的数量 = 组长 * 2
-				if (Num - SubgroupStart < MergeNum)		// 校准合并的数量 
-				{
-					MergeNum = Num - SubgroupStart;
-				}
-
-				// 归并
-				Merge(First + SubgroupStart, SubgroupSize, MergeNum, Projection, Predicate);
-				
-				// 更新起点
+				Merge(
+					First + SubgroupStart,
+					SubgroupSize,
+					FMath::Min(SubgroupSize << 1, Num - SubgroupStart),
+					std::forward<TPred>(Pred));
 				SubgroupStart += SubgroupSize << 1;
 			} while (SubgroupStart < Num);
 
-			SubgroupSize <<= 1;	// 增大归并组的大小
+			SubgroupSize <<= 1;
 		}
-	}
-}
-
-namespace Fuko::Algo
-{
-	/**
-	 * @fn template <typename RangeType> FORCEINLINE void StableSort(RangeType& Range)
-	 *
-	 * @brief 稳定排序
-	 *
-	 * @param [in] Range 数组
-	 */
-	template <typename RangeType>
-	FORCEINLINE void StableSort(RangeType& Range)
-	{
-		Impl::StableSortInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), TLess<>());
-	}
-
-	/**
-	 * @fn template <typename RangeType, typename PredicateType> FORCEINLINE void StableSort(RangeType& Range, PredicateType Pred)
-	 *
-	 * @brief 稳定排序
-	 *
-	 * @param [in]     Range 数组
-	 * @param 		   Pred  排序谓语
-	 */
-	template <typename RangeType, typename PredicateType>
-	FORCEINLINE void StableSort(RangeType& Range, PredicateType Pred)
-	{
-		Impl::StableSortInternal(GetData(Range), GetNum(Range), FIdentityFunctor(), std::move(Pred));
-	}
-
-	/**
-	 * @fn template <typename RangeType, typename ProjectionType> FORCEINLINE void StableSortBy(RangeType& Range, ProjectionType Proj)
-	 *
-	 * @brief 稳定排序
-	 *
-	 * @param [in,out] Range 数组
-	 * @param 		   Proj  映射函数
-	 */
-	template <typename RangeType, typename ProjectionType>
-	FORCEINLINE void StableSortBy(RangeType& Range, ProjectionType Proj)
-	{
-		Impl::StableSortInternal(GetData(Range), GetNum(Range), std::move(Proj), TLess<>());
-	}
-
-	/**
-	 * @fn template <typename RangeType, typename ProjectionType, typename PredicateType> FORCEINLINE void StableSortBy(RangeType& Range, ProjectionType Proj, PredicateType Pred)
-	 *
-	 * @brief 稳定排序
-	 *
-	 * @param [in]	Range 数组
-	 * @param 		Proj  映射函数
-	 * @param 		Pred  排序谓语
-	 */
-	template <typename RangeType, typename ProjectionType, typename PredicateType>
-	FORCEINLINE void StableSortBy(RangeType& Range, ProjectionType Proj, PredicateType Pred)
-	{
-		Impl::StableSortInternal(GetData(Range), GetNum(Range), std::move(Proj), std::move(Pred));
 	}
 }

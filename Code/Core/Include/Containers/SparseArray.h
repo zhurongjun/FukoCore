@@ -54,23 +54,6 @@ namespace Fuko
 		SizeType		m_FirstFreeIndex;	// first free index in data array
 		SizeType		m_NumFreeIndices;	// free indices num
 
-		// for sparse array compare 
-		template <typename Predicate>
-		class FElementCompareClass
-		{
-			const Predicate& Pred;
-
-		public:
-			FElementCompareClass(const Predicate& InPredicate)
-				: Pred(InPredicate)
-			{}
-
-			bool operator()(const ElementOrFreeListLink& A, const ElementOrFreeListLink& B) const
-			{
-				return Pred((const T&)A.ElementData, (const T&)B.ElementData);
-			}
-		};
-
 		//---------------------------------Begin help functions---------------------------------
 		FORCEINLINE uint32* _GetBitArray() const { return m_BitArray; }
 		FORCEINLINE uint32* _GetBitArray() { return m_BitArray; }
@@ -552,13 +535,9 @@ namespace Fuko
 			return bResult;
 		}
 
-		// sort 
-		void Sort()
-		{
-			Sort(TLess<T>());
-		}
-		template<typename Predicate>
-		void Sort(Predicate&& Pred)
+		// sort
+		template <typename TPred = TLess<T>>
+		void Sort(TPred&& Pred = TLess<T>())
 		{
 			if (Num() > 0)
 			{
@@ -566,15 +545,11 @@ namespace Fuko
 				Compact();
 
 				// Sort the elements according to the provided comparison class.
-				::Sort(m_Data.GetData(), Num(), FElementCompareClass<Predicate>(std::forward<Predicate>(Pred)));
+				Algo::IntroSort(m_Data.GetData(), Num(), [&](const ElementOrFreeListLink& A, const ElementOrFreeListLink& B)->bool { return Pred((const T&)A.ElementData, (const T&)B.ElementData); });
 			}
 		}
-		void StableSort()
-		{
-			StableSort(TLess<T>());
-		}
-		template<typename Predicate>
-		void StableSort(Predicate&& Pred)
+		template <typename TPred = TLess<T>>
+		void StableSort(TPred&& Pred = TLess<T>())
 		{
 			if (Num() > 0)
 			{
@@ -582,7 +557,7 @@ namespace Fuko
 				CompactStable();
 
 				// Sort the elements according to the provided comparison class.
-				::StableSort(m_Data.GetData(), Num(), FElementCompareClass<Predicate>(std::forward<Predicate>(Pred)));
+				Algo::StableSort(m_Data.GetData(), Num(), [&](const ElementOrFreeListLink& A, const ElementOrFreeListLink& B)->bool { return Pred((const T&)A.ElementData, (const T&)B.ElementData); });
 			}
 		}
 

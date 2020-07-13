@@ -1,25 +1,19 @@
 #pragma once
-#include "CoreConfig.h"
+#include <CoreConfig.h>
 #include "Templates/TypeTraits.h"
 #include "Math/MathUtility.h"
 #include "Templates/UtilityTemp.h"
 #include "Algo/Sort.h"
 #include "CoreMinimal/Assert.h"
-#include "Templates/Sorting.h"
 #include "Allocator.h"
-#include <Algo/IsHeap.h>
-#include "../Algo/Find.h"
-// forward
-namespace Fuko
-{
-	template<typename T, typename Alloc = PmrAllocator>
-	class TArray;
-}
+#include <Algo/Find.h>
+#include <Algo/Sort.h>
+#include <Algo/StableSort.h>
 
 // Array
 namespace Fuko
 {
-	template<typename T, typename Alloc>
+	template<typename T, typename Alloc = PmrAllocator>
 	class TArray
 	{
 		using SizeType = typename Alloc::USizeType;
@@ -176,7 +170,6 @@ namespace Fuko
 		// get infomation 
 		FORCEINLINE T* GetData() { return m_Data; }
 		FORCEINLINE const T* GetData() const { return m_Data; }
-		FORCEINLINE uint32 GetTypeSize() const { return ElementSize; }
 		FORCEINLINE SizeType Num() const { return m_Num; }
 		FORCEINLINE SizeType Max() const { return m_Max; }
 		FORCEINLINE SizeType Slack() const { return m_Max - m_Num; }
@@ -759,124 +752,59 @@ namespace Fuko
 		}
 
 		// sort 
-		void Sort()
-		{
-			::Sort(GetData(), Num());
-		}
-		template <class Predicate>
-		void Sort(const Predicate& Pred)
-		{
-			::Sort(GetData(), Num(), Pred);
-		}
-		void StableSort()
-		{
-			::StableSort(GetData(), Num());
-		}
-		template <class Predicate>
-		void StableSort(const Predicate& Pred)
-		{
-			::StableSort(GetData(), Num(), Pred);
-		}
+		template<class TPred = TLess<T>>
+		void Sort(TPred&& Pred = TPred()) { Algo::IntroSort(GetData(), Num(), std::forward<TPred>(Pred)); }
+		template<class TPred = TLess<T>>
+		void StableSort(TPred&& Pred = TPred()) { Algo::StableSort(GetData(), Num(), std::forward<TPred>(Pred)); }
 
 		// support heap 
-		void Heapify()
+		T& HeapTop() { return *m_Data; }
+		template<class TPred = TLess<T>>
+		FORCEINLINE void Heapify(TPred&& Pred = TPred())
 		{
-			Heapify(TLess<T>());
+			Algo::Heapify(GetData(), Num(), std::forward<TPred>(Pred));
 		}
-		SizeType HeapPush(T&& InItem)
+		template<class TPred = TLess<T>>
+		SizeType HeapPush(T&& InItem, TPred&& Pred = TPred())
 		{
-			return HeapPush(std::move(InItem), TLess<T>());
-		}
-		SizeType HeapPush(const T& InItem)
-		{
-			return HeapPush(InItem, TLess<T>());
-		}
-		void HeapPop(T& OutItem, bool bAllowShrinking = true)
-		{
-			HeapPop(OutItem, TLess<T>(), bAllowShrinking);
-		}
-		void HeapPopDiscard(bool bAllowShrinking = true)
-		{
-			HeapPopDiscard(TLess<T>(), bAllowShrinking);
-		}
-		const T& HeapTop() const
-		{
-			return (*this)[0];
-		}
-		T& HeapTop()
-		{
-			return (*this)[0];
-		}
-		void HeapRemoveAt(SizeType Index, bool bAllowShrinking = true)
-		{
-			HeapRemoveAt(Index, TLess< T >(), bAllowShrinking);
-		}
-		void HeapSort()
-		{
-			HeapSort(TLess<T>());
-		}
-		template <class Predicate>
-		FORCEINLINE void Heapify(Predicate&& Pred)
-		{
-			TDereferenceWrapper<T, Predicate> PredicateWrapper(std::move(Pred));
-			::Fuko::Algo::Heapify(*this, PredicateWrapper);
-		}
-		template <class Predicate>
-		SizeType HeapPush(T&& InItem, Predicate&& Pred)
-		{
-			// 在尾部添加元素，然后向上检索堆
 			Add(std::move(InItem));
-			TDereferenceWrapper<T, Predicate> PredicateWrapper(std::move(Pred));
-			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
-
-			return Result;
+			return Algo::HeapSiftUp(GetData(), (SizeType)0, Num() - 1, std::forward<TPred>(Pred));
 		}
-		template <class Predicate>
-		SizeType HeapPush(const T& InItem, Predicate&& Pred)
+		template<class TPred = TLess<T>>
+		SizeType HeapPush(const T& InItem, TPred&& Pred = TPred())
 		{
-			// 在尾部添加元素，然后向上检索堆
 			Add(InItem);
-			TDereferenceWrapper<T, Predicate> PredicateWrapper(std::move(Pred));
-			SizeType Result = ::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, Num() - 1, FIdentityFunctor(), PredicateWrapper);
-
-			return Result;
+			return Algo::HeapSiftUp(GetData(), 0, Num() - 1, std::forward<TPred>(Pred));
 		}
-		template <class Predicate>
-		void HeapPop(T& OutItem, Predicate&& Pred, bool bAllowShrinking = true)
+		template<class TPred = TLess<T>>
+		void HeapPop(T& OutItem, TPred&& Pred = TPred(), bool bAllowShrinking = true)
 		{
 			OutItem = std::move((*this)[0]);
 			RemoveAtSwap(0, 1, bAllowShrinking);
 
-			TDereferenceWrapper< T, Predicate> PredicateWrapper(std::move(Pred));
-			::Fuko::Algo::Impl::HeapSiftDown(GetData(), 0, Num(), FIdentityFunctor(), PredicateWrapper);
+			Algo::HeapSiftDown(GetData(), (SizeType)0, Num(), std::forward<TPred>(Pred));
 		}
-		template <class Predicate>
-		void VerifyHeap(Predicate&& Pred)
+		template<class TPred = TLess<T>>
+		bool IsHeap(TPred&& Pred = TPred())
 		{
-			check(::Fuko::Algo::IsHeap(*this, std::move(Pred)));
+			return Algo::IsHeap(GetData(), Num(), std::forward<TPred>(Pred));
 		}
-		template <class Predicate>
-		void HeapPopDiscard(Predicate&& Pred, bool bAllowShrinking = true)
+		template<class TPred = TLess<T>>
+		void HeapPopDiscard(TPred&& Pred = TPred(), bool bAllowShrinking = true)
 		{
 			RemoveAtSwap(0, 1, bAllowShrinking);
-			TDereferenceWrapper<T, Predicate> PredicateWrapper(std::move(Pred));
-			::Fuko::Algo::Impl::HeapSiftDown(GetData(), 0, Num(), FIdentityFunctor(), PredicateWrapper);
+			Algo::HeapSiftDown(GetData(), 0, Num(), std::forward<TPred>(Pred));
 		}
-		template <class Predicate>
-		void HeapRemoveAt(SizeType Index, Predicate& Pred, bool bAllowShrinking = true)
+		template<class TPred = TLess<T>>
+		void HeapRemoveAt(SizeType Index, TPred&& Pred = TPred(), bool bAllowShrinking = true)
 		{
 			RemoveAtSwap(Index, 1, bAllowShrinking);
 
-			TDereferenceWrapper< T, Predicate> PredicateWrapper(std::move(Pred));
-			::Fuko::Algo::Impl::HeapSiftDown(GetData(), Index, Num(), FIdentityFunctor(), PredicateWrapper);
-			::Fuko::Algo::Impl::HeapSiftUp(GetData(), 0, FMath::Min(Index, Num() - 1), FIdentityFunctor(), PredicateWrapper);
+			Algo::HeapSiftDown(GetData(), Index, Num(), std::forward<TPred>(Pred));
+			Algo::HeapSiftUp(GetData(), 0, FMath::Min(Index, Num() - 1), std::forward<TPred>(Pred));
 		}
-		template <class Predicate>
-		void HeapSort(const Predicate& Pred)
-		{
-			TDereferenceWrapper<T, Predicate> PredicateWrapper(Pred);
-			::Fuko::Algo::HeapSort(*this, PredicateWrapper);
-		}
+		template<class TPred = TLess<T>>
+		void HeapSort(TPred&& Pred = TPred()) { Algo::HeapSort(GetData(), Num(), std::forward<TPred>(Pred)); }
 
 		FORCEINLINE T*      	begin()			{ return GetData(); }
 		FORCEINLINE const T* 	begin() const	{ return GetData(); }

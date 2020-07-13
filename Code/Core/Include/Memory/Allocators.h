@@ -37,11 +37,6 @@ namespace Fuko
 		{
 			Free(Ptr);
 		}
-
-
-		// alloc policy 
-		virtual size_t GetGrow(size_t InNumElement, size_t InExistElementNum, size_t InElementByte, size_t Alignment = 0) = 0;
-		virtual size_t GetShrink(size_t InNumElement, size_t InExistElementNum, size_t InElementByte, size_t Alignment = 0) = 0;
 	};
 }
 
@@ -80,51 +75,5 @@ namespace Fuko
 			return _aligned_msize(Ptr, Alignment, 0);
 		}
 		void Trim() override {}
-
-
-		size_t GetGrow(size_t InNumElement, size_t InExistElementNum, size_t InElementByte, size_t Alignment) override
-		{
-			constexpr size_t FirstGrow = 4;
-			constexpr size_t ConstantGrow = 16;
-
-			size_t Retval;
-			check(InNumElement > InExistElementNum && InNumElement > 0);
-
-			size_t Grow = FirstGrow;	// 初次分配空间的内存增长
-			if (InExistElementNum || size_t(InNumElement) > Grow)
-			{
-				// 计算内存增长
-				Grow = InNumElement + 3 * InNumElement / 8 + ConstantGrow;
-			}
-			Retval = (size_t)Grow;
-
-			// 处理溢出
-			if (InNumElement > Retval)
-			{
-				Retval = ULLONG_MAX;
-			}
-			return Retval;
-		}
-		size_t GetShrink(size_t InNumElement, size_t InExistElementNum, size_t InElementByte, size_t Alignment) override
-		{
-			size_t Retval;
-			check(InNumElement < InExistElementNum);
-
-			// 如果闲余空间过多，则刚好收缩到使用空间
-			const size_t CurrentSlackElements = InExistElementNum - InNumElement;
-			const size_t CurrentSlackBytes = (InExistElementNum - InNumElement)*InElementByte;
-			const bool bTooManySlackBytes = CurrentSlackBytes >= 16384;
-			const bool bTooManySlackElements = 3 * InNumElement < 2 * InExistElementNum;
-			if ((bTooManySlackBytes || bTooManySlackElements) && (CurrentSlackElements > 64 || !InNumElement))
-			{
-				Retval = InNumElement;
-			}
-			else
-			{
-				Retval = InExistElementNum;
-			}
-
-			return Retval;
-		}
 	};
 }
