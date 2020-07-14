@@ -90,6 +90,7 @@ namespace Fuko::Algo
 	template<typename SizeType>
 	FORCEINLINE SizeType FindLastBit(const uint32* Data, SizeType Num, bool Value)
 	{
+		if (Num == 0) return 0;
 		SizeType DwordIndex = Algo::CalculateNumWords(Num) - 1;
 		uint32 Mask = Algo::GetLastWordMask(Num);
 

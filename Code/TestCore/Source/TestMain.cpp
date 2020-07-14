@@ -1,12 +1,12 @@
 #include <stdlib.h>
+#include <iostream>
 #include <vector>
 #include <TestArray.h>
 #include <TestBitArray.h>
 #include <TestSparseArray.h>
 #include <TestSet.h>
 #include <TestMap.h>
-#include <Templates/Functor.h>
-#include <Algo/Accumulate.h>
+#include <TestRingQueue.h>
 
 int main()
 {
@@ -15,6 +15,7 @@ int main()
 	TestSparseArray();
 	TestSet();
 	TestMap();
+	TestRingQueue();
 
 	system("pause");
 	return 0;

@@ -7,82 +7,82 @@ void TestBitArray()
 {
 	TBitArray A;
 	TBitArray B(true, 2);
-	check(B.Num() == 2);
-	check(B.Max() == 32);
+	always_check(B.Num() == 2);
+	always_check(B.Max() == 32);
 	for (int i = 0; i < 2; ++i)
 	{
-		check(B[i] == true);
+		always_check(B[i] == true);
 	}
 	TBitArray C(B);
-	check(C.Num() == 2);
-	check(C.Max() == 32);
+	always_check(C.Num() == 2);
+	always_check(C.Max() == 32);
 	for (int i = 0; i < 2; ++i)
 	{
-		check(C[i] == true);
+		always_check(C[i] == true);
 	}
 	C.Init(false, 10);
-	check(C.Num() == 10);
-	check(C.Max() == 32);
+	always_check(C.Num() == 10);
+	always_check(C.Max() == 32);
 	for (int i = 0; i < 10; ++i)
 	{
-		check(C[i] == false);
+		always_check(C[i] == false);
 	}
 	TBitArray D(std::move(C));
-	check(D.Num() == 10);
-	check(D.Max() == 32);
-	check(C.Num() == 0);
-	check(C.Max() == 0);
+	always_check(D.Num() == 10);
+	always_check(D.Max() == 32);
+	always_check(C.Num() == 0);
+	always_check(C.Max() == 0);
 	for (int i = 0; i < 10; ++i)
 	{
-		check(D[i] == false);
+		always_check(D[i] == false);
 	}
 	C = std::move(D);
-	check(C.Num() == 10);
-	check(C.Max() == 32);
-	check(D.Num() == 0);
-	check(D.Max() == 0);
+	always_check(C.Num() == 10);
+	always_check(C.Max() == 32);
+	always_check(D.Num() == 0);
+	always_check(D.Max() == 0);
 	for (int i = 0; i < 10; ++i)
 	{
-		check(C[i] == false);
+		always_check(C[i] == false);
 	}
 	D = C;
-	check(D.Num() == 10);
-	check(D.Max() == 32);
-	check(C.Num() == 10);
-	check(C.Max() == 32);
+	always_check(D.Num() == 10);
+	always_check(D.Max() == 32);
+	always_check(C.Num() == 10);
+	always_check(C.Max() == 32);
 	for (int i = 0; i < 10; ++i)
 	{
-		check(D[i] == false);
+		always_check(D[i] == false);
 	}
-	check(D == C);
-	check(D != A);
+	always_check(D == C);
+	always_check(D != A);
 	A.Init(false, 10);
-	check(D == A);
+	always_check(D == A);
 	A.Init(true, 10);
-	check(D != A);
-	check(B < A);
-	check(D < A);
-	check(!(D < C));
+	always_check(D != A);
+	always_check(B < A);
+	always_check(D < A);
+	always_check(!(D < C));
 
 	A.Empty();
-	check(A.Num() == 0);
-	check(A.Max() == 0);
+	always_check(A.Num() == 0);
+	always_check(A.Max() == 0);
 	B.Empty(10);
-	check(B.Num() == 0);
-	check(B.Max() == 32);
+	always_check(B.Num() == 0);
+	always_check(B.Max() == 32);
 	D.Reset();
-	check(D.Num() == 0);
-	check(D.Max() == 32);
+	always_check(D.Num() == 0);
+	always_check(D.Max() == 32);
 	D.Empty();
 	C.Empty();
 	C.Reserve(100);
-	check(C.Num() == 0);
-	check(C.Max() == 128);
+	always_check(C.Num() == 0);
+	always_check(C.Max() == 128);
 	C.Empty();
 	D.Add(false);
-	check(D.Num() == 1);
+	always_check(D.Num() == 1);
 	D.Add(false,10);
-	check(D.Num() == 11);
+	always_check(D.Num() == 11);
 
 	A.Empty();
 	B.Empty();
@@ -96,46 +96,46 @@ void TestBitArray()
 	}
 	for (int i = 0; i < 20; ++i)
 	{
-		if (i % 2 == 0) check(A[i] == true);
+		if (i % 2 == 0) always_check(A[i] == true);
 	}
 	A.RemoveAt(0);
-	check(A.Num() == 19);
+	always_check(A.Num() == 19);
 	for (int i = 0; i < 19; ++i)
 	{
-		if (i % 2 == 0) check(A[i] == false);
+		if (i % 2 == 0) always_check(A[i] == false);
 	}
 	A.Add(true);
 	for (int i = 0; i < 20; ++i)
 	{
 		A[i] = i % 3 == 2;
 	}
-	check(A.Find(true) == 2);
-	check(A.FindAndSetFirstZeroBit() == 0);
-	check(A[0] == true);
+	always_check(A.Find(true) == 2);
+	always_check(A.FindAndSetFirstZeroBit() == 0);
+	always_check(A[0] == true);
 	A[0] = false;
-	check(A.FindAndSetLastZeroBit() == 19);
-	check(A[19] == true);
+	always_check(A.FindAndSetLastZeroBit() == 19);
+	always_check(A[19] == true);
 	A[19] = false;
 	A.RemoveAt(0, 3);
-	check(A.Num() == 17);
+	always_check(A.Num() == 17);
 	for (int i = 0; i < 17; ++i)
 	{
-		check(A[i] == (i % 3 == 2));
+		always_check(A[i] == (i % 3 == 2));
 	}
 	A.RemoveAtSwap(0);
-	check(A.Num() == 16);
+	always_check(A.Num() == 16);
 	A.RemoveAtSwap(0, 3);
-	check(A.Num() == 13);
-	check(A.Contains(true));
-	check(A.Contains(false));
+	always_check(A.Num() == 13);
+	always_check(A.Contains(true));
+	always_check(A.Contains(false));
 	A.Init(false, 20);
-	check(A.Contains(false));
-	check(!A.Contains(true));
+	always_check(A.Contains(false));
+	always_check(!A.Contains(true));
 	A.Add(true);
-	check(A.Find(true) == 20);
+	always_check(A.Find(true) == 20);
 	A.SetRange(10, 11, false);
-	check(!A.Contains(true));
-	check(A[20] == false);
+	always_check(!A.Contains(true));
+	always_check(A[20] == false);
 	A.Init(true, 100);
 
 	A.Init(false,100);
@@ -143,8 +143,8 @@ void TestBitArray()
 	C.Init(false,100);
 	for (int i = 0; i < 100; ++i)
 	{
-		check(A[i] == false);
-		check(B[i] == false);
+		always_check(A[i] == false);
+		always_check(B[i] == false);
 		A[i] = (i % 5) == 0;
 		B[i] = (i % 3) == 0;
 		C[i] = (i % 15) == 0;
@@ -153,16 +153,16 @@ void TestBitArray()
 	int count = 0;
 	for (TBitArray<>::ConstSetBitIterator It(A, 10); It; ++It)
 	{
-		check(It.GetIndex() % 5 == 0);
+		always_check(It.GetIndex() % 5 == 0);
 		++count;
 	}
-	check(count == 18);
+	always_check(count == 18);
 	count = 0;
 	for (TBitArray<>::ConstDualSetBitIterator It(A, B); It; ++It)
 	{
-		check(It.GetIndex() % 15 == 0);
+		always_check(It.GetIndex() % 15 == 0);
 		++count;
 	}
-	check(count == 7);
+	always_check(count == 7);
 
 }
