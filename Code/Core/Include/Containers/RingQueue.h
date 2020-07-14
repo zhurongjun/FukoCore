@@ -355,7 +355,7 @@ namespace Fuko
 		FORCEINLINE void Reserve(SizeType Number)
 		{
 			m_Lock.lock();
-			Number = FMath::RoundUpToPowerOfTwo(Number);
+			Number = Math::RoundUpToPowerOfTwo(Number);
 			if (Number > m_Max)
 			{
 				_Normalize();
@@ -366,7 +366,7 @@ namespace Fuko
 		FORCEINLINE void Empty(SizeType InSlack = 0)
 		{
 			m_Lock.lock();
-			InSlack = FMath::RoundUpToPowerOfTwo(InSlack);
+			InSlack = Math::RoundUpToPowerOfTwo(InSlack);
 			while (m_Tail > m_Head)
 			{
 				DestructItems(&m_Data[m_Head % m_Max]);
@@ -379,7 +379,7 @@ namespace Fuko
 		FORCEINLINE void Reset(SizeType NewSize = 0)
 		{
 			m_Lock.lock();
-			NewSize = FMath::RoundUpToPowerOfTwo(NewSize);
+			NewSize = Math::RoundUpToPowerOfTwo(NewSize);
 			while (m_Tail > m_Head)
 			{
 				DestructItems(&m_Data[m_Head % m_Max]);

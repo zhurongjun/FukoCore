@@ -1,9 +1,9 @@
-#include "../../include/Math/MathUtility.h"
+#include <Math/MathUtility.h>
 
-float FMathGeneric::Atan2(float Y, float X)
+float Fuko::Math::Atan2(float Y, float X)
 {
-	const float absX = FMathGeneric::Abs(X);
-	const float absY = FMathGeneric::Abs(Y);
+	const float absX = Abs(X);
+	const float absY = Abs(Y);
 	const bool yAbsBigger = (absY > absX);
 	float t0 = yAbsBigger ? absY : absX; // Max(absY, absX)
 	float t1 = yAbsBigger ? absX : absY; // Min(absX, absY)

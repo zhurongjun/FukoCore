@@ -42,7 +42,7 @@ namespace Fuko::Algo
 				// First pass with simple bubble-sort.
 				do
 				{
-					TSize GroupEnd = FMath::Min(SubgroupStart + MinMergeSubgroupSize, Num);
+					TSize GroupEnd = Math::Min(SubgroupStart + MinMergeSubgroupSize, Num);
 					do
 					{
 						for (TSize It = SubgroupStart; It < GroupEnd - 1; ++It)
@@ -79,7 +79,7 @@ namespace Fuko::Algo
 				Merge(
 					First + SubgroupStart,
 					SubgroupSize,
-					FMath::Min(SubgroupSize << 1, Num - SubgroupStart),
+					Math::Min(SubgroupSize << 1, Num - SubgroupStart),
 					std::forward<TPred>(Pred));
 				SubgroupStart += SubgroupSize << 1;
 			} while (SubgroupStart < Num);

@@ -13,13 +13,13 @@ namespace Fuko
 {
 	// 内部swap
 	template <typename T>
-	static FORCEINLINE void Valswap(T& A, T& B)
+	FORCEINLINE void Valswap(T& A, T& B)
 	{
 		T Tmp = A;
 		A = B;
 		B = Tmp;
 	}
-	static void MemswapGreaterThan8(void* Ptr1, void* Ptr2, size_t Size)
+	void MemswapGreaterThan8(void* Ptr1, void* Ptr2, size_t Size)
 	{
 		union PtrUnion
 		{
@@ -57,7 +57,7 @@ namespace Fuko
 		}
 
 		// 对齐的内存交换
-		uint32_t CommonAlignment = FMath::Min(FMath::CountTrailingZeros((uint32)Union1.PtrUint - (uint32)Union2.PtrUint), 3u);
+		uint32_t CommonAlignment = Math::Min(Math::CountTrailingZeros((uint32)Union1.PtrUint - (uint32)Union2.PtrUint), 3u);
 		switch (CommonAlignment)
 		{
 		default:
@@ -86,32 +86,32 @@ namespace Fuko
 		}
 	}
 
-	FORCEINLINE static void* Memmove(void* Dest, const void* Src, size_t Count)
+	FORCEINLINE void* Memmove(void* Dest, const void* Src, size_t Count)
 	{
 		return memmove(Dest, Src, Count);
 	}
 
-	FORCEINLINE static int32_t Memcmp(const void* Buf1, const void* Buf2, size_t Count)
+	FORCEINLINE int32_t Memcmp(const void* Buf1, const void* Buf2, size_t Count)
 	{
 		return memcmp(Buf1, Buf2, Count);
 	}
 
-	FORCEINLINE static void* Memset(void* Dest, uint8 Char, size_t Count)
+	FORCEINLINE void* Memset(void* Dest, uint8 Char, size_t Count)
 	{
 		return memset(Dest, Char, Count);
 	}
 
-	FORCEINLINE static void* Memzero(void* Dest, size_t Count)
+	FORCEINLINE void* Memzero(void* Dest, size_t Count)
 	{
 		return memset(Dest, 0, Count);
 	}
 
-	FORCEINLINE static void* Memcpy(void* Dest, const void* Src, size_t Count)
+	FORCEINLINE void* Memcpy(void* Dest, const void* Src, size_t Count)
 	{
 		return memcpy(Dest, Src, Count);
 	}
 
-	FORCEINLINE static void Memswap(void* Ptr1, void* Ptr2, size_t Size)
+	FORCEINLINE void Memswap(void* Ptr1, void* Ptr2, size_t Size)
 	{
 		switch (Size)
 		{
@@ -168,19 +168,19 @@ namespace Fuko
 
 	//提供便利函数
 	template<class T>
-	FORCEINLINE static void Memset(T& Src, uint8_t ValueToSet)
+	FORCEINLINE void Memset(T& Src, uint8_t ValueToSet)
 	{
 		static_assert(!std::is_pointer_v<T>, "For pointers use the three parameters function");
 		Memset(&Src, ValueToSet, sizeof(T));
 	}
 	template<class T>
-	FORCEINLINE static void Memzero(T& Src)
+	FORCEINLINE void Memzero(T& Src)
 	{
 		static_assert(!std::is_pointer_v<T>, "For pointers use the two parameters function");
 		Memzero(&Src, sizeof(T));
 	}
 	template<class T>
-	FORCEINLINE static void Memcpy(T& Dest, const T& Src)
+	FORCEINLINE void Memcpy(T& Dest, const T& Src)
 	{
 		static_assert(!std::is_pointer_v<T>, "For pointers use the three parameters function");
 		Memcpy(&Dest, &Src, sizeof(T));

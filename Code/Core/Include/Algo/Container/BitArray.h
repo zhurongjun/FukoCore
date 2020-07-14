@@ -8,7 +8,7 @@ namespace Fuko::Algo
 	FORCEINLINE SizeType CalculateNumWords(SizeType NumBits)
 	{
 		check(NumBits >= 0);
-		return FMath::DivideAndRoundUp(NumBits, (SizeType)NumBitsPerDWORD);
+		return Math::DivideAndRoundUp(NumBits, (SizeType)NumBitsPerDWORD);
 	}
 
 	template<typename SizeType>
@@ -54,7 +54,7 @@ namespace Fuko::Algo
 			// reserve for CountTrailingZeros
 			const uint32 Bits = Value ? (Data[DwordIndex]) : ~(Data[DwordIndex]);
 			check(Bits != 0);
-			const SizeType LowestBitIndex = FMath::CountTrailingZeros(Bits) + (DwordIndex << NumBitsPerDWORDLogTwo);
+			const SizeType LowestBitIndex = Math::CountTrailingZeros(Bits) + (DwordIndex << NumBitsPerDWORDLogTwo);
 
 			if (LowestBitIndex < Num) return LowestBitIndex;
 		}
@@ -65,7 +65,7 @@ namespace Fuko::Algo
 	FORCEINLINE SizeType FindAndSetFirstZeroBit(uint32* Data, SizeType Num, SizeType ConservativeStartIndex)
 	{
 		const SizeType DwordCount = Algo::CalculateNumWords(Num);
-		SizeType DwordIndex = FMath::DivideAndRoundDown(ConservativeStartIndex, (SizeType)NumBitsPerDWORD);
+		SizeType DwordIndex = Math::DivideAndRoundDown(ConservativeStartIndex, (SizeType)NumBitsPerDWORD);
 		while (DwordIndex < DwordCount && Data[DwordIndex] == (uint32)-1)
 		{
 			++DwordIndex;
@@ -76,7 +76,7 @@ namespace Fuko::Algo
 			const uint32 Bits = ~(Data[DwordIndex]);
 			check(Bits != 0);
 			const uint32 LowestBit = (Bits) & (-(int32)Bits);
-			const SizeType LowestBitIndex = FMath::CountTrailingZeros(Bits) + (DwordIndex << NumBitsPerDWORDLogTwo);
+			const SizeType LowestBitIndex = Math::CountTrailingZeros(Bits) + (DwordIndex << NumBitsPerDWORDLogTwo);
 			if (LowestBitIndex < Num)
 			{
 				Data[DwordIndex] |= LowestBit;
@@ -109,7 +109,7 @@ namespace Fuko::Algo
 		{
 			const uint32 Bits = (Value ? Data[DwordIndex] : ~Data[DwordIndex]) & Mask;
 			check(Bits != 0);
-			uint32 BitIndex = (NumBitsPerDWORD - 1) - FMath::CountLeadingZeros(Bits);
+			uint32 BitIndex = (NumBitsPerDWORD - 1) - Math::CountLeadingZeros(Bits);
 			SizeType Result = BitIndex + (DwordIndex << NumBitsPerDWORDLogTwo);
 			return Result;
 		}
@@ -143,7 +143,7 @@ namespace Fuko::Algo
 		const uint32 Bits = ~Data[DwordIndex] & Mask;
 		check(Bits != 0);
 
-		uint32 BitIndex = (NumBitsPerDWORD - 1) - FMath::CountLeadingZeros(Bits);
+		uint32 BitIndex = (NumBitsPerDWORD - 1) - Math::CountLeadingZeros(Bits);
 		Data[DwordIndex] |= 1u << BitIndex;
 
 		SizeType Result = BitIndex + (DwordIndex << NumBitsPerDWORDLogTwo);

@@ -25,7 +25,7 @@ namespace Fuko::Algo
 		}
 
 		// 构建栈，最高深度为数量的自然对数 * 2
-		FStack RecursionStack[32] = { {First, First + Num - 1, (uint32)(FMath::Loge((float)Num) * 2.f)} }, Current, Inner;
+		FStack RecursionStack[32] = { {First, First + Num - 1, (uint32)(Math::Loge((float)Num) * 2.f)} }, Current, Inner;
 
 		// 开始内省排序
 		for (FStack* StackTop = RecursionStack; StackTop >= RecursionStack; --StackTop)

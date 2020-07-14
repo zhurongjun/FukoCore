@@ -54,7 +54,7 @@ namespace Fuko::Algo
 					// LastCount: 上方值
 					// OperationCount[IndexB + 1]): 左侧值
 					// 这种情况下，三个值都要 + 1，等价于先取得最小值在 + 1
-					NewCount = FMath::Min3(NewCount, LastCount, OperationCount[IndexB + 1]) + 1;
+					NewCount = Math::Min3(NewCount, LastCount, OperationCount[IndexB + 1]) + 1;
 				}
 				// 此时，NewCount已经成为下一个值的上方值(也就是结果) 
 				// 如果两者值相同，则通常左上方值是最小的 

@@ -84,7 +84,7 @@ namespace Fuko
 
 			if (NumHashedElements >= MinNumberOfHashedElements)
 			{
-				return FMath::RoundUpToPowerOfTwo((USizeType)(NumHashedElements / AverageNumberOfElementsPerHashBucket + BaseNumberOfHashBuckets));
+				return Math::RoundUpToPowerOfTwo((USizeType)(NumHashedElements / AverageNumberOfElementsPerHashBucket + BaseNumberOfHashBuckets));
 			}
 
 			return 1;
@@ -106,7 +106,7 @@ namespace Fuko
 		// rehash, before call it, m_HashSize Must be updated 
 		void _Rehash() const
 		{
-			check(FMath::IsPowerOfTwo(m_HashSize));
+			check(Math::IsPowerOfTwo(m_HashSize));
 			
 			// realloc hash
 			m_HashSize = const_cast<TSet*>(this)->m_Elements.GetAllocator().Reserve(m_Hash, m_HashSize);

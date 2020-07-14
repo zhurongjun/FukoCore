@@ -586,7 +586,7 @@ namespace Fuko
 				// move memory 
 				const SizeType NumElementsInHole = Count;
 				const SizeType NumElementsAfterHole = m_Num - (Index + Count);
-				const SizeType NumElementsToMoveIntoHole = FMath::Min(NumElementsInHole, NumElementsAfterHole);
+				const SizeType NumElementsToMoveIntoHole = Math::Min(NumElementsInHole, NumElementsAfterHole);
 				if (NumElementsToMoveIntoHole)
 				{
 					Memcpy(
@@ -802,7 +802,7 @@ namespace Fuko
 			RemoveAtSwap(Index, 1, bAllowShrinking);
 
 			Algo::HeapSiftDown(GetData(), Index, Num(), std::forward<TPred>(Pred));
-			Algo::HeapSiftUp(GetData(), 0, FMath::Min(Index, Num() - 1), std::forward<TPred>(Pred));
+			Algo::HeapSiftUp(GetData(), 0, Math::Min(Index, Num() - 1), std::forward<TPred>(Pred));
 		}
 		template<class TPred = TLess<T>>
 		void HeapSort(TPred&& Pred = TPred()) { Algo::HeapSort(GetData(), Num(), std::forward<TPred>(Pred)); }

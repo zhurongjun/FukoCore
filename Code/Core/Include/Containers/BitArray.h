@@ -189,7 +189,7 @@ namespace Fuko
 			m_Mask = NewRemainingBitMask ^ RemainingBitMask;
 
 			// If the Nth bit was the lowest set bit of BitMask, then this gives us N
-			m_CurrentBitIndex = (m_DWORDIndex + 1) * NumBitsPerDWORD - FMath::CountLeadingZeros(m_Mask) - 1;
+			m_CurrentBitIndex = (m_DWORDIndex + 1) * NumBitsPerDWORD - Math::CountLeadingZeros(m_Mask) - 1;
 
 			// out of bounds
 			if (m_CurrentBitIndex > ArrayNum) m_CurrentBitIndex = ArrayNum;
@@ -277,7 +277,7 @@ namespace Fuko
 			m_Mask = NewRemainingBitMask ^ RemainingBitMask;
 
 			// set current bit index 
-			m_CurrentBitIndex = (m_DWORDIndex + 1) * NumBitsPerDWORD - FMath::CountLeadingZeros(m_Mask) - 1;
+			m_CurrentBitIndex = (m_DWORDIndex + 1) * NumBitsPerDWORD - Math::CountLeadingZeros(m_Mask) - 1;
 		}
 	public:
 		template<typename TAllocA, template<typename> typename TAllocB>
