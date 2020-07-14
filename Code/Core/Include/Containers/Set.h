@@ -40,6 +40,7 @@ namespace Fuko
 	public:
 		using KeyType = typename KeyFuncs::KeyType;
 		using SizeType = typename Alloc::SizeType;
+		using USizeType = typename Alloc::USizeType;
 		
 		class SetElementId
 		{
@@ -83,7 +84,7 @@ namespace Fuko
 
 			if (NumHashedElements >= MinNumberOfHashedElements)
 			{
-				return FMath::RoundUpToPowerOfTwo(NumHashedElements / AverageNumberOfElementsPerHashBucket + BaseNumberOfHashBuckets);
+				return FMath::RoundUpToPowerOfTwo((USizeType)(NumHashedElements / AverageNumberOfElementsPerHashBucket + BaseNumberOfHashBuckets));
 			}
 
 			return 1;
@@ -345,6 +346,7 @@ namespace Fuko
 		FORCEINLINE SizeType Max() const { return m_Elements.Max(); }
 		FORCEINLINE Alloc& GetAllocator() { return m_Elements.GetAllocator(); }
 		FORCEINLINE const Alloc& GetAllocator() const { return m_Elements.GetAllocator(); }
+		FORCEINLINE bool IsEmpty() const { return m_Elements.IsEmpty(); }
 
 		// empty & reset & shrink & reserve 
 		FORCEINLINE void Empty(SizeType ExpectedNumElements = 0)

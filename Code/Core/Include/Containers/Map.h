@@ -72,7 +72,8 @@ namespace Fuko
 		FORCEINLINE SizeType Num() const { return m_Pairs.Num(); }
 		FORCEINLINE SizeType Max() const { return m_Pairs.Max(); }
 		FORCEINLINE SizeType GetMaxIndex() const { return m_Pairs.GetMaxIndex(); }
-		
+		FORCEINLINE bool IsEmpty() const { return m_Pairs.IsEmpty(); }
+
 		// compare operator that not care element order, may be very slow 
 		bool OrderIndependentCompareEqual(const TMapBase& Other) const
 		{

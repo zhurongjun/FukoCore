@@ -484,6 +484,7 @@ namespace Fuko
 		FORCEINLINE SizeType Max() const { return m_MaxBits; }
 		FORCENOINLINE Alloc& GetAllocator() { return m_Allocator; }
 		FORCENOINLINE const Alloc& GetAllocator() const { return m_Allocator; }
+		FORCEINLINE bool IsEmpty() const { return m_NumBits == 0; }
 
 		// set num & empty & reserve 
 		void Empty(SizeType ExpectedNumBits = 0)

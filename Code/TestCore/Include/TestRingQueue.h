@@ -3,6 +3,38 @@
 
 using Fuko::TRingQueue;
 
+struct SlowObj
+{
+	int		Val;
+
+	operator int() { return Val; }
+
+	SlowObj() : Val(-1) {}
+
+	SlowObj(SlowObj&&) = default;
+	SlowObj& operator=(SlowObj&&) = default;
+
+	SlowObj(int InVal)
+	{
+		for (int i = 0; i < 1000; ++i)
+		{
+			InVal += 10;
+			InVal -= 10;
+		}
+		Val = InVal;
+	}
+
+	~SlowObj()
+	{
+		for (int i = 0; i < 1000; ++i)
+		{
+			Val += 10;
+			Val -= 10;
+		}
+		Val = 0;
+	}
+};
+
 void TestRingQueue()
 {
 	int a = 0;
@@ -60,6 +92,72 @@ void TestRingQueue()
 		{
 			always_check(A.GetData()[i] == i);
 		}
+	}
+
+	// lock queue
+	{
+		TArray<std::atomic<int>>		CountArray;
+		TRingQueue<SlowObj, Fuko::TSpinLock<>> SpinLockQueue(64);
+		TRingQueue<SlowObj, Fuko::MutexLock> MutexLockQueue(64);
+
+		static constexpr int ThreadCount = 10;
+		static constexpr int LoopCount = 10'0000;
+		std::thread		ThreadArr[ThreadCount * 2];
+		CountArray.Reserve(LoopCount);
+		CountArray.SetNumZeroed(LoopCount);
+
+		auto EnqueueThread = [&](const auto& Queue) 
+		{
+			for (int i = 0; i < LoopCount; ++i) Queue.get().Enqueue(i);
+		};
+
+		auto DequeueThread = [&](const auto& Queue)
+		{
+			for (int i = 0; i < LoopCount; ++i)
+			{
+				SlowObj n;
+				Queue.get().Dequeue(n);
+				++CountArray[n];
+			}
+		};
+
+		// test spin lock
+		auto Begin = std::chrono::system_clock::now();
+		for (int i = 0; i < ThreadCount; ++i)
+		{
+			ThreadArr[i] = std::thread(EnqueueThread, std::ref(SpinLockQueue));
+			ThreadArr[ThreadCount + i] = std::thread(DequeueThread, std::ref(SpinLockQueue));
+		}
+		for (int i = 0; i < ThreadCount * 2; ++i)
+		{
+			ThreadArr[i].join();
+		}
+		auto End = std::chrono::system_clock::now();
+		for (int i = 0; i < LoopCount; ++i)
+		{
+			always_check(CountArray[i] == ThreadCount);
+			CountArray[i] = 0;
+		}
+		std::cout << "Spin lock cost time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
+
+		// test mutex lock
+		Begin = std::chrono::system_clock::now();
+		for (int i = 0; i < ThreadCount; ++i)
+		{
+			ThreadArr[i] = std::thread(EnqueueThread, std::ref(MutexLockQueue));
+			ThreadArr[ThreadCount + i] = std::thread(DequeueThread, std::ref(MutexLockQueue));
+		}
+		for (int i = 0; i < ThreadCount * 2; ++i)
+		{
+			ThreadArr[i].join();
+		}
+		End = std::chrono::system_clock::now();
+		for (int i = 0; i < LoopCount; ++i)
+		{
+			always_check(CountArray[i] == ThreadCount);
+			CountArray[i] = 0;
+		}
+		std::cout << "Mutex lock cost time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
 	}
 }
 

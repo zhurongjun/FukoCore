@@ -225,10 +225,10 @@ struct FMathGeneric
 		uint32_t Bitmask = ((uint32_t)(CountLeadingZeros(Arg) << 26)) >> 31;
 		return (32 - CountLeadingZeros(Arg - 1)) & (~Bitmask);
 	}
-	static FORCEINLINE uint64_t CeilLogTwo64(uint64_t Arg)
+	static FORCEINLINE uint64_t CeilLogTwo(uint64_t Arg)
 	{
-		uint64_t Bitmask = ((uint64_t)(CountLeadingZeros64(Arg) << 57)) >> 63;
-		return (64 - CountLeadingZeros64(Arg - 1)) & (~Bitmask);
+		uint64_t Bitmask = ((uint64_t)(CountLeadingZeros(Arg) << 57)) >> 63;
+		return (64 - CountLeadingZeros(Arg - 1)) & (~Bitmask);
 	}
 
 	// 计算头部有几个0位
@@ -237,7 +237,7 @@ struct FMathGeneric
 		if (Value == 0) return 32;
 		return 31 - FloorLog2(Value);
 	}
-	static FORCEINLINE uint64_t CountLeadingZeros64(uint64_t Value)
+	static FORCEINLINE uint64_t CountLeadingZeros(uint64_t Value)
 	{
 		if (Value == 0) return 64;
 		return 63 - FloorLog2_64(Value);
@@ -258,7 +258,7 @@ struct FMathGeneric
 		}
 		return Result;
 	}
-	static FORCEINLINE uint64_t CountTrailingZeros64(uint64_t Value)
+	static FORCEINLINE uint64_t CountTrailingZeros(uint64_t Value)
 	{
 		if (Value == 0)
 		{
@@ -278,9 +278,9 @@ struct FMathGeneric
 	{
 		return 1 << CeilLogTwo(Arg);
 	}
-	static FORCEINLINE uint64_t RoundUpToPowerOfTwo64(uint64_t V)
+	static FORCEINLINE uint64_t RoundUpToPowerOfTwo(uint64_t V)
 	{
-		return uint64_t(1) << CeilLogTwo64(V);
+		return uint64_t(1) << CeilLogTwo(V);
 	}
 
 	// 莫顿码
@@ -450,6 +450,7 @@ struct FMathWindows : public FMathGeneric
 	}
 
 #pragma intrinsic( _BitScanReverse )
+#pragma intrinsic( _BitScanForward )
 	static FORCEINLINE uint32_t FloorLog2(uint32_t Value)
 	{
 		// 得到最后一个有效位，就是Log向下Log的结果
@@ -492,18 +493,18 @@ struct FMathWindows : public FMathGeneric
 	{
 		return 1 << CeilLogTwo(Arg);
 	}
-	static FORCEINLINE uint64_t RoundUpToPowerOfTwo64(uint64_t Arg)
+	static FORCEINLINE uint64_t RoundUpToPowerOfTwo(uint64_t Arg)
 	{
-		return uint64_t(1) << CeilLogTwo64(Arg);
+		return uint64_t(1) << CeilLogTwo(Arg);
 	}
 
 #if PLATFORM_64BITS
-	static FORCEINLINE uint64 CeilLogTwo64(uint64 Arg)
+	static FORCEINLINE uint64 CeilLogTwo(uint64 Arg)
 	{
-		int64 Bitmask = ((int64)(CountLeadingZeros64(Arg) << 57)) >> 63;
+		int64 Bitmask = ((int64)(CountLeadingZeros(Arg) << 57)) >> 63;
 		return (64 - CountLeadingZeros64(Arg - 1)) & (~Bitmask);
 	}
-	static FORCEINLINE uint64 CountLeadingZeros64(uint64 Value)
+	static FORCEINLINE uint64 CountLeadingZeros(uint64 Value)
 	{
 		// Use BSR to return the log2 of the integer
 		unsigned long Log2;

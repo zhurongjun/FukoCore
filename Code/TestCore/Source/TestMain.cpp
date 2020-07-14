@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
+#include <thread>
+#include <atomic>
+
 #include <TestArray.h>
 #include <TestBitArray.h>
 #include <TestSparseArray.h>
@@ -16,6 +19,7 @@ int main()
 	TestSet();
 	TestMap();
 	TestRingQueue();
+
 
 	system("pause");
 	return 0;

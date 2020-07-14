@@ -214,6 +214,7 @@ namespace Fuko
 		SizeType Max() const { return m_Data.Max(); }
 		Alloc& GetAllocator() { return m_Data.GetAllocator(); }
 		const Alloc& GetAllocator() const { return m_Data.GetAllocator(); }
+		FORCEINLINE bool IsEmpty() const { return Num() == 0; }
 
 		// allocate index, set the index as allocated, but won't call construct and remove from free list
 		SparseArrayAllocationInfo AllocateIndex(SizeType Index)

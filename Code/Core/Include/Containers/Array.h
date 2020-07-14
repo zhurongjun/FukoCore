@@ -175,6 +175,7 @@ namespace Fuko
 		FORCEINLINE SizeType Slack() const { return m_Max - m_Num; }
 		FORCEINLINE const Alloc& GetAllocator() const { return m_Allocator; }
 		FORCEINLINE Alloc& GetAllocator() { return m_Allocator; }
+		FORCEINLINE bool IsEmpty() const { return m_Num == 0; }
 
 		// compare
 		FORCEINLINE bool operator==(const TArray& Rhs) const { return m_Num == Rhs.m_Num && CompareItems(GetData(), Rhs.GetData(), m_Num); }

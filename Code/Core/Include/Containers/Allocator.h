@@ -111,12 +111,9 @@ namespace Fuko
 
 		template<typename T>
 		FORCEINLINE SizeType	Free(T*& Data) 
-		{  
-			if (Data)
-			{
-				_aligned_free(Data); 
-				Data = nullptr;
-			}
+		{ 
+			_aligned_free(Data);
+			Data = nullptr;
 			return 0;
 		}
 		template<typename T>
