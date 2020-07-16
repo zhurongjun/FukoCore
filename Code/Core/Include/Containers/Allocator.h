@@ -18,6 +18,8 @@ namespace Fuko
 		FORCEINLINE SizeType	Free(T*& Data);
 		template<typename T>
 		FORCEINLINE SizeType	Reserve(T*& Data, SizeType InMax);
+		FORCEINLINE SizeType	FreeRaw(void*& Data, SizeType InAlign);
+		FORCEINLINE SizeType	ReserveRaw(void*& Data, SizeType InSize, SizeType InAlign);
 
 		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax);
 		FORCEINLINE SizeType	GetShrink(SizeType InNum, SizeType InMax);
@@ -58,6 +60,23 @@ namespace Fuko
 				Data = (T*)m_Allocator->TAlloc<T>(InMax);
 			}
 			return InMax;
+		}
+		FORCEINLINE SizeType	FreeRaw(void*& Data, SizeType InAlign)
+		{
+			m_Allocator->Free(Data);
+			return 0;
+		}
+		FORCEINLINE SizeType	ReserveRaw(void*& Data, SizeType InSize, SizeType InAlign)
+		{
+			if (Data)
+			{
+				Data = m_Allocator->Realloc(Data, InSize, InAlign);
+			}
+			else
+			{
+				Data = m_Allocator->Alloc(InSize, InAlign);
+			}
+			return InSize;
 		}
 
 		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax)
@@ -124,6 +143,20 @@ namespace Fuko
 			else
 				Data = _aligned_malloc(InMax * sizeof(T), alignof(T));
 			return InMax;
+		}
+		FORCEINLINE SizeType	FreeRaw(void*& Data, SizeType InAlign)
+		{
+			_aligned_free(Data);
+			Data = nullptr;
+			return 0;
+		}
+		FORCEINLINE SizeType	ReserveRaw(void*& Data, SizeType InSize, SizeType InAlign)
+		{
+			if (Data)
+				Data = _aligned_realloc(Data, InSize, InAlign);
+			else
+				Data = _aligned_malloc(InSize, InAlign);
+			return InSize;
 		}
 
 		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax)

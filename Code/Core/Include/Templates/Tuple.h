@@ -132,14 +132,43 @@ namespace Fuko::Tuple_Private
 	};
 }
 
+// apply tuple helper
+namespace Fuko::Tuple_Private
+{
+	template<typename Sequence>
+	struct TApplyTupleHelper;
+
+	template<uint32...Indices>
+	struct TApplyTupleHelper<std::integer_sequence<uint32, Indices...>>
+	{
+		template<typename TFun,typename TTup>
+		FORCEINLINE static decltype(auto) Apply(TFun&& Func, TTup&& Tp)
+		{
+			return Func(Tp.Get<Indices>()...);
+		}
+
+		template<typename TFun, typename TTup, typename...TArgs>
+		FORCEINLINE static decltype(auto) ApplyBefore(TFun&& Func, TTup&& Tp, TArgs&&...Args)
+		{
+			return Func(Tp.Get<Indices>()..., std::forward<TArgs>(Args)...);
+		}
+
+		template<typename TFun, typename TTup, typename...TArgs>
+		FORCEINLINE static decltype(auto) ApplyAfter(TFun&& Func, TTup&& Tp, TArgs&&...Args)
+		{
+			return Func(std::forward<TArgs>(Args)..., Tp.Get<Indices>()...);
+		}
+	};
+}
+
 // implement tuple
 namespace Fuko
 {
 	template<>
 	struct TTuple<>
 	{
-		bool operator==(const TTuple& Other) const { return true; }
-		bool operator<(const TTuple& Other) const { return true; }
+		FORCEINLINE bool operator==(const TTuple& Other) const { return true; }
+		FORCEINLINE bool operator<(const TTuple& Other) const { return true; }
 	};
 
 	template<typename Type, typename...Types>
@@ -150,66 +179,100 @@ namespace Fuko
 		using ValueType = Type;
 
 		// construct
-		constexpr TTuple() = default;
-		constexpr TTuple(Type&& Arg, Types&&...Args) : BaseType(std::forward<Types>(Args)...) , _Value(std::forward<Type>(Arg)) {}
-		constexpr TTuple(const Type& Arg, const Types&... Args) : BaseType(Args...), _Value(Arg) {}
+		FORCEINLINE constexpr TTuple() = default;
+		FORCEINLINE constexpr TTuple(Type&& Arg, Types&&...Args) : BaseType(std::forward<Types>(Args)...) , _Value(std::forward<Type>(Arg)) {}
+		FORCEINLINE constexpr TTuple(const Type& Arg, const Types&... Args) : BaseType(Args...), _Value(Arg) {}
 
 		// copy & move
-		TTuple(TTuple&& Other) = default;
-		TTuple(const TTuple& Other) = default;
+		FORCEINLINE TTuple(TTuple&& Other) = default;
+		FORCEINLINE TTuple(const TTuple& Other) = default;
 
 		// head
-		const Type &Head() const { return _Value; }
-		Type& Head() { return _Value; }
+		FORCEINLINE const Type &Head() const { return _Value; }
+		FORCEINLINE Type& Head() { return _Value; }
 
 		// assign
-		TTuple& operator=(TTuple&& Other) = default;
-		TTuple& operator=(const TTuple& Other) = default;
+		FORCEINLINE TTuple& operator=(TTuple&& Other) = default;
+		FORCEINLINE TTuple& operator=(const TTuple& Other) = default;
 
 		// equal & not equal
-		bool operator==(const ThisType& Other) const
+		FORCEINLINE bool operator==(const ThisType& Other) const
 		{
 			return (_Value == Other._Value) && BaseType::operator==(static_cast<const BaseType&>(Other));
 		}
-		bool operator!=(const ThisType& Other) const
+		FORCEINLINE bool operator!=(const ThisType& Other) const
 		{
 			return !(*this == Other);
 		}
 
 		// compare
-		bool operator<(const ThisType& Other) const
+		FORCEINLINE bool operator<(const ThisType& Other) const
 		{
 			return (_Value < Other._Value) && BaseType::operator<(static_cast<const BaseType&>(Other));
 		}
-		bool operator<=(const ThisType& Other) const
+		FORCEINLINE bool operator<=(const ThisType& Other) const
 		{
 			return !(Other < *this);
 		}
-		bool operator>(const ThisType& Other) const
+		FORCEINLINE bool operator>(const ThisType& Other) const
 		{
 			return Other < *this;
 		}
-		bool operator>=(const ThisType& Other) const
+		FORCEINLINE bool operator>=(const ThisType& Other) const
 		{
 			return !(*this < Other);
 		}
 
 		// get
-		template<uint32 Index> FORCEINLINE const std::tuple_element_t<Index,TTuple<Type,Types...>>& 
+		template<uint32 Index> 
+		FORCEINLINE const std::tuple_element_t<Index,TTuple<Type,Types...>>& 
 			Get() const { return std::get<Index>(*this); }
-		template<uint32 Index> FORCEINLINE std::tuple_element_t<Index, TTuple<Type, Types...>>&
+		template<uint32 Index> 
+		FORCEINLINE std::tuple_element_t<Index, TTuple<Type, Types...>>&
 			Get() { return std::get<Index>(*this); }
 
 		// each
-		template<typename FuncType>
-		void Each(FuncType&& Func)
+		template<typename TFun>
+		FORCEINLINE void Each(TFun&& Func)
 		{
 			VisitTupleElements(std::forward<FuncType>(Func), *this);
 		}
-		template<typename FuncType>
-		void Each(FuncType&& Func) const
+		template<typename TFun>
+		FORCEINLINE void Each(TFun&& Func) const
 		{
 			VisitTupleElements(std::forward<FuncType>(Func), *this);
+		}
+
+		// apply
+		template<typename TFun>
+		FORCEINLINE decltype(auto) Apply(TFun&& Func)
+		{
+			return ApplyTuple(std::forward<TFun>(Func), *this);
+		}
+		template<typename TFun,typename...TArgs>
+		FORCEINLINE decltype(auto) ApplyBefore(TFun&& Func, TArgs...Args)
+		{
+			return ApplyTupleBefore(std::forward<TFun>(Func), *this, Args...);
+		}
+		template<typename TFun, typename...TArgs>
+		FORCEINLINE decltype(auto) ApplyAfter(TFun&& Func, TArgs...Args)
+		{
+			return ApplyTupleAfter(std::forward<TFun>(Func), *this, Args...);
+		}
+		template<typename TFun>
+		FORCEINLINE decltype(auto) Apply(TFun&& Func) const
+		{
+			return ApplyTuple(std::forward<TFun>(Func), *this);
+		}
+		template<typename TFun, typename...TArgs>
+		FORCEINLINE decltype(auto) ApplyBefore(TFun&& Func, TArgs...Args) const
+		{
+			return ApplyTupleBefore(std::forward<TFun>(Func), *this, Args...);
+		}
+		template<typename TFun, typename...TArgs>
+		FORCEINLINE decltype(auto) ApplyAfter(TFun&& Func, TArgs...Args) const
+		{
+			return ApplyTupleAfter(std::forward<TFun>(Func), *this, Args...);
 		}
 
 	protected:
@@ -225,7 +288,7 @@ namespace Fuko
 	{
 		Tuple_Private::TVisitTupleHelper <
 			std::make_integer_sequence<uint32, std::tuple_size_v<std::decay_t<FirstTupleType>>>
-			>::Do(std::forward<FuncType>(Func), std::forward<FirstTupleType>(FirstTuple), std::forward<TupleTypes>(Tuples)...);
+		>::Do(std::forward<FuncType>(Func), std::forward<FirstTupleType>(FirstTuple), std::forward<TupleTypes>(Tuples)...);
 	}
 	template <typename FuncType, typename FirstTupleType, typename... TupleTypes>
 	FORCEINLINE void VisitTupleElements(FuncType&& Func, const FirstTupleType& FirstTuple, const TupleTypes&...Tuples)
@@ -233,6 +296,34 @@ namespace Fuko
 		Tuple_Private::TVisitTupleHelper <
 			std::make_integer_sequence<uint32, std::tuple_size_v<std::decay_t<FirstTupleType>>>
 		>::Do(std::forward<FuncType>(Func), FirstTuple, Tuples...);
+	}
+}
+
+// implement apply
+namespace Fuko
+{
+	template<typename TFun,typename TTup>
+	FORCEINLINE decltype(auto) ApplyTuple(TFun&& Func, TTup&& Tup)
+	{
+		return Tuple_Private::TApplyTupleHelper<
+			std::make_integer_sequence<uint32, std::tuple_size_v<std::decay_t<TTup>>>
+		>::Apply(std::forward<TFun>(Func), std::forward<TTup>(Tup));
+	}
+
+	template<typename TFun, typename TTup,typename...TArgs>
+	FORCEINLINE decltype(auto) ApplyTupleBefore(TFun&& Func, TTup&& Tup, TArgs...Args)
+	{
+		return Tuple_Private::TApplyTupleHelper<
+			std::make_integer_sequence<uint32, std::tuple_size_v<std::decay_t<TTup>>>
+		>::ApplyBefore(std::forward<TFun>(Func), std::forward<TTup>(Tup), std::forward<TArgs>(Args)...);
+	}
+
+	template<typename TFun, typename TTup, typename...TArgs>
+	FORCEINLINE decltype(auto) ApplyTupleAfter(TFun&& Func, TTup&& Tup, TArgs...Args)
+	{
+		return Tuple_Private::TApplyTupleHelper<
+			std::make_integer_sequence<uint32, std::tuple_size_v<std::decay_t<TTup>>>
+		>::ApplyAfter(std::forward<TFun>(Func), std::forward<TTup>(Tup), std::forward<TArgs>(Args)...);
 	}
 }
 
