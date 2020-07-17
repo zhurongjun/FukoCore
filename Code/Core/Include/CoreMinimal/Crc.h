@@ -196,6 +196,16 @@ namespace Fuko::Crc
 			return ~CRC;
 		}
 	}
+
+	template<const TCHAR* Str, int Size>
+	struct TStrHash
+	{
+		static constexpr uint32 value = StrCrc32(Str, Size);
+	};
+
 };
 
 constexpr uint32 operator""_Hash(const char* Ch, size_t Len) { return Fuko::Crc::StrCrc32(Ch); }
+constexpr uint32 operator""_HashLen(const char* Ch, size_t Len) { return Fuko::Crc::StrCrc32(Ch, Len); }
+constexpr uint32 operator""_Hash(const wchar_t* Ch, size_t Len) { return Fuko::Crc::StrCrc32(Ch); }
+constexpr uint32 operator""_HashLen(const wchar_t* Ch, size_t Len) { return Fuko::Crc::StrCrc32(Ch, Len); }

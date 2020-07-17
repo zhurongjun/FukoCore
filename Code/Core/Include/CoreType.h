@@ -18,4 +18,9 @@ typedef uint16		CHAR16;
 typedef uint32		CHAR32;
 
 typedef WIDECHAR	TCHAR;
+#define TSTR(Str) L##Str
 #define _TCHAR_DEFINED
+
+constexpr size_t operator""_Kb(size_t InSize) { return InSize * 1024; }
+constexpr size_t operator""_Mb(size_t InSize) { return InSize * 1024 * 1024; }
+constexpr size_t operator""_Gb(size_t InSize) { return InSize * 1024 * 1024 * 1024; }

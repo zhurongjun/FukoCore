@@ -38,7 +38,7 @@ namespace Fuko
 		default:
 			checkNoEntry();
 		}
-
+		return  nullptr;
 	}
 	CORE_API bool	ReleaseBlock(void* Block)
 	{
@@ -64,4 +64,6 @@ namespace Fuko
 		}
 		return true;
 	}
+
+	
 }

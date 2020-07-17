@@ -1,6 +1,9 @@
 #pragma once
 #include <CoreConfig.h>
 #include <CoreType.h>
+#include <CoreMinimal/Assert.h>
+#include <Memory/MemoryOps.h>
+#include <Memory/MemoryPolicy.h>
 
 // Allocator interface
 namespace Fuko
@@ -89,6 +92,4 @@ namespace Fuko
 	CORE_API void*	RequirBlock(size_t BlockSize);
 	CORE_API bool	ReleaseBlock(void* Block);
 
-	// Alloc memory for Name, never release until program exit 
-	CORE_API void*	RequirName(size_t NameLen);
 }

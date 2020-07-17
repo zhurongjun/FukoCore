@@ -1,10 +1,10 @@
 #pragma once
-#include "CoreConfig.h"
-#include "CoreType.h"
-#include "CoreMinimal/Assert.h"
-#include "Char.h"
-#include "Templates/UtilityTemp.h"
+#include <CoreConfig.h>
+#include <CoreType.h>
+#include <CoreMinimal/Assert.h>
+#include <Templates/UtilityTemp.h>
 #include <string.h>
+#include "Char.h"
 
 #define SWITCHCH(InCh) Switch(InCh,L##InCh)
 

@@ -199,7 +199,7 @@ namespace Fuko
 	};
 }
 
-// transient allocator
+// block allocator
 namespace Fuko
 {
 	template<typename FallBackAlloc = PmrAlloc>

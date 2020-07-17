@@ -230,7 +230,7 @@ namespace Fuko
 			while (Ptr->IsValid())
 			{
 				auto& Element = m_Elements[*Ptr];
-				if (KeyFuncs::Matches(KeyFuncs::Key(Element.Value), Key))
+				if (Element.Hash == KeyHash && KeyFuncs::Matches(KeyFuncs::Key(Element.Value), Key))
 				{
 					SetElementId RemoveIndex = *Ptr;
 					// link to next element id 
@@ -257,6 +257,13 @@ namespace Fuko
 			, m_Hash(nullptr)
 			, m_Elements(std::move(InAlloc))
 		{ }
+		FORCEINLINE TSet(SizeType InitSize,Alloc&& InAlloc = Alloc())
+			: m_HashSize(0)
+			, m_Hash(nullptr)
+			, m_Elements(std::move(InAlloc))
+		{
+			Reserve(InitSize);
+		}
 		FORCEINLINE TSet(std::initializer_list<T> InitList, Alloc&& InAlloc = Alloc())
 			: m_HashSize(0)
 			, m_Hash(nullptr)
@@ -396,7 +403,7 @@ namespace Fuko
 		FORCEINLINE SetElementId Add(T&& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return Emplace(std::move(InElement), bIsAlreadyInSetPtr); }
 		FORCEINLINE SetElementId AddByHash(uint32 KeyHash, const T& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return EmplaceByHash(KeyHash, InElement, bIsAlreadyInSetPtr); }
 		FORCEINLINE SetElementId AddByHash(uint32 KeyHash, T&& InElement, bool* bIsAlreadyInSetPtr = nullptr) { return EmplaceByHash(KeyHash, std::move(InElement), bIsAlreadyInSetPtr); }
-
+		
 		// emplace 
 		template <typename ArgsType>
 		SetElementId Emplace(ArgsType&& Args, bool* bIsAlreadyInSetPtr = nullptr)
@@ -419,6 +426,21 @@ namespace Fuko
 			SetElement& Element = *new (ElementAllocation.Pointer) SetElement(std::forward<ArgsType>(Args));
 
 			return _EmplaceImpl(KeyHash, Element, ElementAllocation.Index, bIsAlreadyInSetPtr);
+		}
+		template<typename ArgsType>
+		FORCEINLINE SetElementId EmplaceNoCheck(uint32 KeyHash, ArgsType&& Args)
+		{
+			// Create a new element.
+			auto ElementAllocation = m_Elements.AddUninitialized();
+			SetElement& Element = *new (ElementAllocation.Pointer) SetElement(std::forward<ArgsType>(Args));
+
+			// Check if the hash needs to be resized.
+			if (!_ConditionalRehash(m_Elements.Num()))
+			{
+				// If the rehash didn't add the new element to the hash, add it.
+				_LinkElement(ElementAllocation.Index, Element, KeyHash);
+			}
+			return ElementAllocation.Index;
 		}
 
 		// append 
@@ -511,11 +533,13 @@ namespace Fuko
 		{
 			if (m_Elements.Num())
 			{
-				for (SetElementId ElementId = _BucketId(KeyFuncs::Hash(Key));
+				uint32 KeyHash = KeyFuncs::Hash(Key);
+				for (SetElementId ElementId = _BucketId(KeyHash);
 					ElementId.IsValid();
 					ElementId = m_Elements[ElementId].HashNextId)
 				{
-					if (KeyFuncs::Matches(KeyFuncs::Key(m_Elements[ElementId].Value), Key))
+					auto& Element = m_Elements[ElementId];
+					if (Element.Hash == KeyHash && KeyFuncs::Matches(KeyFuncs::Key(Element.Value), Key))
 					{
 						return ElementId;
 					}
@@ -533,7 +557,8 @@ namespace Fuko
 					ElementId.IsValid();
 					ElementId = m_Elements[ElementId].HashNextId)
 				{
-					if (KeyFuncs::Matches(KeyFuncs::Key(m_Elements[ElementId].Value), Key))
+					auto& Element = m_Elements[ElementId];
+					if (Element.Hash == KeyHash && KeyFuncs::Matches(KeyFuncs::Key(Element.Value), Key))
 					{
 						return ElementId;
 					}

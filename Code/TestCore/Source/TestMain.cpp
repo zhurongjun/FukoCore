@@ -11,6 +11,7 @@
 #include <TestMap.h>
 #include <TestRingQueue.h>
 #include <TestDelegate.h>
+#include <TestName.h>
 
 int main()
 {
@@ -22,7 +23,7 @@ int main()
 	TestRingQueue();
 
 	TestDelegate();
-
+	TestName();
 
 	system("pause");
 	return 0;
