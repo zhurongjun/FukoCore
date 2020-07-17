@@ -202,8 +202,10 @@ namespace Fuko
 // transient allocator
 namespace Fuko
 {
-	class TransientAlloc
+	template<typename FallBackAlloc = PmrAlloc>
+	class TBlockAlloc
 	{
+		FallBackAlloc	m_FallBack;
 	public:
 		using SizeType = int32;
 		using USizeType = uint32;
@@ -211,17 +213,49 @@ namespace Fuko
 		FORCEINLINE SizeType	FreeRaw(void*& Data, SizeType InAlign)
 		{
 			check(InAlign <= 16);
-			ReleaseBlock(Data);
+			if (ReleaseBlock(Data))
+			{
+				Data = nullptr;
+			}
+			else
+			{
+				m_FallBack.FreeRaw(Data, InAlign);
+			}
 			return 0;
 		}
 		FORCEINLINE SizeType	ReserveRaw(void*& Data, SizeType InSize, SizeType InAlign)
 		{
 			check(InAlign <= 16);
+			USizeType BlockSize = Math::RoundUpToPowerOfTwo((USizeType)InSize);
 			if (Data)
-				ResizeBlock(Data, InSize);
+			{
+				if (ReleaseBlock(Data))
+				{
+					Data = nullptr;
+					if (BlockSize <= 256)
+						Data = RequirBlock(BlockSize);
+					else
+						m_FallBack.ReserveRaw(Data, InSize, InAlign);
+				}
+				else
+				{
+					if (BlockSize <= 256)
+					{
+						m_FallBack.FreeRaw(Data, InSize);
+						Data = RequirBlock(BlockSize);
+					}
+					else
+						m_FallBack.ReserveRaw(Data, InSize, InAlign);
+				}
+			}
 			else
-				Data = RequirBlock(InSize);
-			return InSize;
+			{
+				if (BlockSize <= 256)
+					Data = RequirBlock(BlockSize);
+				else
+					m_FallBack.ReserveRaw(Data, InSize, InAlign);
+			}
+			return BlockSize > 256 ? InSize : BlockSize;
 		}
 
 		// never use to container 

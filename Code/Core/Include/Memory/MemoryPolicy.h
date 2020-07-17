@@ -84,10 +84,10 @@ namespace Fuko
 {
 	CORE_API IAllocator* DefaultAllocator();
 
-	// Global memory pool 
+	// Global block pool
+	// only support block of 32 / 64 / 128 / 56 
 	CORE_API void*	RequirBlock(size_t BlockSize);
-	CORE_API void	ReleaseBlock(void* Block);
-	CORE_API void	ResizeBlock(void* Block, size_t NewSize);
+	CORE_API bool	ReleaseBlock(void* Block);
 
 	// Alloc memory for Name, never release until program exit 
 	CORE_API void*	RequirName(size_t NameLen);

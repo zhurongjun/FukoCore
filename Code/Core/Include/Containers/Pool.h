@@ -2,6 +2,7 @@
 #include <CoreConfig.h>
 #include <CoreType.h>
 #include "LockPolicy.h"
+#include "Array.h"
 
 // Forward 
 namespace Fuko
@@ -16,9 +17,9 @@ namespace Fuko
 	template<typename T, typename TAlloc>
 	class TPool<T, NoLock, TAlloc> final
 	{
-		using SizeType = TAlloc::USizeType;
+		using SizeType = typename TAlloc::USizeType;
 		TArray<T*, TAlloc>		m_PtrPool;
-		TArray<void*,TAlloc>	m_Blocks;
+		TArray<T*,TAlloc>	m_Blocks;
 		SizeType				m_BlockSize;
 		
 		void _AllocBlock(SizeType BlockNum = 1)
@@ -27,7 +28,7 @@ namespace Fuko
 			for (int i = 0; i < BlockNum; ++i)
 			{
 				T* NewBlock = nullptr;
-				NewBlock = m_PtrPool.GetAllocator().Reserve(NewBlock, m_BlockSize, 0);
+				m_BlockSize = m_PtrPool.GetAllocator().Reserve(NewBlock, m_BlockSize);
 				m_Blocks.Add(NewBlock);
 				for (int j = 0; j < m_BlockSize; ++j)
 				{
@@ -39,16 +40,25 @@ namespace Fuko
 		TPool(SizeType BlockSize, SizeType InitBlockNum = 1, const TAlloc& InAlloc = TAlloc())
 			: m_Blocks(InitBlockNum > 4 ? InitBlockNum : 4, InAlloc)
 			, m_PtrPool(InitBlockNum * BlockSize, InAlloc)
-			, m_Blocks(BlockSize)
+			, m_BlockSize(BlockSize)
 		{
 			_AllocBlock(InitBlockNum);
 		}
 		~TPool()
 		{
-			for (void* Ptr : m_Blocks)
+			for (T*& Ptr : m_Blocks)
 			{
-				m_Blocks.GetAllocator().Free<T>((T*)Ptr);
+				m_Blocks.GetAllocator().Free<T>(Ptr);
 			}
+		}
+
+		bool IsInPool(void* Memory)
+		{
+			for (T* Ptr : m_Blocks)
+			{
+				if (Memory >= Ptr && Memory < (void*)(Ptr + m_BlockSize)) return true;
+			}
+			return false;
 		}
 
 		T* Alloc() 
@@ -79,11 +89,11 @@ namespace Fuko
 namespace Fuko
 {
 	template<typename T,typename TLockPolicy, typename TAlloc>
-	class TPool<T, NoLock, TAlloc> final
+	class TPool final
 	{
-		using SizeType = TAlloc::USizeType;
+		using SizeType = typename TAlloc::USizeType;
 		TArray<T*, TAlloc>		m_PtrPool;
-		TArray<void*, TAlloc>	m_Blocks;
+		TArray<T*, TAlloc>		m_Blocks;
 		SizeType				m_BlockSize;
 		TLockPolicy				m_LockPolicy;
 
@@ -93,7 +103,7 @@ namespace Fuko
 			for (int i = 0; i < BlockNum; ++i)
 			{
 				T* NewBlock = nullptr;
-				NewBlock = m_PtrPool.GetAllocator().Reserve(NewBlock, m_BlockSize, 0);
+				m_BlockSize = m_PtrPool.GetAllocator().Reserve(NewBlock, m_BlockSize);
 				m_Blocks.Add(NewBlock);
 				for (int j = 0; j < m_BlockSize; ++j)
 				{
@@ -105,23 +115,23 @@ namespace Fuko
 		TPool(SizeType BlockSize, SizeType InitBlockNum = 1, const TAlloc& InAlloc = TAlloc())
 			: m_Blocks(InitBlockNum > 4 ? InitBlockNum : 4, InAlloc)
 			, m_PtrPool(InitBlockNum * BlockSize, InAlloc)
-			, m_Blocks(BlockSize)
+			, m_BlockSize(BlockSize)
 		{
 			_AllocBlock(InitBlockNum);
 		}
 		~TPool()
 		{
-			for (void* Ptr : m_Blocks)
+			for (T*& Ptr : m_Blocks)
 			{
-				m_Blocks.GetAllocator().Free<T>((T*)Ptr);
+				m_Blocks.GetAllocator().Free<T>(Ptr);
 			}
 		}
 
 		bool IsInPool(void* Memory)
 		{
-			for (void* Ptr : m_Blocks)
+			for (T* Ptr : m_Blocks)
 			{
-				if (Memory >= Ptr && Memory < (void*)((T*)Ptr + m_BlockSize)) return true;
+				if (Memory >= Ptr && Memory < (Ptr + m_BlockSize)) return true;
 			}
 			return false;
 		}

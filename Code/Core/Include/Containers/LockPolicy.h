@@ -1,6 +1,8 @@
 #pragma once
 #include <CoreConfig.h>
 #include <CoreType.h>
+#include <mutex>
+#include <atomic>
 
 namespace Fuko
 {
