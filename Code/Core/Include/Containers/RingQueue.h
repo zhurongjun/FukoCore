@@ -1,48 +1,14 @@
 #pragma once
 #include <CoreType.h>
 #include <CoreConfig.h>
-#include "Allocator.h"
 #include <mutex>
-
-// RingQueueLockPolicy
-namespace Fuko
-{
-	struct NoLock 
-	{
-		FORCEINLINE void lock() {}
-		FORCEINLINE void unlock() {}
-		FORCEINLINE void try_lock() {}
-	};
-	struct LockFree : public NoLock {};
-
-	struct MutexLock
-	{
-		std::mutex Mtx;
-		FORCEINLINE void lock() { Mtx.lock(); }
-		FORCEINLINE void unlock() { Mtx.unlock(); }
-		FORCEINLINE bool try_lock() { return Mtx.try_lock(); }
-	};
-	template<int YieldTime = -1>
-	struct TSpinLock
-	{
-		std::atomic_flag LockFlag = ATOMIC_FLAG_INIT;
-		FORCEINLINE void lock()
-		{
-			while (LockFlag.test_and_set())
-			{
-				if constexpr (YieldTime == -1) std::this_thread::yield();
-				else if constexpr (YieldTime != 0) std::this_thread::sleep_for(std::chrono::microseconds(YieldTime));
-			}
-		}
-		FORCEINLINE void unlock() { LockFlag.clear(); }
-		FORCEINLINE bool try_lock() { return !LockFlag.test_and_set(); }
-	};
-}
+#include "Allocator.h"
+#include "LockPolicy.h"
 
 // forward
 namespace Fuko
 {
-	template<typename T, typename TLockPolicy = NoLock, typename Alloc = PmrAllocator>
+	template<typename T, typename TLockPolicy = NoLock, typename Alloc = PmrAlloc>
 	class TRingQueue;
 }
 

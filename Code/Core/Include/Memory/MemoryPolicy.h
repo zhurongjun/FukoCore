@@ -1,5 +1,6 @@
 #pragma once
-#include <limits>
+#include <CoreConfig.h>
+#include <CoreType.h>
 
 // Allocator interface
 namespace Fuko
@@ -58,9 +59,9 @@ namespace Fuko
 		}
 		void* Realloc(void* InPtr, size_t InSize, size_t Alignment) override
 		{
-			if (InSize > 0 && InPtr == nullptr) 
+			if (InSize > 0 && InPtr == nullptr)
 				++m_Count;
-			else if (InPtr != nullptr && InSize == 0) 
+			else if (InPtr != nullptr && InSize == 0)
 				--m_Count;
 			return _aligned_realloc(InPtr, InSize, Alignment);
 		}
@@ -76,4 +77,18 @@ namespace Fuko
 		}
 		void Trim() override {}
 	};
+}
+
+// Alloc 
+namespace Fuko
+{
+	CORE_API IAllocator* DefaultAllocator();
+
+	// Global memory pool 
+	CORE_API void*	RequirBlock(size_t BlockSize);
+	CORE_API void	ReleaseBlock(void* Block);
+	CORE_API void	ResizeBlock(void* Block, size_t NewSize);
+
+	// Alloc memory for Name, never release until program exit 
+	CORE_API void*	RequirName(size_t NameLen);
 }

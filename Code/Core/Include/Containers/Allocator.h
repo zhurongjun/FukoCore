@@ -1,8 +1,8 @@
 #pragma once
 #include <CoreConfig.h>
 #include <CoreType.h>
-#include "../Memory/Allocators.h"
-#include "../Memory/Memory.h"
+#include <Memory/MemoryPolicy.h>
+#include <Memory/MemoryOps.h>
 #include <corecrt_malloc.h>
 
 // alloc template 
@@ -29,22 +29,22 @@ namespace Fuko
 // pmr allocator
 namespace Fuko
 {
-	class PmrAllocator
+	class PmrAlloc
 	{
 		IAllocator*		m_Allocator;
 	public:
 		using SizeType = int32;
 		using USizeType = uint32;
 
-		FORCEINLINE PmrAllocator(IAllocator* InAllocator = DefaultAllocator())
+		FORCEINLINE PmrAlloc(IAllocator* InAllocator = DefaultAllocator())
 			: m_Allocator(InAllocator)
 		{
 			check(m_Allocator != nullptr);
 		}
-		FORCEINLINE PmrAllocator(const PmrAllocator&) = default;
-		FORCEINLINE PmrAllocator(PmrAllocator&&) = default;
-		FORCEINLINE PmrAllocator& operator=(const PmrAllocator&) = default;
-		FORCEINLINE PmrAllocator& operator=(PmrAllocator&&) = default;
+		FORCEINLINE PmrAlloc(const PmrAlloc&) = default;
+		FORCEINLINE PmrAlloc(PmrAlloc&&) = default;
+		FORCEINLINE PmrAlloc& operator=(const PmrAlloc&) = default;
+		FORCEINLINE PmrAlloc& operator=(PmrAlloc&&) = default;
 
 		template<typename T>
 		FORCEINLINE SizeType	Free(T*& Data) { m_Allocator->TFree(Data); Data = nullptr; return 0; }
@@ -196,5 +196,40 @@ namespace Fuko
 
 			return Retval;
 		}
+	};
+}
+
+// transient allocator
+namespace Fuko
+{
+	class TransientAlloc
+	{
+	public:
+		using SizeType = int32;
+		using USizeType = uint32;
+
+		FORCEINLINE SizeType	FreeRaw(void*& Data, SizeType InAlign)
+		{
+			check(InAlign <= 16);
+			ReleaseBlock(Data);
+			return 0;
+		}
+		FORCEINLINE SizeType	ReserveRaw(void*& Data, SizeType InSize, SizeType InAlign)
+		{
+			check(InAlign <= 16);
+			if (Data)
+				ResizeBlock(Data, InSize);
+			else
+				Data = RequirBlock(InSize);
+			return InSize;
+		}
+
+		// never use to container 
+		template<typename T>
+		FORCEINLINE SizeType	Free(T*& Data) { checkNoEntry; }
+		template<typename T>
+		FORCEINLINE SizeType	Reserve(T*& Data, SizeType InMax) { checkNoEntry(); }
+		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax) { checkNoEntry(); }
+		FORCEINLINE SizeType	GetShrink(SizeType InNum, SizeType InMax) { checkNoEntry(); }
 	};
 }

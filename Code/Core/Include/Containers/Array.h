@@ -13,7 +13,7 @@
 // Array
 namespace Fuko
 {
-	template<typename T, typename Alloc = PmrAllocator>
+	template<typename T, typename Alloc = PmrAlloc>
 	class TArray
 	{
 		using SizeType = typename Alloc::USizeType;
@@ -71,6 +71,22 @@ namespace Fuko
 			, m_Max(0)
 			, m_Allocator(InAlloc)
 		{}
+		FORCEINLINE TArray(const T& InitValue, SizeType InitSize, const Alloc& InAlloc = Alloc())
+			: m_Num(0)
+			, m_Data(nullptr)
+			, m_Max(0)
+			, m_Allocator(InAlloc)
+		{
+			Init(InitValue, InitSize);
+		}
+		FORCEINLINE TArray(SizeType InitSize, const Alloc& InAlloc = Alloc())
+			: m_Num(0)
+			, m_Data(nullptr)
+			, m_Max(0)
+			, m_Allocator(InAlloc)
+		{
+			_ResizeTo(InitSize);
+		}
 		FORCEINLINE TArray(const T* Ptr, SizeType Count, const Alloc& InAlloc = Alloc())
 			: m_Num(0)
 			, m_Data(nullptr)

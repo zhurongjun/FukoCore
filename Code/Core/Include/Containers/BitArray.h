@@ -1,17 +1,17 @@
 #pragma once
-#include "CoreConfig.h"
-#include "CoreType.h"
+#include <CoreConfig.h>
+#include <CoreType.h>
 #include <Math/MathUtility.h>
-#include "CoreMinimal/Assert.h"
-#include <Memory/Allocators.h>
-#include "Memory/Memory.h"
+#include <CoreMinimal/Assert.h>
+#include <Memory/MemoryOps.h>
+#include <Memory/MemoryPolicy.h>
 #include <Containers/Allocator.h>
 #include <Algo/Container/BitArray.h>
 
 // forward
 namespace Fuko
 {
-	template<typename Alloc = PmrAllocator>
+	template<typename Alloc = PmrAlloc>
 	class TBitArray;
 }
 

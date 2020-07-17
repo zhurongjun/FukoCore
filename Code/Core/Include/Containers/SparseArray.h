@@ -1,7 +1,8 @@
 #pragma once
 #include "CoreType.h"
 #include "CoreConfig.h"
-#include "Memory/Allocators.h"
+#include <Memory/MemoryOps.h>
+#include <Memory/MemoryPolicy.h>
 #include "Array.h"
 #include "CoreMinimal/Assert.h"
 #include "BitArray.h"
@@ -9,7 +10,7 @@
 // forward
 namespace Fuko
 {
-	template<typename T,typename Alloc = PmrAllocator>
+	template<typename T,typename Alloc = PmrAlloc>
 	class TSparseArray;
 }
 

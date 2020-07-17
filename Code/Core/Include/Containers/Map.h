@@ -3,7 +3,8 @@
 #include "CoreConfig.h"
 #include "Templates/Pair.h"
 #include "Set.h"
-#include <Memory/Allocators.h>
+#include <Memory/MemoryOps.h>
+#include <Memory/MemoryPolicy.h>
 
 // KeyFunctions 
 namespace Fuko
@@ -326,7 +327,7 @@ namespace Fuko
 namespace Fuko
 {
 	template<typename KeyType, typename ValueType
-		, typename Alloc = PmrAllocator
+		, typename Alloc = PmrAlloc
 		, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType, ValueType, false>>
 	class TMap : public TMapBase<KeyType, ValueType, Alloc, KeyFuncs>
 	{
@@ -415,7 +416,7 @@ namespace Fuko
 namespace Fuko
 {
 	template<typename KeyType, typename ValueType
-		, typename Alloc = PmrAllocator
+		, typename Alloc = PmrAlloc
 		, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType, ValueType, true>>
 	class TMultiMap : public TMapBase<KeyType, ValueType, Alloc, KeyFuncs>
 	{

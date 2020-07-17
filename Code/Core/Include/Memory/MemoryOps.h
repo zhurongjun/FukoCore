@@ -1,17 +1,16 @@
 #pragma once
-#include <vcruntime_string.h>
-#include <stdint.h>
+#include <CoreConfig.h>
+#include <CoreType.h>
+#include <Templates/TypeTraits.h>
+#include <CoreMinimal/Assert.h>
+#include <Math/MathUtility.h>
+
 #include <corecrt_malloc.h>
-#include "CoreConfig.h"
-#include "Templates/TypeTraits.h"
-#include "CoreMinimal/Assert.h"
-#include "CoreType.h"
-#include "Math/MathUtility.h"
+#include <vcruntime_string.h>
 
 // Move,Copy... 
 namespace Fuko
 {
-	// 内部swap
 	template <typename T>
 	FORCEINLINE void Valswap(T& A, T& B)
 	{
@@ -85,32 +84,12 @@ namespace Fuko
 			}
 		}
 	}
-
-	FORCEINLINE void* Memmove(void* Dest, const void* Src, size_t Count)
-	{
-		return memmove(Dest, Src, Count);
-	}
-
-	FORCEINLINE int32_t Memcmp(const void* Buf1, const void* Buf2, size_t Count)
-	{
-		return memcmp(Buf1, Buf2, Count);
-	}
-
-	FORCEINLINE void* Memset(void* Dest, uint8 Char, size_t Count)
-	{
-		return memset(Dest, Char, Count);
-	}
-
-	FORCEINLINE void* Memzero(void* Dest, size_t Count)
-	{
-		return memset(Dest, 0, Count);
-	}
-
-	FORCEINLINE void* Memcpy(void* Dest, const void* Src, size_t Count)
-	{
-		return memcpy(Dest, Src, Count);
-	}
-
+	
+	FORCEINLINE void* Memmove(void* Dest, const void* Src, size_t Count) { return memmove(Dest, Src, Count); } 
+	FORCEINLINE int32_t Memcmp(const void* Buf1, const void* Buf2, size_t Count) { return memcmp(Buf1, Buf2, Count); }
+	FORCEINLINE void* Memset(void* Dest, uint8 Char, size_t Count) { return memset(Dest, Char, Count); }
+	FORCEINLINE void* Memzero(void* Dest, size_t Count) { return memset(Dest, 0, Count); }
+	FORCEINLINE void* Memcpy(void* Dest, const void* Src, size_t Count) { return memcpy(Dest, Src, Count); }
 	FORCEINLINE void Memswap(void* Ptr1, void* Ptr2, size_t Size)
 	{
 		switch (Size)
@@ -354,10 +333,4 @@ namespace Fuko
 			return true;
 		}
 	}
-}
-
-namespace Fuko
-{
-	class IAllocator;
-	CORE_API IAllocator* DefaultAllocator();
 }

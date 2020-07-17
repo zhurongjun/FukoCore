@@ -4,14 +4,14 @@
 #include "Templates/TypeTraits.h"
 #include "CoreMinimal/Assert.h"
 #include "SparseArray.h"
-#include "Memory/Memory.h"
-#include "Memory/Allocators.h"
+#include <Memory/MemoryOps.h>
+#include <Memory/MemoryPolicy.h>
 #include "../Templates/Functor.h"
 
 // forward
 namespace Fuko
 {
-	template<typename T, typename Alloc = PmrAllocator, typename KeyFuncs = DefaultKeyFuncs<T>>
+	template<typename T, typename Alloc = PmrAlloc, typename KeyFuncs = DefaultKeyFuncs<T>>
 	class TSet;
 }
 
