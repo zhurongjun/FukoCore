@@ -1,5 +1,6 @@
 #pragma once
 #include <CoreMinimal/Delegate.h>
+#include <functional>
 
 using Fuko::TDelegate;
 
@@ -41,6 +42,11 @@ struct TestClass
 	int PrintFourC(int a, float b, const char* c, double d) const
 	{
 		std::cout << "const: " << a << ", " << b << ", " << c << ", " << d << std::endl;
+		return a;
+	}
+
+	int AddFourC(int a, float b, const char* c, double d) const
+	{
 		return a;
 	}
 
@@ -103,4 +109,40 @@ void TestDelegate()
 	check(A(111) == 111);
 	A.BindLambda([](int a, const char* b) { std::cout << b << std::endl; return 0; }, "老子是参数!!!!!");
 	char(A(999) == 0);
+
+	std::cout << "=======================Test Performance======================" << std::endl;
+	TArray<std::function<int(int)>>		StdArray(100'0000);
+	TArray<TDelegate<int(int)>>			FukoArray(100'0000);
+
+	auto Begin = std::chrono::system_clock::now();
+	for (int i = 0; i < 100'0000; ++i)
+	{
+		StdArray.Emplace_GetRef() = std::bind(&TestClass::AddFourC, &C, std::placeholders::_1, 666.6f, "PrintFour", 666666.6666);
+	}
+	auto End = std::chrono::system_clock::now();
+	std::cout << "Std construct time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
+
+	Begin = std::chrono::system_clock::now();
+	for (int i = 0; i < 100'0000; ++i)
+	{
+		FukoArray.Emplace_GetRef().BindMember(&C, &TestClass::AddFourC, 666.6f, "PrintFour", 666666.6666);
+	}
+	End = std::chrono::system_clock::now();
+	std::cout << "Fuko construct time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
+
+	Begin = std::chrono::system_clock::now();
+	for (int i = 0; i < 100'0000; ++i)
+	{
+		StdArray[i](10);
+	}
+	End = std::chrono::system_clock::now();
+	std::cout << "Std call time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
+
+	Begin = std::chrono::system_clock::now();
+	for (int i = 0; i < 100'0000; ++i)
+	{
+		FukoArray[i](10);
+	}
+	End = std::chrono::system_clock::now();
+	std::cout << "Fuko call time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
 }
