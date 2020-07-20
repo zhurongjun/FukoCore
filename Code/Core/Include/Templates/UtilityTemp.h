@@ -1,6 +1,7 @@
 #pragma once
 #include "TypeTraits.h"
-#include "CoreType.h"
+#include <CoreType.h>
+#include <CoreConfig.h>
 #include <initializer_list>
 #include "Align.h"
 
@@ -161,3 +162,20 @@ struct TRangePointerType<T[N]>
 // 右值转换为左值 
 template <typename T> struct TRValueToLValueReference { typedef T  Type; };
 template <typename T> struct TRValueToLValueReference<T&&> { typedef T& Type; };
+
+// 不定模板参的N个值 
+template<typename T, typename...Ts>
+FORCEINLINE constexpr decltype(auto) NthValue(int N, T&& Arg, Ts&&...Args)
+{ 
+	if constexpr (N == 0)
+		return std::forward<T>(Arg);
+	else
+		return NthValue(N - 1, std::forward<Ts>(Args)...);
+}
+
+// 是否是const的成员函数 
+template<typename TFun> struct TIsConstMemeberFunPtr { static constexpr bool Value = false; };
+template<typename TR,typename TC,typename...Ts>
+struct TIsConstMemeberFunPtr<TR(TC::*)(Ts...) const> { static constexpr bool Value = true; };
+template<typename TFun>
+inline constexpr bool TIsConstMemeberFunPtr_v = TIsConstMemeberFunPtr<TFun>::Value;

@@ -2,7 +2,8 @@
 #include <type_traits>
 #include <stdint.h>
 #include <xtr1common>
-#include "CoreType.h"
+#include <CoreType.h>
+#include <CoreConfig.h>
 
 // 是否是强类型枚举
 template<typename T>

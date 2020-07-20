@@ -1,6 +1,6 @@
 #pragma once
-#include "CoreConfig.h"
-#include "CoreType.h"
+#include <CoreType.h>
+#include <CoreConfig.h>
 #include "Tuple.h"
 
 // implement TPair

@@ -1,6 +1,6 @@
 #pragma once
-#include "CoreType.h"
-#include "CoreConfig.h"
+#include <CoreType.h>
+#include <CoreConfig.h>
 #include "TypeTraits.h"
 #include "UtilityTemp.h"
 #include "CoreMinimal/Crc.h"

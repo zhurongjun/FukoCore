@@ -1,5 +1,6 @@
 #pragma once
-#include "CoreConfig.h"
+#include <CoreType.h>
+#include <CoreConfig.h>
 #include "Templates/UtilityTemp.h"
 
 // 元素map方式

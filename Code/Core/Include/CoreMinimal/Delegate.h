@@ -2,6 +2,7 @@
 #include <CoreConfig.h>
 #include <CoreType.h>
 #include <Containers/Allocator.h>
+#include <Templates/TypeList.h>
 
 // forward 
 namespace Fuko
@@ -12,7 +13,7 @@ namespace Fuko
 	class TBaseDelegate;
 	template<typename TFun, typename...TVars>
 	class TBaseStaticDelegate;
-	template<bool IsConst, typename TClass, typename TFun, typename...TVars>
+	template<bool IsConst, typename TFun, typename TClass, typename TVarList>
 	class TBaseMemberDelegate;
 	template<typename TFunctor, typename TFun, typename...TVars>
 	class TBaseFunctorDelegate;
@@ -30,7 +31,7 @@ namespace Fuko
 		template<typename...TVars>
 		using TBaseStatic = TBaseStaticDelegate<TR(TParams...), TVars...>;
 		template<bool IsConst,typename TClass,typename...TVars>
-		using TBaseMember = TBaseMemberDelegate<IsConst, TClass, TR(TParams...), TVars...>;
+		using TBaseMember = TBaseMemberDelegate<IsConst, TR(TParams...), TClass, TVars...>;
 		template<typename TFun,typename...TVars>
 		using TBaseFunctor = TBaseFunctorDelegate<TFun, TR(TParams...), TVars...>;
 
@@ -139,47 +140,38 @@ namespace Fuko
 		FORCEINLINE TR operator()(TParams...Args) { if (IsValid()) return m_pInstance->Invoke(Args...); return TR(); }
 
 		// bind
-		template<typename...TVars>
-		FORCEINLINE void BindStatic(TFunPtr<TVars...> Func,TVars...Vars)
-		{
-			using FunType = TBaseStatic<TVars...>;
-			if (m_pInstance) m_pInstance->~TDelegateInstance();
-			SizeType NewSize = sizeof(FunType);
-			SizeType NewAlign = alignof(FunType);
-			_Resize(NewSize, NewAlign);
-			new(m_pInstance) FunType(Func, Vars...);
-		}
 		template<typename TFun,typename...TVars>
-		FORCEINLINE void BindFunctor(TFun&& Func, TVars...Vars)
+		FORCEINLINE void Bind(TFun&& Func, TVars...Vars)
 		{
-			using FunType = TBaseFunctor<TFun, TVars...>;
-			if (m_pInstance) m_pInstance->~TDelegateInstance();
-			SizeType NewSize = sizeof(FunType);
-			SizeType NewAlign = alignof(FunType);
-			_Resize(NewSize, NewAlign);
-			new(m_pInstance) FunType(std::forward<TFun>(Func), Vars...);
-		}
-		template<typename TFun, typename...TVars>
-		FORCEINLINE void BindLambda(TFun&& Func, TVars...Vars) { BindFunctor(std::forward<TFun>(Func), Vars...); }
-		template<typename TClass, typename...TVars>
-		FORCEINLINE void BindMember(TClass* Class, TMemFunPtr<TClass,TVars...> Func, TVars...Vars)
-		{
-			using FunType = TBaseMember<false, std::decay_t<TClass>, TVars...>;
-			if (m_pInstance) m_pInstance->~TDelegateInstance();
-			SizeType NewSize = sizeof(FunType);
-			SizeType NewAlign = alignof(FunType);
-			_Resize(NewSize, NewAlign);
-			new(m_pInstance) FunType(Class, Func, Vars...);
-		}
-		template<typename TClass, typename...TVars>
-		FORCEINLINE void BindMember(const TClass* Class, TConstMemFunPtr<TClass, TVars...> Func, TVars...Vars)
-		{
-			using FunType = TBaseMember<true, std::decay_t<TClass>, TVars...>;
-			if (m_pInstance) m_pInstance->~TDelegateInstance();
-			SizeType NewSize = sizeof(FunType);
-			SizeType NewAlign = alignof(FunType);
-			_Resize(NewSize, NewAlign);
-			new(m_pInstance) FunType(Class, Func, Vars...);
+			if constexpr (std::is_member_function_pointer_v<TFun>)
+			{
+				using FunType = TBaseMember<TIsConstMemeberFunPtr_v<TFun>, 
+					std::remove_pointer_t<TNthType_t<0,TVars...>> ,
+					TRightTypes_t<1, TypeList<TVars...>>>;
+				if (m_pInstance) m_pInstance->~TDelegateInstance();
+				SizeType NewSize = sizeof(FunType);
+				SizeType NewAlign = alignof(FunType);
+				_Resize(NewSize, NewAlign);
+				new(m_pInstance) FunType(Func, Vars...);
+			}
+			else if constexpr (std::is_pointer_v<TFun>)
+			{
+				using FunType = TBaseStatic<TVars...>;
+				if (m_pInstance) m_pInstance->~TDelegateInstance();
+				SizeType NewSize = sizeof(FunType);
+				SizeType NewAlign = alignof(FunType);
+				_Resize(NewSize, NewAlign);
+				new(m_pInstance) FunType(Func, Vars...);
+			}
+			else
+			{
+				using FunType = TBaseFunctor<std::decay_t<TFun>, TVars...>;
+				if (m_pInstance) m_pInstance->~TDelegateInstance();
+				SizeType NewSize = sizeof(FunType);
+				SizeType NewAlign = alignof(FunType);
+				_Resize(NewSize, NewAlign);
+				new(m_pInstance) FunType(std::forward<TFun>(Func), Vars...);
+			}
 		}
 
 	private:
@@ -246,7 +238,7 @@ namespace Fuko
 {
 	// not const 
 	template<typename TClass, typename TR, typename...TParams, typename...TVars>
-	class TBaseMemberDelegate<false, TClass, TR(TParams...), TVars...>
+	class TBaseMemberDelegate<false, TR(TParams...), TClass, TypeList<TVars...>>
 		: public TBaseDelegate<TR(TParams...)>
 		, TTuple<TVars...>
 	{
@@ -254,7 +246,7 @@ namespace Fuko
 	public:
 		using TFunPtr = TR(TClass::*)(TParams..., TVars...);
 
-		TBaseMemberDelegate(TClass* Class,TFunPtr InFun, TVars...Vars)
+		TBaseMemberDelegate(TFunPtr InFun, TClass* Class, TVars...Vars)
 			: TTuple<TVars...>(std::forward<TVars>(Vars)...)
 			, m_pFun(InFun)
 		{}
@@ -269,9 +261,9 @@ namespace Fuko
 		virtual void CreateCopy(void* Ptr) const override
 		{
 			if constexpr (sizeof...(TVars) != 0)
-				Apply([&](TVars...Vars) { new(Ptr)TBaseMemberDelegate(m_pObj, m_pFun, Vars...); });
+				Apply([&](TVars...Vars) { new(Ptr)TBaseMemberDelegate(m_pFun, m_pObj, Vars...); });
 			else
-				new(Ptr) TBaseMemberDelegate(m_pObj, m_pFun);
+				new(Ptr) TBaseMemberDelegate(m_pFun, m_pObj);
 		}
 
 	private:
@@ -281,14 +273,14 @@ namespace Fuko
 
 	// const 
 	template<typename TClass, typename TR, typename...TParams, typename...TVars>
-	class TBaseMemberDelegate<true, TClass, TR(TParams...), TVars...>
+	class TBaseMemberDelegate<true, TR(TParams...), TClass, TypeList<TVars...>>
 		: public TBaseDelegate<TR(TParams...)>
 		, TTuple<TVars...>
 	{
 	public:
 		using TFunPtr = TR(TClass::*)(TParams..., TVars...) const;
 
-		TBaseMemberDelegate(const TClass* Class, TFunPtr InFun, TVars...Vars)
+		TBaseMemberDelegate(TFunPtr InFun, const TClass* Class, TVars...Vars)
 			: TTuple<TVars...>(std::forward<TVars>(Vars)...)
 			, m_pFun(InFun)
 		{}
@@ -303,9 +295,9 @@ namespace Fuko
 		virtual void CreateCopy(void* Ptr) const override
 		{
 			if constexpr (sizeof...(TVars) != 0)
-				Apply([&](TVars...Vars) { new(Ptr)TBaseMemberDelegate(m_pObj, m_pFun, Vars...); });
+				Apply([&](TVars...Vars) { new(Ptr)TBaseMemberDelegate(m_pFun, m_pObj, Vars...); });
 			else
-				new(Ptr) TBaseMemberDelegate(m_pObj, m_pFun);
+				new(Ptr) TBaseMemberDelegate(m_pFun, m_pObj);
 		}
 
 	private:

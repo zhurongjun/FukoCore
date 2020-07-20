@@ -1,7 +1,7 @@
 #pragma once
 #include <tuple>
-#include "CoreType.h"
-#include "CoreConfig.h"
+#include <CoreType.h>
+#include <CoreConfig.h>
 #include "UtilityTemp.h"
 #include "Templates/TypeHash.h"
 

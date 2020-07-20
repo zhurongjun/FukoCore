@@ -1,6 +1,6 @@
 #pragma once
-#include "CoreType.h"
-#include "CoreConfig.h"
+#include <CoreType.h>
+#include <CoreConfig.h>
 
 // 用于实现concept 
 template <typename Concept, typename... Args>

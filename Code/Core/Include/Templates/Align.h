@@ -1,6 +1,7 @@
 #pragma once
 #include <inttypes.h>
-#include "CoreConfig.h"
+#include <CoreType.h>
+#include <CoreConfig.h>
 #include "TypeTraits.h"
 
 // 向上对齐, Alignment必须是2的次方
