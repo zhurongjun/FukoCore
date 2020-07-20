@@ -13,7 +13,7 @@ namespace Fuko::Algo::Impl
 
 		for (auto& Elem : Range)
 		{
-			if (!Result || std::invoke(Pred, std::invoke(Proj, Elem), std::invoke(Proj, *Result)))
+			if (!Result || Pred( Elem, *Result))
 			{
 				Result = &Elem;
 			}
@@ -23,13 +23,13 @@ namespace Fuko::Algo::Impl
 	}
 
 	template <typename RangeType, typename ProjectionType, typename PredicateType>
-	typename TRangePointerType<RangeType>::Type MaxElementBy(RangeType& Range, ProjectionType Proj, PredicateType Pred)
+	typename TRangePointerType<RangeType>::Type MaxElementBy(RangeType& Range, PredicateType Pred)
 	{
 		typename TRangePointerType<RangeType>::Type Result = nullptr;
 
 		for (auto& Elem : Range)
 		{
-			if (!Result || std::invoke(Pred, std::invoke(Proj, *Result), std::invoke(Proj, Elem)))
+			if (!Result || Pred(*Result, , Elem))
 			{
 				Result = &Elem;
 			}
@@ -42,59 +42,16 @@ namespace Fuko::Algo::Impl
 namespace Fuko::Algo
 {
 	template <typename RangeType>
-	FORCEINLINE auto MaxElement(RangeType& Range)
-		-> decltype(Impl::MaxElementBy(Range, FIdentityFunctor(), TLess<>()))
+	FORCEINLINE decltype(auto) MaxElement(RangeType& Range)
 	{
-		return Impl::MaxElementBy(Range, FIdentityFunctor(), TLess<>());
-	}
-
-	template <typename RangeType, typename ComparatorType>
-	FORCEINLINE auto MaxElement(RangeType& Range, ComparatorType Comp)
-		-> decltype(Impl::MaxElementBy(Range, FIdentityFunctor(), std::move(Comp)))
-	{
-		return Impl::MaxElementBy(Range, FIdentityFunctor(), std::move(Comp));
-	}
-
-	template <typename RangeType, typename ProjectionType>
-	FORCEINLINE auto MaxElementBy(RangeType& Range, ProjectionType Proj)
-		-> decltype(Impl::MaxElementBy(Range, std::move(Proj), TLess<>()))
-	{
-		return Impl::MaxElementBy(Range, std::move(Proj), TLess<>());
-	}
-
-	
-	template <typename RangeType, typename ProjectionType, typename ComparatorType>
-	FORCEINLINE auto MaxElementBy(RangeType& Range, ProjectionType Proj, ComparatorType Comp)
-		-> decltype(Impl::MaxElementBy(Range, std::move(Proj), std::move(Comp)))
-	{
-		return Impl::MaxElementBy(Range, std::move(Proj), std::move(Comp));
+		return Impl::MaxElementBy(Range, TLess<>());
 	}
 
 	template <typename RangeType>
-	FORCEINLINE auto MinElement(RangeType& Range)
-		-> decltype(Impl::MinElementBy(Range, FIdentityFunctor(), TLess<>()))
+	FORCEINLINE decltype(auto) MinElement(RangeType& Range)
 	{
-		return Impl::MinElementBy(Range, FIdentityFunctor(), TLess<>());
+		return Impl::MinElementBy(Range, TLess<>());
 	}
 
-	template <typename RangeType, typename ComparatorType>
-	FORCEINLINE auto MinElement(RangeType& Range, ComparatorType Comp)
-		-> decltype(Impl::MinElementBy(Range, FIdentityFunctor(), std::move(Comp)))
-	{
-		return Impl::MinElementBy(Range, FIdentityFunctor(), std::move(Comp));
-	}
 
-	template <typename RangeType, typename ProjectionType>
-	FORCEINLINE auto MinElementBy(RangeType& Range, ProjectionType Proj)
-		-> decltype(Impl::MinElementBy(Range, std::move(Proj), TLess<>()))
-	{
-		return Impl::MinElementBy(Range, std::move(Proj), TLess<>());
-	}
-
-	template <typename RangeType, typename ProjectionType, typename ComparatorType>
-	FORCEINLINE auto MinElementBy(RangeType& Range, ProjectionType Proj, ComparatorType Comp)
-		-> decltype(Impl::MinElementBy(Range, std::move(Proj), std::move(Comp)))
-	{
-		return Impl::MinElementBy(Range, std::move(Proj), std::move(Comp));
-	}
 }

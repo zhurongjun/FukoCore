@@ -2,16 +2,6 @@
 #include "CoreConfig.h"
 #include "Templates/UtilityTemp.h"
 
-// 直接返回输入值的Functor用于默认的Projection 
-struct FIdentityFunctor
-{
-	template <typename T>
-	FORCEINLINE T&& operator()(T&& Val) const
-	{
-		return (T&&)Val;
-	}
-};
-
 // 元素map方式
 struct NoMap
 {
