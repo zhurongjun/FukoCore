@@ -121,11 +121,11 @@ void TestDelegate()
 	char(A(999) == 0);
 
 	std::cout << "=======================Test Performance======================" << std::endl;
-	TArray<std::function<int(int)>>		StdArray(1000'0000);
-	TArray<TDelegate<int(int)>>			FukoArray(1000'0000);
+	TArray<std::function<int(int)>>		StdArray(100'0000);
+	TArray<TDelegate<int(int)>>			FukoArray(100'0000);
 
 	auto Begin = std::chrono::system_clock::now();
-	for (int i = 0; i < 1000'0000; ++i)
+	for (int i = 0; i < 100'0000; ++i)
 	{
 		StdArray.Emplace_GetRef() = std::bind(BigFunctor(), std::placeholders::_1, 666.6f, "PrintFour", 666666.6666);
 	}
@@ -133,7 +133,7 @@ void TestDelegate()
 	std::cout << "Std construct time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
 
 	Begin = std::chrono::system_clock::now();
-	for (int i = 0; i < 1000'0000; ++i)
+	for (int i = 0; i < 100'0000; ++i)
 	{
 		FukoArray.Emplace_GetRef().Bind(BigFunctor(), 666.6f, "PrintFour", 666666.6666);
 	}
@@ -141,7 +141,7 @@ void TestDelegate()
 	std::cout << "Fuko construct time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
 
 	Begin = std::chrono::system_clock::now();
-	for (int i = 0; i < 1000'0000; ++i)
+	for (int i = 0; i < 100'0000; ++i)
 	{
 		StdArray[i](10);
 	}
@@ -149,7 +149,7 @@ void TestDelegate()
 	std::cout << "Std call time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
 
 	Begin = std::chrono::system_clock::now();
-	for (int i = 0; i < 1000'0000; ++i)
+	for (int i = 0; i < 100'0000; ++i)
 	{
 		FukoArray[i](10);
 	}

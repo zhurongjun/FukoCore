@@ -4,20 +4,6 @@
 
 namespace Fuko
 {
-	struct NameElement
-	{
-		const TCHAR*	NamePtr = nullptr;
-		uint32			NameLen = 0;
-
-		bool operator==(const NameElement& Rhs) const
-		{
-			if (NameLen != Rhs.NameLen) return false;
-			if (NamePtr == Rhs.NamePtr) return true;
-			return TCString<TCHAR>::Strcmp(NamePtr, Rhs.NamePtr) == 0;
-		}
-	};
-	uint32 GetTypeHash(const NameElement& Element) { return Crc::StrCrc32(Element.NamePtr, Element.NameLen); }
-
 	constexpr uint32 NamePageSize = 4_Kb;
 	class NamePool
 	{
@@ -65,7 +51,7 @@ namespace Fuko
 		NameElement* ExistElement = g_NameTable.FindByHash(NameHash, Element);
 		if (ExistElement != nullptr)
 		{
-			m_Ptr = ExistElement->NamePtr;
+			m_Ptr = ExistElement;
 			return;
 		}
 
@@ -74,9 +60,9 @@ namespace Fuko
 		Memcpy(NameStorage, InStr, NameSize);
 
 		// add to set
-		Element.NamePtr =(TCHAR*) NameStorage;
-		m_Ptr = Element.NamePtr;
-		g_NameTable.AddByHash(NameHash, Element);
+		Element.NamePtr =(TCHAR*)NameStorage;
+		auto Id = g_NameTable.EmplaceNoCheck(NameHash, Element);
+		m_Ptr = &g_NameTable[Id];
 	}
 
 	Name::Name(const TCHAR* InStr, uint32 NameHash)
@@ -90,7 +76,7 @@ namespace Fuko
 		NameElement* ExistElement = g_NameTable.FindByHash(NameHash, Element);
 		if (ExistElement != nullptr)
 		{
-			m_Ptr = ExistElement->NamePtr;
+			m_Ptr = ExistElement;
 			return;
 		}
 
@@ -100,8 +86,8 @@ namespace Fuko
 
 		// add to set
 		Element.NamePtr = (TCHAR*)NameStorage;
-		m_Ptr = Element.NamePtr;
-		g_NameTable.EmplaceNoCheck(NameHash, Element);
+		auto Id = g_NameTable.EmplaceNoCheck(NameHash, Element);
+		m_Ptr = &g_NameTable[Id];
 	}
 
 }

@@ -3,14 +3,36 @@
 #include <CoreType.h>
 #include <Containers/ContainerFwd.h>
 #include <Memory/MemoryPolicy.h>
+#include <Templates/TypeHash.h>
 #include "CString.h"
 
+// Name Element
+namespace Fuko
+{
+	struct NameElement
+	{
+		const TCHAR* NamePtr = nullptr;
+		uint32			NameLen = 0;
+
+		bool operator==(const NameElement& Rhs) const
+		{
+			if (NameLen != Rhs.NameLen) return false;
+			if (NamePtr == Rhs.NamePtr) return true;
+			return TCString<TCHAR>::Strcmp(NamePtr, Rhs.NamePtr) == 0;
+		}
+	};
+	uint32 GetTypeHash(const NameElement& Element) 
+	{ 
+		return Crc::StrCrc32(Element.NamePtr, Element.NameLen); 
+	}
+
+}
 // Name
 namespace Fuko
 {
 	class CORE_API Name
 	{
-		const TCHAR*	m_Ptr;
+		const NameElement*	m_Ptr;
 	public:
 		Name(const TCHAR* InStr = TSTR("")); 
 		Name(const TCHAR* InStr, uint32 Hash);
