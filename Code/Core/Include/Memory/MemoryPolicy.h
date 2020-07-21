@@ -53,7 +53,7 @@ namespace Fuko
 	public:
 		~HeapAllocator()
 		{
-			check(m_Count == 0);
+			always_check(m_Count == 0);
 		}
 		void* Alloc(size_t InSize, size_t Alignment) override
 		{
