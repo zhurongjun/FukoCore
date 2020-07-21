@@ -11,7 +11,7 @@ namespace Fuko
 {
 	struct NameElement
 	{
-		const TCHAR* NamePtr = nullptr;
+		const TCHAR*	NamePtr = nullptr;
 		uint32			NameLen = 0;
 
 		bool operator==(const NameElement& Rhs) const
@@ -25,7 +25,6 @@ namespace Fuko
 	{ 
 		return Crc::StrCrc32(Element.NamePtr, Element.NameLen); 
 	}
-
 }
 // Name
 namespace Fuko
@@ -37,8 +36,35 @@ namespace Fuko
 		Name(const TCHAR* InStr = TSTR("")); 
 		Name(const TCHAR* InStr, uint32 Hash);
 
+		// copy construct & assign 
+		Name(const Name&) = default;
+		Name(Name&&) = default;
+		Name& operator=(const Name&) = default;
+		Name& operator=(Name&&) = default;
+
+		// compare 
 		FORCEINLINE bool operator==(const Name& Other) { return m_Ptr == Other.m_Ptr; }
 		FORCEINLINE bool operator!=(const Name& Other) { return m_Ptr != Other.m_Ptr; }
+
+		// compare with raw ptr 
+		FORCEINLINE bool operator==(const TCHAR* Str) 
+		{ 
+			auto Len = TCString<TCHAR>::Strlen(Str);
+			if (Len != m_Ptr->NameLen) return false;
+			return TCString<TCHAR>::Strcmp(m_Ptr->NamePtr, Str) == 0; 
+		}
+		FORCEINLINE friend bool operator==(const TCHAR* Lhs, const Name& Rhs)
+		{
+			auto Len = TCString<TCHAR>::Strlen(Lhs);
+			if (Len != Rhs.m_Ptr->NameLen) return false;
+			return TCString<TCHAR>::Strcmp(m_Ptr->NamePtr, Str) == 0;
+			return TCString<TCHAR>::Strcmp(Rhs.m_Ptr->NamePtr, Str) == 0;
+		}
+
+		// name info 
+		FORCEINLINE uint32 Len() { return m_Ptr->NameLen; }
+		FORCEINLINE const TCHAR* Data() { return m_Ptr->NamePtr; }
+		FORCEINLINE const TCHAR* operator*() { return m_Ptr->NamePtr; }
 	};
 }
 
