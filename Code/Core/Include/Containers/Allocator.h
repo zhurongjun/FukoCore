@@ -139,9 +139,9 @@ namespace Fuko
 		FORCEINLINE SizeType	Reserve(T*& Data, SizeType InMax)
 		{
 			if (Data)
-				Data = _aligned_realloc(Data, InMax * sizeof(T), alignof(T));
+				Data = (T*)_aligned_realloc(Data, InMax * sizeof(T), alignof(T));
 			else
-				Data = _aligned_malloc(InMax * sizeof(T), alignof(T));
+				Data = (T*)_aligned_malloc(InMax * sizeof(T), alignof(T));
 			return InMax;
 		}
 		FORCEINLINE SizeType	FreeRaw(void*& Data, SizeType InAlign)

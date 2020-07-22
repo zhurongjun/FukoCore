@@ -4,7 +4,7 @@
 using Fuko::Name;
 void TestName()
 {
-	Name a = MAKE_NAME("Test Name");
+	Name a(TSTR("Test Name"));
 	Name b(TSTR("Test Name"));
 
 	Name c;
@@ -24,7 +24,7 @@ void TestName()
 			}
 		}
 		c = Name(chs);
-		// always_check(c != Last);
+		always_check(c != Last);
 		Last = c;
 	}
 	c == a;
@@ -41,7 +41,6 @@ void TestName()
 	Begin = std::chrono::system_clock::now();
 	for (int i = 0; i < 100'0000; ++i)
 	{
-		a == MAKE_NAME("Test Name");
 	}
 	End = std::chrono::system_clock::now();
 	std::cout << "MAKE_NAME time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
