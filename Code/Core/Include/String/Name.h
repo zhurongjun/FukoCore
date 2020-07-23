@@ -110,9 +110,9 @@ namespace Fuko
 		FORCEINLINE friend bool operator==(const T* Lhs, const TName& Rhs);
 
 		// name info 
-		FORCEINLINE uint32 Len() { return m_Ptr->NameLen; }
-		FORCEINLINE const T* Data() { return m_Ptr->NamePtr; }
-		FORCEINLINE const T* operator*() { return m_Ptr->NamePtr; }
+		FORCEINLINE uint32 Len() const { return m_Ptr->NameLen; }
+		FORCEINLINE const T* Data() const { return m_Ptr->NamePtr; }
+		FORCEINLINE const T* operator*() const { return m_Ptr->NamePtr; }
 	};
 }
 
@@ -166,6 +166,12 @@ namespace Fuko
 		Element.NamePtr = (T*)NameStorage;
 		auto Id = s_NameTable.EmplaceNoCheck(NameHash, Element);
 		m_Ptr = &s_NameTable[Id];
+	}
+
+	template<typename T>
+	FORCEINLINE uint32 GetTypeHash(const TName<T>& Element)
+	{
+		return PointerHash(Element.Data());
 	}
 
 	using Name = TName<TCHAR>;

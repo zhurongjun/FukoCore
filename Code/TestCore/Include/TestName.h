@@ -44,6 +44,6 @@ void TestName()
 	}
 	End = std::chrono::system_clock::now();
 	std::cout << "MAKE_NAME time : " << std::chrono::duration<double, std::milli>(End - Begin).count() << " ms" << std::endl;
-
+	
 	check(a == b);
 }
