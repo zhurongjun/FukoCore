@@ -1,8 +1,8 @@
 #pragma once
-#include <ctype.h>
-#include <wctype.h>
 #include <CoreType.h>
 #include <CoreConfig.h>
+#include <ctype.h>
+#include <wctype.h>
 
 namespace  Fuko
 {

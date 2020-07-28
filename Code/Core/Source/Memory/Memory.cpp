@@ -29,10 +29,10 @@ namespace Fuko
 
 	static_assert(sizeof(TBlock<32>) == 48);
 
-	TPool<TBlock<32>, MutexLock>		g_Block32(64, 4);
-	TPool<TBlock<64>, MutexLock>		g_Block64(32, 4);
-	TPool<TBlock<128>, MutexLock>		g_Block128(16, 4);
-	TPool<TBlock<256>, MutexLock>		g_Block256(16, 2);
+	TPool<TBlock<32>, MutexLock, BaseAlloc>		g_Block32(64, 4);
+	TPool<TBlock<64>, MutexLock, BaseAlloc>		g_Block64(32, 4);
+	TPool<TBlock<128>, MutexLock, BaseAlloc>	g_Block128(16, 4);
+	TPool<TBlock<256>, MutexLock, BaseAlloc>	g_Block256(16, 2);
 
 	CORE_API void*	RequirBlock(size_t BlockSize)
 	{

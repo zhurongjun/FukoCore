@@ -5,6 +5,7 @@
 #include <Templates/UtilityTemp.h>
 #include <string.h>
 #include "Char.h"
+#include <stdarg.h>
 
 #define SWITCHCH(InCh) Switch(InCh,L##InCh)
 
@@ -524,12 +525,8 @@ namespace Fuko
 				return wcstok_s(TokenString, Delim, Context);
 		}
 
-		template <typename FmtType, typename... Types>
-		static FORCEINLINE int32 Sprintf(CharType* Dest, const FmtType& Fmt, Types... Args)
+		static FORCEINLINE int32 Sprintf(CharType* Dest, const CharType* Fmt, ...)
 		{
-			static_assert(TIsArrayOrRefOfType_v<FmtType, CharType>, "Formatting string must be a literal string of the same character type as template.");
-			static_assert((TIsValidVariadicFunctionArg_v<Types> && ... ), "Invalid argument(s) passed to TCString::Sprintf");
-
 			int32 Result = -1;
 
 			{ 
@@ -548,12 +545,9 @@ namespace Fuko
 			return Result;
 		}
 
-		template <typename FmtType, typename... Types>
-		static FORCEINLINE int32 Snprintf(CharType* Dest, int32 DestSize, const FmtType& Fmt, Types... Args)
+		template <typename FmtType>
+		static FORCEINLINE int32 Snprintf(CharType* Dest, int32 DestSize, const CharType* Fmt,...)
 		{
-			static_assert(TIsArrayOrRefOfType_v<FmtType, CharType>, "Formatting string must be a literal string of the same character type as template.");
-			static_assert((TIsValidVariadicFunctionArg_v<Types> && ...), "Invalid argument(s) passed to TCString::Sprintf");
-			
 			int32 Result = -1;
 
 			{
@@ -573,8 +567,8 @@ namespace Fuko
 		}
 	};
 
-	typedef TCString<ANSICHAR> AString;
-	typedef TCString<WIDECHAR> WString;
+	typedef TCString<ANSICHAR> ACString;
+	typedef TCString<WIDECHAR> WCString;
 
 }
 

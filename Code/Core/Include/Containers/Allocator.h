@@ -235,7 +235,12 @@ namespace Fuko
 					if (BlockSize <= 256)
 						Data = RequirBlock(BlockSize);
 					else
-						m_FallBack.ReserveRaw(Data, InSize, InAlign);
+					{
+						m_FallBack.ReserveRaw(Data, InSize + 16, InAlign);
+						int32* SizePtr = (int32*)Data;
+						*SizePtr = InSize;
+						Data = SizePtr + 4;
+					}
 				}
 				else
 				{
@@ -245,7 +250,12 @@ namespace Fuko
 						Data = RequirBlock(BlockSize);
 					}
 					else
-						m_FallBack.ReserveRaw(Data, InSize, InAlign);
+					{
+						m_FallBack.ReserveRaw(Data, InSize + 16, InAlign);
+						int32* SizePtr = (int32*)Data;
+						*SizePtr = InSize;
+						Data = SizePtr + 4;
+					}
 				}
 			}
 			else
@@ -253,17 +263,65 @@ namespace Fuko
 				if (BlockSize <= 256)
 					Data = RequirBlock(BlockSize);
 				else
-					m_FallBack.ReserveRaw(Data, InSize, InAlign);
+				{
+					m_FallBack.ReserveRaw(Data, InSize + 16, InAlign);
+					int32* SizePtr = (int32*)Data;
+					*SizePtr = InSize;
+					Data = SizePtr + 4;
+				}
 			}
 			return BlockSize > 256 ? InSize : BlockSize;
 		}
 
 		// never use to container 
 		template<typename T>
-		FORCEINLINE SizeType	Free(T*& Data) { checkNoEntry; }
+		FORCEINLINE SizeType	Free(T*& Data) 
+		{ 
+			return FreeRaw((void*&)Data, alignof(T));
+		}
+		
 		template<typename T>
-		FORCEINLINE SizeType	Reserve(T*& Data, SizeType InMax) { checkNoEntry(); }
-		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax) { checkNoEntry(); }
-		FORCEINLINE SizeType	GetShrink(SizeType InNum, SizeType InMax) { checkNoEntry(); }
+		FORCEINLINE SizeType	Reserve(T*& Data, SizeType InMax) 
+		{ 
+			return ReserveRaw((void*&)Data, InMax * sizeof(T), alignof(T));
+		}
+	
+		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax)
+		{
+			constexpr SizeType FirstGrow = 4;
+			constexpr SizeType ConstantGrow = 16;
+
+			SizeType Retval;
+			check(InNum > InMax && InNum > 0);
+
+			SizeType Grow = FirstGrow;	// 初次分配空间的内存增长
+			if (InMax || InNum > Grow)
+			{
+				// 计算内存增长
+				Grow = InNum + 3 * InNum / 8 + ConstantGrow;
+			}
+			Retval = Grow;
+
+			// 处理溢出
+			if (InNum > Retval) Retval = ULLONG_MAX;
+			return Retval;
+		}
+		FORCEINLINE SizeType	GetShrink(SizeType InNum, SizeType InMax)
+		{
+			SizeType Retval;
+			check(InNum < InMax);
+
+			// 如果闲余空间过多，则刚好收缩到使用空间
+			if ((3 * InNum < 2 * InMax) && (InMax - InNum > 64 || !InNum))
+			{
+				Retval = InNum;
+			}
+			else
+			{
+				Retval = InMax;
+			}
+
+			return Retval;
+		}
 	};
 }

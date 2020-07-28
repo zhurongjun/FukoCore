@@ -24,8 +24,7 @@ int main()
 
 	TestDelegate();
 	TestName();
-
-
+	
 	system("pause");
 	return 0;
 }
