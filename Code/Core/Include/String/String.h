@@ -475,7 +475,7 @@ namespace Fuko
 		FORCEINLINE bool ContainBy(TPred&& Pred) { return FindBy(std::forward<TPred>(Pred)) != nullptr; }
 
 		// compare 
-		FORCEINLINE bool operator==(const TString& Rhs)
+		FORCEINLINE bool operator==(const TString& Rhs) const
 		{
 			// same shared ptr 
 			if (m_StrSP == Rhs.m_StrSP) return true;
@@ -488,8 +488,8 @@ namespace Fuko
 			// compare 
 			return CString::Strcmp(m_StrSP->Str, Rhs.m_StrSP->Str) == 0;
 		}
-		FORCEINLINE bool operator!=(const TString& Rhs) { return !(*this == Rhs); }
-		FORCEINLINE bool operator==(const T* Rhs)
+		FORCEINLINE bool operator!=(const TString& Rhs) const { return !(*this == Rhs); }
+		FORCEINLINE bool operator==(const T* Rhs) const 
 		{
 			SizeType StrLen = CString::Strlen(Rhs);
 			if (StrLen != Len()) return false;
@@ -497,7 +497,7 @@ namespace Fuko
 			if (!m_StrSP) return true;
 			return CString::Strcmp(m_StrSP->Str, Rhs) == 0;
 		}
-		FORCEINLINE bool operator!=(const T* Rhs) { return !(*this == Rhs); }
+		FORCEINLINE bool operator!=(const T* Rhs) const { return !(*this == Rhs); }
 
 		// access 
 		FORCEINLINE T& operator[](SizeType N) { return m_StrSP->Str[N]; }
@@ -612,7 +612,7 @@ namespace Fuko
 namespace Fuko
 {
 	template<typename T,typename TAlloc>
-	uint32 GetTypedHash(const TString<T, TAlloc>& Str)
+	uint32 GetTypeHash(const TString<T, TAlloc>& Str)
 	{
 		auto Data = Str.GetData();
 		return Data ? Crc::StrCrc32(Data) : 0;

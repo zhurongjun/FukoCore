@@ -43,4 +43,8 @@ void TestString()
 	A.AppendFmt(L"  %s,%d", L"aaa");
 	std::wcout << *A.Upper() << std::endl;
 	std::wcout << *A.Lower() << std::endl;
+
+	TMap<Fuko::TString<ANSICHAR>, Fuko::TString<ANSICHAR>> Maps;
+
+	std::wcout << 100 << std::endl;
 }
