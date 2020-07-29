@@ -206,6 +206,7 @@ namespace Fuko
 	class TBlockAlloc
 	{
 		FallBackAlloc	m_FallBack;
+		void* _UnpackData(void* RawData) { return((int32*)(RawData) - 4); }
 	public:
 		using SizeType = int32;
 		using USizeType = uint32;
@@ -219,7 +220,9 @@ namespace Fuko
 			}
 			else
 			{
-				m_FallBack.FreeRaw(Data, InAlign);
+				void* RawPtr = _UnpackData(Data);
+				m_FallBack.FreeRaw(RawPtr, InAlign);
+				Data = nullptr;
 			}
 			return 0;
 		}
@@ -229,30 +232,46 @@ namespace Fuko
 			USizeType BlockSize = Math::RoundUpToPowerOfTwo((USizeType)InSize);
 			if (Data)
 			{
+				void* OldData = Data;
+				SizeType LastSize = GetBlockSize(OldData);
 				if (ReleaseBlock(Data))
 				{
+					// old memory is block 
 					Data = nullptr;
 					if (BlockSize <= 256)
+					{
+						// new memory use block 
 						Data = RequirBlock(BlockSize);
+						Memcpy(Data, OldData, LastSize);
+					}
 					else
 					{
+						// new memory use Fallback 
 						m_FallBack.ReserveRaw(Data, InSize + 16, InAlign);
 						int32* SizePtr = (int32*)Data;
 						*SizePtr = InSize;
 						Data = SizePtr + 4;
+						Memcpy(Data, OldData, LastSize);
 					}
 				}
 				else
 				{
+					// old memory isn't block 
 					if (BlockSize <= 256)
 					{
-						m_FallBack.FreeRaw(Data, InSize);
-						Data = RequirBlock(BlockSize);
+						// new memory use block 
+						void* NewData = RequirBlock(BlockSize);
+						Memcpy(NewData, OldData, LastSize);
+						void* RawData = _UnpackData(Data);
+						m_FallBack.FreeRaw(RawData, InAlign);
+						Data = NewData;
 					}
 					else
 					{
-						m_FallBack.ReserveRaw(Data, InSize + 16, InAlign);
-						int32* SizePtr = (int32*)Data;
+						// new memory use Fallback 
+						void* RawData = _UnpackData(Data);
+						m_FallBack.ReserveRaw(RawData, InSize + 16, InAlign);
+						int32* SizePtr = (int32*)RawData;
 						*SizePtr = InSize;
 						Data = SizePtr + 4;
 					}
@@ -260,10 +279,15 @@ namespace Fuko
 			}
 			else
 			{
+				// old memory not exist 
 				if (BlockSize <= 256)
+				{
+					// use block 
 					Data = RequirBlock(BlockSize);
+				}
 				else
 				{
+					// use Fallback 
 					m_FallBack.ReserveRaw(Data, InSize + 16, InAlign);
 					int32* SizePtr = (int32*)Data;
 					*SizePtr = InSize;
@@ -273,18 +297,10 @@ namespace Fuko
 			return BlockSize > 256 ? InSize : BlockSize;
 		}
 
-		// never use to container 
 		template<typename T>
-		FORCEINLINE SizeType	Free(T*& Data) 
-		{ 
-			return FreeRaw((void*&)Data, alignof(T));
-		}
-		
+		FORCEINLINE SizeType	Free(T*& Data) { return FreeRaw((void*&)Data, alignof(T)); }		
 		template<typename T>
-		FORCEINLINE SizeType	Reserve(T*& Data, SizeType InMax) 
-		{ 
-			return ReserveRaw((void*&)Data, InMax * sizeof(T), alignof(T));
-		}
+		FORCEINLINE SizeType	Reserve(T*& Data, SizeType InMax) { return ReserveRaw((void*&)Data, InMax * sizeof(T), alignof(T)) / sizeof(T); }
 	
 		FORCEINLINE SizeType	GetGrow(SizeType InNum, SizeType InMax)
 		{

@@ -33,6 +33,8 @@ struct TIsValidVariadicFunctionArg
 		std::is_same_v<T, unsigned long> ||
 		std::is_same_v<T, char> ||
 		std::is_same_v<T, wchar_t> ||
+		std::is_same_v<T, char *> ||
+		std::is_same_v<T, wchar_t *> ||
 		std::is_same_v<T, bool> ||
 		std::is_same_v<T, const void*>;
 };

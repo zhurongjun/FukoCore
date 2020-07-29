@@ -52,7 +52,7 @@ namespace Fuko
 		case 256:
 			return &g_Block256.New()->Memory;
 		default:
-			checkNoEntry();
+			always_checkNoEntry();
 		}
 		return  nullptr;
 	}
@@ -82,6 +82,11 @@ namespace Fuko
 			return false;
 		}
 		return true;
+	}
+	CORE_API int32  GetBlockSize(void* Block)
+	{
+		if (!Block) return 0;
+		return *(((int32*)Block) - 4);
 	}
 
 	

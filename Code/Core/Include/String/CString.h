@@ -25,6 +25,14 @@ namespace Fuko
 				return WCh;
 		}
 
+		static constexpr const CharType* Switch(const ANSICHAR* ACh, const WIDECHAR* WCh)
+		{
+			if constexpr (IsAnisChar)
+				return ACh;
+			else
+				return WCh;
+		}
+
 		static FORCEINLINE bool IsPureAnsi(const T* Str)
 		{
 			if constexpr (IsAnisChar)
@@ -112,18 +120,20 @@ namespace Fuko
 			return Dest;
 		}
 		
-		static FORCEINLINE CharType* Strupr(CharType* Dest, size_t DestCount)
+		static FORCEINLINE int32 Strupr(CharType* Dest, size_t DestCount)
 		{
 			if constexpr (IsAnisChar)
 				return _strupr_s(Dest, DestCount);
 			else
-				return wcsupr_s(Dest, DestCount);
+				return _wcsupr_s(Dest, DestCount);
 		}
-		
-		template<size_t DestCount>
-		static FORCEINLINE CharType* Strupr(CharType(&Dest)[DestCount])
+
+		static FORCEINLINE int32 Strlwr(CharType* Dest, size_t DestCount)
 		{
-			return Strupr(Dest, DestCount);
+			if constexpr (IsAnisChar)
+				return _strlwr_s(Dest, DestCount);
+			else
+				return _wcslwr_s(Dest, DestCount);
 		}
 
 		static FORCEINLINE int32 Strcmp(const CharType* String1, const CharType* String2)
@@ -202,6 +212,14 @@ namespace Fuko
 					L"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
 				return TabArray + 255 - NumTabs;
 			}
+		}
+
+		static FORCEINLINE const CharType* EmptyStr()
+		{
+			if constexpr (IsAnisChar)
+				return "";
+			else
+				return L"";
 		}
 
 		static FORCEINLINE const CharType* Strfind(const CharType* Str, const CharType* Find, bool bSkipQuotedChars = false)
@@ -545,8 +563,7 @@ namespace Fuko
 			return Result;
 		}
 
-		template <typename FmtType>
-		static FORCEINLINE int32 Snprintf(CharType* Dest, int32 DestSize, const CharType* Fmt,...)
+		static FORCEINLINE int32 Snprintf(CharType* Dest, int32 DestSize, const CharType* Fmt, ...)
 		{
 			int32 Result = -1;
 

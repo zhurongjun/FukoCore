@@ -1,6 +1,7 @@
 #pragma once
 #include <CoreConfig.h>
 #include <CoreType.h>
+#include <chrono>
 
 namespace Fuko::Log
 {
@@ -13,14 +14,20 @@ namespace Fuko::Log
 		Fatal ,
 	};
 
+	struct LogItem
+	{
+		std::chrono::time_point		LogTime;
+		ELogType					LogLevel;
+		String						LogStr;
+	};
+
 	struct ILogDevice
 	{
 		virtual ~ILogDevice() {}
 
 		// Add log message
-		virtual void	Log(ELogType InType, const TCHAR* InFmt, ...) = 0;
-		virtual void	LogSubMsg(const TCHAR* InFmt, ...) = 0;
-		
+		virtual void	Log(ELogType InType, const LogItem& InLog) = 0;
+
 		// Clear log device 
 		virtual bool	ClearDevice() = 0;
 
@@ -30,9 +37,10 @@ namespace Fuko::Log
 		virtual void	SetAutoFlushRate(float InRate) = 0;
 	};
 
+	class LogSystem
+	{
+		TArray<ILogDevice*>		m_Devices;
+	public:
 
-
-
-
-
+	};
 }

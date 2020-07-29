@@ -91,5 +91,5 @@ namespace Fuko
 	// only support block of 32 / 64 / 128 / 56 
 	CORE_API void*	RequirBlock(size_t BlockSize);
 	CORE_API bool	ReleaseBlock(void* Block);
-
+	CORE_API int32  GetBlockSize(void* Block);
 }

@@ -12,6 +12,7 @@
 #include <TestRingQueue.h>
 #include <TestDelegate.h>
 #include <TestName.h>
+#include <TestString.h>
 
 int main()
 {
@@ -20,10 +21,11 @@ int main()
 	TestSparseArray();
 	TestSet();
 	TestMap();
-	TestRingQueue();
+	//TestRingQueue();
 
-	TestDelegate();
-	TestName();
+	//TestDelegate();
+	//TestName();
+	TestString();
 	
 	system("pause");
 	return 0;
