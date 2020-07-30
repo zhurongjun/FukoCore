@@ -13,6 +13,7 @@
 #include <TestDelegate.h>
 #include <TestName.h>
 #include <TestString.h>
+#include <future>
 
 int main()
 {
@@ -26,7 +27,7 @@ int main()
 	//TestDelegate();
 	//TestName();
 	TestString();
-	
+
 	system("pause");
 	return 0;
 }
