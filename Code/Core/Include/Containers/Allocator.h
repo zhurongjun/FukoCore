@@ -294,7 +294,7 @@ namespace Fuko
 					Data = SizePtr + 4;
 				}
 			}
-			return BlockSize > 256 ? InSize : BlockSize;
+			return BlockSize > 256 ? InSize : BlockSize < 32 ? 32 : BlockSize;
 		}
 
 		template<typename T>

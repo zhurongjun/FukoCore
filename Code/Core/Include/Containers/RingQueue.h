@@ -197,11 +197,12 @@ namespace Fuko
 			{
 				// reserve array 
 				SizeType NewMax = m_Allocator.GetGrow(CurNum + 1, CurNum);
-				m_Max = m_Allocator.Reserve(m_Data, NewMax);
+				Reserve(NewMax);
 			}
 			// add element 
+			auto LastTail = m_Tail;
 			++m_Tail;
-			return new(GetData() + (m_Tail - 1)% m_Max) T(std::forward<Ts>(Args)...);
+			return new(GetData() + LastTail % m_Max) T(std::forward<Ts>(Args)...);
 		}
 		FORCEINLINE bool Dequeue()
 		{
@@ -221,8 +222,8 @@ namespace Fuko
 		}
 
 		// access 
-		FORCEINLINE T* Tail() { return m_Tail > m_Head ? &m_Data[(m_Tail - 1) % m_Max] : nullptr; }
-		FORCEINLINE T* Head() { return m_Tail > m_Head ? &m_Data[m_Head % m_Max] : nullptr; }
+		FORCEINLINE T* Tail() { return m_Tail >= m_Head ? &m_Data[(m_Tail - 1) % m_Max] : nullptr; }
+		FORCEINLINE T* Head() { return m_Tail >= m_Head ? &m_Data[m_Head % m_Max] : nullptr; }
 		FORCEINLINE const T* Tail() const { return const_cast<TRingQueue*>(this)->Tail(); }
 		FORCEINLINE const T* Head() const { return const_cast<TRingQueue*>(this)->Head(); }
 	};

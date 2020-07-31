@@ -67,6 +67,15 @@ namespace Fuko
 			, m_InstanceSize(0)
 			, m_InstanceAlign(0)
 		{}
+		template<typename TFun, typename...TVars>
+		TDelegate(TFun&& Fun, TVars&&...Vars, const TAlloc& InAlloc = TAlloc())
+			: m_pInstance(nullptr)
+			, m_Alloc(InAlloc)
+			, m_InstanceSize(0)
+			, m_InstanceAlign(0)
+		{
+			Bind(std::forward<TFun>(Fun), std::forward<TVars>(Vars)...);
+		}
 		
 		// copy construct 
 		TDelegate(const TDelegate& Other)
@@ -117,6 +126,7 @@ namespace Fuko
 				m_Alloc.ReserveRaw(m_pInstance, m_InstanceSize, m_InstanceAlign);
 				Other.m_pInstance->CreateCopy(m_pInstance);
 			}
+			return *this;
 		}
 
 		// move assign
@@ -127,6 +137,7 @@ namespace Fuko
 			m_InstanceSize = Other.m_InstanceSize;
 			m_InstanceAlign = Other.m_InstanceAlign;
 			m_Alloc = Other.m_Alloc;
+			return *this;
 		}
 
 		// destruct 

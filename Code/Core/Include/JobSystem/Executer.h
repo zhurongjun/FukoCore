@@ -1,6 +1,5 @@
 #pragma once
-#include <CoreType.h>
-#include <CoreConfig.h>
+#include "JobConfig.h"
 
 namespace Fuko::Job
 {
