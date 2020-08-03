@@ -12,6 +12,7 @@ namespace Fuko
 		FORCEINLINE void unlock() {}
 		FORCEINLINE void try_lock() {}
 	};
+	struct LockFree : public NoLock {};
 
 	// 互斥锁 
 	struct MutexLock

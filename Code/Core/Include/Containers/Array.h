@@ -27,6 +27,7 @@ namespace Fuko
 	private:
 		FORCENOINLINE void _FreeArray()
 		{
+			if (!m_Data) return;
 			DestructItems(GetData(), m_Num);
 			m_Num = 0;
 			m_Max = m_Allocator.Free(m_Data);
@@ -181,7 +182,7 @@ namespace Fuko
 		}
 		
 		// destruct 
-		FORCEINLINE ~TArray() { _FreeArray(); }
+		FORCEINLINE ~TArray() {  _FreeArray(); }
 		
 		// get infomation 
 		FORCEINLINE T* GetData() { return m_Data; }

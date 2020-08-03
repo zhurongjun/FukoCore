@@ -13,9 +13,7 @@
 #include <TestDelegate.h>
 #include <TestName.h>
 #include <TestString.h>
-#include <future>
-#include <Async/ThreadPool.h>
-#include <JobSystem/Queue.h>
+#include <TestPool.h>
 
 int n = 0;
 
@@ -49,22 +47,9 @@ int main()
 	//TestRingQueue();
 
 	//TestDelegate();
+	TestPool();
 	//TestName();
 	TestString();
-	auto Begin = std::chrono::high_resolution_clock::now();
-	{
-		Fuko::ThreadPool Pool;
-		Begin = std::chrono::high_resolution_clock::now();
-		for (int i = 0; i < 20; ++i)
-		{
-			Pool.ExecTask(&TaskFun);
-		}
-	}
-	auto End = std::chrono::high_resolution_clock::now();
-
-	std::cout << "Time: " << std::chrono::duration<double, std::milli>(End - Begin).count() << "ms" << std::endl;
-
-	Fuko::Job::JobQueue<void*> a;
 
 	system("pause");
 	return 0;
