@@ -1,10 +1,13 @@
 #pragma once
-#include "JobConfig.h"
+#include "JobConfig.hpp"
 
 namespace Fuko::Job
 {
-	class JobExecuter final
+	class JobBucket
 	{
 		
+
+
+
 	};
 }
