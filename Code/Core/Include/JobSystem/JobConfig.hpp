@@ -3,10 +3,18 @@
 #include <atomic>
 #include <stdint.h>
 #include <assert.h>
+#include <future>
+#include <vector>
+
+#define JobAssert(Pred) assert(Pred)
 
 // Job config policy 
 namespace Fuko::Job
 {
+	// Normal alloc policy
+	void*	Alloc(int32_t InSize, int32_t InAlign);
+	void	Free(void* Ptr);
+
 	// Executable alloc policy 
 	void*	AllocExecutable(int32_t InSize, int32_t InAlign);
 	void	FreeExecutable(void* Ptr);
@@ -17,12 +25,48 @@ namespace Fuko::Job
 
 	// Memory operator
 	void	Memcpy(void* Dest, void* Src, int32_t Size);
+
+	// JobAllocator 
+	template<class T>
+	class JobAllocator : public std::allocator<T>
+	{
+	public:
+		using base_type = std::allocator<T>;
+
+		template<class Other>
+		struct rebind { using other = JobAllocator<Other>; };
+
+		JobAllocator() {}
+
+		JobAllocator(JobAllocator<T> const&) {}
+
+		JobAllocator<T>& operator=(JobAllocator<T> const&) { return (*this); }
+
+		template<class Other> JobAllocator(JobAllocator<Other> const&) {}
+
+		template<class Other> JobAllocator<T>& operator=(JobAllocator<Other> const&) { return (*this); }
+
+		pointer allocate(size_type count) { return (pointer)AllocContainer(count * sizeof(T), alignof(T)); }
+		void deallocate(pointer ptr, size_type count) { FreeContainer(ptr); }
+	};
+
+	// container
+	template<typename T>
+	using JobVector = std::vector<T, JobAllocator<T>>;
 }
 
-// Fuko core policy 
+//================================Fuko core policy================================
 #include <Memory/MemoryOps.h>
 namespace Fuko::Job
 {
+	void* Alloc(int32_t InSize, int32_t InAlign)
+	{
+		return _aligned_malloc(InSize, InAlign);
+	}
+	void Free(void* Ptr)
+	{
+		_aligned_free(Ptr);
+	}
 	FORCEINLINE void* AllocExecutable(int32_t InSize, int32_t InAlign)
 	{ 
 		return _aligned_malloc(InSize, InAlign); 

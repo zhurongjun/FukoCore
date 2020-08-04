@@ -3,14 +3,9 @@
 
 namespace Fuko::Job
 {
-	enum class EExecutableType : int8_t
-	{
-		Normal ,		// Normal task
-		Condition ,		// Condition task
-	};
-
 	using NormalExec = void(*)(void*);
 	using ConditionExec = uint32_t(*)(void*);
+	using BranchExec = bool(*)(void*);
 
 	struct alignas(16) Executable
 	{
@@ -19,62 +14,96 @@ namespace Fuko::Job
 		void*				ExecuteFunc;
 		MemoryOpFun			DestroyFunc;
 
-		inline Executable()
-			: Storage(nullptr)
-			, ExecuteFunc(nullptr)
-			, DestroyFunc(nullptr)
-		{}
+		inline Executable();
 		inline ~Executable() { Destroy(); }
 
-		inline bool IsValid() { return Storage && ExecuteFunc; }
-		inline bool IsDestroyed() { return DestroyFunc == nullptr; }
-		inline void Destroy() 
-		{
-			if (DestroyFunc && Storage)
-			{
-				DestroyFunc(Storage);
-				DestroyFunc = nullptr;
-			}
-			if (Storage)
-			{
-				FreeExecutable(Storage);
-				Storage = nullptr;
-			}
-		}
+		inline bool IsValid() const { return Storage && ExecuteFunc; }
+		inline bool IsDestroyed() const { return DestroyFunc == nullptr; }
+		inline void Destroy();
 		
 		// Invoke 
 		inline void			InvokeNormal() { ((NormalExec)(ExecuteFunc))(Storage); }
 		inline uint32_t		InvokeCondition() { return ((ConditionExec)(ExecuteFunc))(Storage); }
+		inline bool			InvokeBranch() { return ((BranchExec)(ExecuteFunc))(Storage); }
 
 		// Bind 
-		template<typename TFun>
-		inline void	BindNormal(TFun&& Fun)
-		{
-			using RealTFun = std::remove_reference_t<TFun>;
-			
-			Storage = AllocExecutable(sizeof(RealTFun), alignof(RealTFun));
-			new(Storage) RealTFun(std::forward<TFun>(Fun));
-
-			NormalExec Exec;
-			Exec = [](void* InPtr) { (*(RealTFun*)(InPtr))(); };
-			
-			ExecuteFunc = Exec;
-			DestroyFunc = [](void* InPtr) { ((RealTFun*)InPtr)->~RealTFun(); };
-		}
-		template<typename TFun>
-		inline void BindCondition(TFun&& Fun)
-		{
-			using RealTFun = std::remove_reference_t<TFun>;
-
-			Storage = AllocExecutable(sizeof(RealTFun), alignof(RealTFun));
-			new(Storage) RealTFun(std::forward<TFun>(Fun));
-
-			ConditionExec Exec;
-			Exec = [](void* InPtr) { return (*(RealTFun*)(InPtr))(); };
-			
-			ExecuteFunc = Exec;
-			DestroyFunc = [](void* InPtr) { ((RealTFun*)InPtr)->~RealTFun(); };
-		}
-
+		template<typename TFun> inline void	BindNormal(TFun&& Fun);
+		template<typename TFun> inline void BindCondition(TFun&& Fun);
+		template<typename TFun> inline void BindBranch(TFun&& Fun);
 	};
+}
+
+// Impl 
+namespace Fuko::Job
+{
+	inline Executable::Executable()
+		: Storage(nullptr)
+		, ExecuteFunc(nullptr)
+		, DestroyFunc(nullptr)
+	{}
+
+	inline void Executable::Destroy()
+	{
+		if (DestroyFunc && Storage)
+		{
+			DestroyFunc(Storage);
+			DestroyFunc = nullptr;
+		}
+		if (Storage)
+		{
+			FreeExecutable(Storage);
+			Storage = nullptr;
+		}
+	}
+
+	template<typename TFun>
+	inline void	Executable::BindNormal(TFun&& Fun)
+	{
+		using RealTFun = std::remove_reference_t<TFun>;
+
+		Destroy();
+
+		Storage = AllocExecutable(sizeof(RealTFun), alignof(RealTFun));
+		new(Storage) RealTFun(std::forward<TFun>(Fun));
+
+		NormalExec Exec;
+		Exec = [](void* InPtr) { (*(RealTFun*)(InPtr))(); };
+
+		ExecuteFunc = Exec;
+		DestroyFunc = [](void* InPtr) { ((RealTFun*)InPtr)->~RealTFun(); };
+	}
+	
+	template<typename TFun>
+	inline void Executable::BindCondition(TFun&& Fun)
+	{
+		using RealTFun = std::remove_reference_t<TFun>;
+
+		Destroy();
+
+		Storage = AllocExecutable(sizeof(RealTFun), alignof(RealTFun));
+		new(Storage) RealTFun(std::forward<TFun>(Fun));
+
+		ConditionExec Exec;
+		Exec = [](void* InPtr) { return (*(RealTFun*)(InPtr))(); };
+
+		ExecuteFunc = Exec;
+		DestroyFunc = [](void* InPtr) { ((RealTFun*)InPtr)->~RealTFun(); };
+	}
+	
+	template<typename TFun>
+	inline void Executable::BindBranch(TFun&& Fun)
+	{
+		using RealTFun = std::remove_reference_t<TFun>;
+
+		Destroy();
+
+		Storage = AllocExecutable(sizeof(RealTFun), alignof(RealTFun));
+		new(Storage) RealTFun(std::forward<TFun>(Fun));
+
+		BranchExec Exec;
+		Exec = [](void* InPtr) { return (*(RealTFun*)(InPtr))(); };
+
+		ExecuteFunc = Exec;
+		DestroyFunc = [](void* InPtr) { ((RealTFun*)InPtr)->~RealTFun(); };
+	}
 }

@@ -4,27 +4,6 @@
 namespace Fuko::Job
 {	
 	template<typename T>
-	class SimpleArray
-	{
-	public:
-		T*			Data;
-		int32_t		Max;
-		int32_t		Mask;
-
-		explicit SimpleArray(int32_t InMax)
-			: Max(InMax)
-			, Mask(InMax - 1)
-		{
-			Data = (T*)AllocContainer(InMax * sizeof(T), alignof(T));
-		}
-
-		~SimpleArray() { FreeContainer(Data); }
-
-		void Set(int32_t Index, T Data) { Data[Index&Mask] = Data; }
-		T Get(int32_t Index) { return Data[Index&Mask]; }
-	};
-
-	template<typename T>
 	class MutexQueue
 	{
 		static_assert(std::is_pointer_v<T>, "T must be a pointer type!!!");
@@ -38,9 +17,11 @@ namespace Fuko::Job
 		MutexQueue(int32_t InMax = 1024)
 			: Max(InMax)
 			, Mask(InMax - 1)
-		{ assert((InMax & (InMax - 1)) == 0 && InMax != 0); }
+		{
+			JobAssert((InMax & (InMax - 1)) == 0 && InMax != 0);
+		}
 
-		bool IsEmpty() { return Num() != 0; }
+		bool IsEmpty() { return Num() == 0; }
 		int32_t Num() { return m_Tail - m_Head; }
 		int32_t Max() { return m_Max; }
 
@@ -63,13 +44,16 @@ namespace Fuko::Job
 		}
 		bool TryEnqueue(T InElement)
 		{
-			auto Lck = std::lock_guard(m_Mutex);
 			if (Num() >= m_Max) return false;
-			// now enqueue 
-			SizeType GottenTail = m_Tail;
-			++m_Tail;
-			*(m_Data + (GottenTail & m_Mask)) = InElement;
-			return true;
+			{
+				auto Lck = std::lock_guard(m_Mutex);
+				if (Num() >= m_Max) return false;
+				// now enqueue 
+				SizeType GottenTail = m_Tail;
+				++m_Tail;
+				*(m_Data + (GottenTail & m_Mask)) = InElement;
+				return true;
+			}
 		}
 	
 		T Dequeue()
@@ -90,13 +74,16 @@ namespace Fuko::Job
 		}
 		T TryDequeue()
 		{
-			auto Lck = std::lock_guard(m_Mutex);
-			// some bitch gotten lock before us, and dequeue an element
-			if (Num() == 0) return nullptr;
-			// now dequeue
-			SizeType GottenHead = m_Head;
-			++m_Head;
-			return *(m_Data + (GottenHead & m_Mask));
+			if (Num() == 0) return nullptr
+			{
+				auto Lck = std::lock_guard(m_Mutex);
+				// some bitch gotten lock before us, and dequeue an element
+				if (Num() == 0) return nullptr;
+				// now dequeue
+				SizeType GottenHead = m_Head;
+				++m_Head;
+				return *(m_Data + (GottenHead & m_Mask));
+			}
 		}
 	};
 
@@ -109,6 +96,8 @@ namespace Fuko::Job
 	template<typename T>
 	class WorkStealingQueue
 	{
+		static_assert(std::is_pointer_v<T>, "T must be a pointer type");
+
 
 	};
 }

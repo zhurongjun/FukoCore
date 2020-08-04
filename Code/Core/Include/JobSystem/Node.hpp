@@ -4,6 +4,13 @@
 
 namespace Fuko::Job
 {
+	enum class EJobType
+	{
+		PlaceHolder ,	// PlaceHolder task 
+		Static,			// Static task
+		Condition,		// Condition task
+	};
+
 	enum class EJobState
 	{
 		Building ,		// 构建 
@@ -21,193 +28,210 @@ namespace Fuko::Job
 			uint32_t	Num;
 			uint32_t	Max;
 
-			JobArr()
-				: Data(nullptr)
-				, Num(0)
-				, Max(0)
-			{}
-			~JobArr()
-			{
-				if (Data)
-				{
-					FreeContainer(Data);
-					Data = nullptr;
-				}
-			}
-			inline void Resize(uint32_t InNum)
-			{
-				uint32_t NewMax;
-				if (InNum > Max)
-				{
-					NewMax = InNum > 8 ? InNum * 4 / 3 : 8;
-					JobNode** NewData = (JobNode**)AllocContainer(NewMax * sizeof(JobNode*), alignof(JobNode*));
-					if (Data)
-					{
-						Memcpy(NewData, Data, sizeof(JobNode*) * Num);
-						FreeContainer(Data);
-					}
-					Data = NewData;
-					Max = NewMax;
-				}
-			}
-			inline void Grow(uint32 InGrow)
-			{
-				uint32_t NewNum = Num + InGrow;
-				Resize(NewNum);
-			}
-			inline void Add(JobNode* InNode)
-			{
-				Grow(1);
-				Data[Num] = InNode;
-				++Num;
-			}
+			inline JobArr();
+			inline ~JobArr();
+			inline void Resize(uint32_t InNum);
+			inline void Grow(uint32 InGrow);
+			inline void Add(JobNode* InNode);
 			inline void Reset() { Num = 0; }
 			inline JobNode*& operator[](int32_t Index) { return Data[Index]; }
 			inline JobNode* const & operator[](int32_t Index) const { return Data[Index]; }
 		};
 
-		//========================Begin build step state========================
 		// 执行体 
-		Executable		m_Executable;
-		EExecutableType	m_ExecutableType;
+		Executable	m_Executable;
+		EJobType	m_JobType;
 
 		// 依赖自己的节点数组 
-		JobArr			m_JobsDependSelf;
+		JobArr		m_JobsDependSelf;
 		// 自己依赖的节点 
-		JobArr			m_SelfDependJobs;
-		//=========================End build step state=========================
+		JobArr		m_SelfDependJobs;
 
-		//=========================Begin run step state=========================
+
 		// 依赖计数 
 		std::atomic<uint32>			m_SelfDependJobCount;
-		// Job状态
-		std::atomic<EJobState>		m_JobState;
-		//==========================End run step state==========================
 
 		//=========================Begin help function==========================		
-		inline void _Precede(JobNode* InNode)
-		{
-			m_JobsDependSelf.Add(InNode);
-			InNode->m_SelfDependJobs.Add(this);
-		}
+		inline void _Precede(JobNode* InNode);
 		//==========================End help function===========================
 	public:
 		JobNode(const JobNode&) = delete;
 		JobNode(JobNode&&) = delete;
 
-		//======================Begin build step function=======================
-		// 绑定一个函数 
-		template<typename TFun>
-		void Bind(TFun&& Fun)
-		{
-			using TRet = decltype(Fun());
+		// Build process 
+		template<typename TFun> inline void Bind(TFun&& Fun);
+		template<typename...Ts> inline void Precede(Ts...Args);
+		template<typename...Ts> inline void Depend(Ts...Args);
+		inline void Unbind();
 
-			if constexpr (std::is_same_v<TRet, uint32_t>)
-			{
-				// condition 
-				m_ExecutableType = EExecutableType::Condition;
-
-				if (m_Executable.IsValid()) m_Executable.Destroy();
-				m_Executable.BindCondition(std::forward<TFun>(Fun));
-			}
-			else
-			{
-				// Normal 
-				m_ExecutableType = EExecutableType::Normal;
-
-				if (m_Executable.IsValid()) m_Executable.Destroy();
-				m_Executable.BindNormal(std::forward<TFun>(Fun));
-			}
-		}
-
-		// 领先其它Job执行 
-		template<typename...Ts>
-		void Precede(Ts...Args)
-		{
-			switch (m_ExecutableType)
-			{
-			case EExecutableType::Condition:
-			{
-				m_JobsDependSelf.Resize(sizeof...(Args));
-				m_JobsDependSelf.Reset();
-				int Temp[] = { 0,(_Precede(Args),0)... };
-				(void)Temp;
-				break;
-			}
-			case EExecutableType::Normal:
-			{
-				m_JobsDependSelf.Grow(sizeof...(Args));
-				int Temp[] = { 0,(_Precede(Args),0)... };
-				(void)Temp;
-				break;
-			}
-			default: assert(false);
-			}
-		}
-
-		// 依赖其它Job(Other.Precede(this)) 
-		template<typename...Ts>
-		void Depend(Ts...Args)
-		{
-			m_SelfDependJobs.Grow(sizeof...(Args));
-			int Temp[] = { 0,(Args->Precede(this),0)... };
-			(void)Temp;
-		}
-		//=======================End build step function========================
-
-		//=======================Begin run step function========================
-		inline void Prepare()
-		{
-			assert(false);
-		}
-		inline void BeginDoing()
-		{
-			assert(false);
-		}
-		inline void TryDone()
-		{
-			assert(false);
-		}
-		//========================End run step function=========================
-
+		// Get Info
+		inline uint32_t NumDependentsStroge() const;
+		inline uint32_t NumDependentsWeak() const;
+		inline uint32_t NumDependents() const { return m_SelfDependJobs.Num; }
+		inline uint32_t NumPrecede() const { return m_JobsDependSelf.Num; }
+		inline EJobType	Type() const { return m_JobType; }
+		inline bool		IsValid() const { return m_Executable.IsValid(); }
 	public:
 		friend class JobBucket;
 		friend class JobExecuter;
 
-		JobNode()
-			: m_SelfDependJobCount(0)
-			, m_ExecutableType(EExecutableType::Normal)
-		{}
-
-		// 执行Job 
-		JobNode* DoJob()
-		{
-			JobNode* RetJob = nullptr;
-			switch (m_ExecutableType)
-			{
-			case EExecutableType::Condition:
-			{
-				uint32_t Index = m_Executable.InvokeCondition();
-				RetJob = Index < m_JobsDependSelf.Num ? m_JobsDependSelf[Index] : nullptr;
-				TryDone();
-				break;
-			}
-			case EExecutableType::Normal:
-			{
-				m_Executable.InvokeNormal();
-				for (uint32_t i = 0; i < m_JobsDependSelf.Num; ++i)
-				{
-					if (--m_JobsDependSelf[i]->m_SelfDependJobCount == 0 && !RetJob)
-					{
-						RetJob = m_JobsDependSelf[i];
-					}
-				}
-				TryDone();
-				break;
-			}
-			default: assert(false);
-			}
-			return RetJob;
-		}
+		JobNode();
 	};
 }
+
+// Job Arr 
+namespace Fuko::Job
+{
+	inline JobNode::JobArr::JobArr()
+		: Data(nullptr)
+		, Num(0)
+		, Max(0)
+	{}
+
+	inline JobNode::JobArr::~JobArr()
+	{
+		if (Data)
+		{
+			FreeContainer(Data);
+			Data = nullptr;
+		}
+	}
+
+	inline void JobNode::JobArr::Resize(uint32_t InNum)
+	{
+		uint32_t NewMax;
+		if (InNum > Max)
+		{
+			NewMax = InNum > 8 ? InNum * 4 / 3 : 8;
+			JobNode** NewData = (JobNode**)AllocContainer(NewMax * sizeof(JobNode*), alignof(JobNode*));
+			if (Data)
+			{
+				Memcpy(NewData, Data, sizeof(JobNode*) * Num);
+				FreeContainer(Data);
+			}
+			Data = NewData;
+			Max = NewMax;
+		}
+	}
+
+	inline void JobNode::JobArr::Grow(uint32 InGrow)
+	{
+		uint32_t NewNum = Num + InGrow;
+		Resize(NewNum);
+	}
+
+	inline void JobNode::JobArr::Add(JobNode* InNode)
+	{
+		Grow(1);
+		Data[Num] = InNode;
+		++Num;
+	}
+}
+
+// Job Node
+namespace Fuko::Job
+{
+	//=================================Private Functions=================================
+	inline JobNode::JobNode()
+		: m_SelfDependJobCount(0)
+		, m_JobType(EJobType::PlaceHolder)
+	{}
+
+	inline void JobNode::_Precede(JobNode* InNode)
+	{
+		m_JobsDependSelf.Add(InNode);
+		InNode->m_SelfDependJobs.Add(this);
+	}
+
+	//==================================Public Functions=================================
+	template<typename TFun>
+	inline void JobNode::Bind(TFun&& Fun)
+	{
+		using TRet = decltype(Fun());
+
+		if constexpr (std::is_same_v<TRet, uint32_t>)
+		{
+			// condition 
+			m_JobType = EJobType::Condition;
+
+			if (m_Executable.IsValid()) m_Executable.Destroy();
+			m_Executable.BindCondition(std::forward<TFun>(Fun));
+		}
+		else
+		{
+			// Static 
+			m_JobType = EJobType::Static;
+
+			if (m_Executable.IsValid()) m_Executable.Destroy();
+			m_Executable.BindNormal(std::forward<TFun>(Fun));
+		}
+	}
+
+	inline void JobNode::Unbind()
+	{
+		m_Executable.Destroy();
+		m_JobType = EJobType::PlaceHolder;
+	}
+
+	template<typename...Ts>
+	inline void JobNode::Precede(Ts...Args)
+	{
+		switch (m_JobType)
+		{
+		case EJobType::Condition:
+		{
+			m_JobsDependSelf.Resize(sizeof...(Args));
+			m_JobsDependSelf.Reset();
+			int Temp[] = { 0,(_Precede(Args),0)... };
+			(void)Temp;
+			break;
+		}
+		case EJobType::Static:
+		case EJobType::PlaceHolder:
+		{
+			m_JobsDependSelf.Grow(sizeof...(Args));
+			int Temp[] = { 0,(_Precede(Args),0)... };
+			(void)Temp;
+			break;
+		}
+		default: JobAssert(false);
+		}
+	}
+
+	template<typename...Ts>
+	inline void JobNode::Depend(Ts...Args)
+	{
+		m_SelfDependJobs.Grow(sizeof...(Args));
+		int Temp[] = { 0,(Args->Precede(this),0)... };
+		(void)Temp;
+	}
+
+	inline uint32_t JobNode::NumDependentsStroge() const
+	{
+		uint32_t Count = 0;
+		for (JobNode** It = m_SelfDependJobs.Data,
+			**End = m_SelfDependJobs.Data + m_SelfDependJobs.Num;
+			It != End; ++It)
+		{
+			if ((*It)->m_JobType != EJobType::Condition) ++Count;
+		}
+		return Count;
+	}
+	
+	inline uint32_t JobNode::NumDependentsWeak() const
+	{
+		uint32_t Count = 0;
+		for (JobNode** It = m_SelfDependJobs.Data,
+			 **End = m_SelfDependJobs.Data + m_SelfDependJobs.Num;
+			It != End; ++It)
+		{
+			if ((*It)->m_JobType == EJobType::Condition) ++Count;
+		}
+		return Count;
+	}
+}
+
+
+
+
+

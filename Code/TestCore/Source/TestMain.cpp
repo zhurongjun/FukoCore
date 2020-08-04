@@ -14,7 +14,7 @@
 #include <TestName.h>
 #include <TestString.h>
 #include <TestPool.h>
-#include <JobSystem/Node.hpp>
+#include <JobSystem/Bucket.hpp>
 
 int n = 0;
 
@@ -52,11 +52,8 @@ int main()
 	//TestName();
 	TestString();
 
-	Fuko::Job::JobNode A, B, C, D, E;
-
-	A.Precede(&B, &C, &D, &E);
-	E.Depend(&A, &B, &C, &D);
-	A.Bind([]() {std::cout << "shit" << std::endl; });
+	Fuko::Job::JobBucket Bucket;
+	auto[A, B, C, D, E] = Bucket.Emplace([] {}, [] {}, [] {}, [] {}, [] {});
 
 	system("pause");
 	return 0;
