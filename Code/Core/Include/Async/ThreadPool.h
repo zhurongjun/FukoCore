@@ -101,6 +101,12 @@ namespace Fuko
 			m_QueueWait.notify_one();
 		}
 
+		void ReserveTaskQueue(uint32 Size)
+		{
+			std::lock_guard<std::mutex> Lck(m_QueueMutex);
+			m_Tasks.Reserve(Size);
+		}
+
 		void AddWorker(int32 NumWorkers)
 		{
 			for (int32 i = 0; i < NumWorkers; ++i)

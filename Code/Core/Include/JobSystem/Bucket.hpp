@@ -1,29 +1,25 @@
 #pragma once
 #include "JobConfig.hpp"
 #include "Node.hpp"
-#include "Plan.hpp"
+#include "BucketBuilder.hpp"
 
 namespace Fuko::Job
 {
-	class JobBucket
+	class JobBucket : public JobBucketBuilder
 	{
-		JobVector<JobNode*>	m_AllNodes;
+		friend class SingleQueueExecuter;
+		friend class JobPlan;
 
-		//=======================Begin help functions=======================
-		template<typename TFun> 
-		JobNode* _Emplace(TFun&& InFun);
-		//========================End help functions========================
+		JobVector<JobNode*>	m_AllNodes;
+		JobString			m_BucketName;
+		bool				m_HasPrepare;
 	public:
 		JobBucket();
 		~JobBucket();
 
-		template<typename...TFuns> 
-		inline decltype(auto) Emplace(TFuns&&...Funs);
-
-		inline JobNode* PlaceHolder();
-
+		
+		void	Prepare();
 	private:
-		inline void Prepare();
 	};
 }
 
@@ -31,7 +27,9 @@ namespace Fuko::Job
 namespace Fuko::Job
 {
 	JobBucket::JobBucket()
-		: m_AllNodes()
+		: JobBucketBuilder(m_AllNodes)
+		, m_AllNodes()
+		, m_HasPrepare(false)
 	{
 		m_AllNodes.reserve(64);
 	}
@@ -40,26 +38,13 @@ namespace Fuko::Job
 	{
 	}
 
-	template<typename TFun>
-	JobNode* JobBucket::_Emplace(TFun&& InFun)
+	void JobBucket::Prepare()
 	{
-		JobNode* Node = PlaceHolder();
-		Node->Bind(std::forward<TFun>(InFun));
-		return Node;
+		if (m_HasPrepare) return;
+		for (JobNode* Node : m_AllNodes)
+		{
+			Node->Prepare();
+		}
+		m_HasPrepare = true;
 	}
-
-	inline JobNode* JobBucket::PlaceHolder()
-	{
-		JobNode* Node = (JobNode*)Alloc(sizeof(JobNode), alignof(JobNode));
-		new (Node)JobNode();
-		m_AllNodes.emplace_back(Node);
-		return Node;
-	}
-
-	template<typename...TFuns>
-	inline decltype(auto) JobBucket::Emplace(TFuns&&...Funs)
-	{
-		return std::make_tuple(_Emplace(std::forward<TFuns>(Funs))...);
-	}
-
 }

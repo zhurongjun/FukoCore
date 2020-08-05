@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <future>
 #include <vector>
+#include <string>
 
 #define JobAssert(Pred) assert(Pred)
 
@@ -53,6 +54,21 @@ namespace Fuko::Job
 	// container
 	template<typename T>
 	using JobVector = std::vector<T, JobAllocator<T>>;
+	using JobString = std::basic_string<wchar_t, std::char_traits<wchar_t>, JobAllocator<wchar_t>>;
+	
+	// helpers 
+	template<typename T,typename...Ts>
+	T*		JobNew(Ts&&...Args)
+	{
+		void* Memory = Alloc(sizeof(T), alignof(T));
+		return new(Memory)T(std::forward<Ts>(Args)...);
+	}
+	template<typename T>
+	void    JobDelete(T* Ptr)
+	{
+		Ptr->~T();
+		Free(Ptr);
+	}
 }
 
 //================================Fuko core policy================================

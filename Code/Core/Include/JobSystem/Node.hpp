@@ -11,17 +11,20 @@ namespace Fuko::Job
 		Condition,		// Condition task
 	};
 
-	enum class EJobState
+	enum EJobFlag
 	{
-		Building ,		// 构建 
-		Waiting ,		// 等待
-		Doing ,			// 执行
-		Pending ,		// 挂起
-		Done ,			// 完成
+		BRANCH = 1,
 	};
+
+	class JobPlan;
 
 	class JobNode final
 	{
+		friend class JobBucket;
+		friend class JobBucketBuilder;
+		friend class JobPlan;
+		friend class SingleQueueExecuter;
+
 		struct JobArr
 		{
 			JobNode**	Data;
@@ -36,6 +39,11 @@ namespace Fuko::Job
 			inline void Reset() { Num = 0; }
 			inline JobNode*& operator[](int32_t Index) { return Data[Index]; }
 			inline JobNode* const & operator[](int32_t Index) const { return Data[Index]; }
+
+			inline JobNode** begin() { return Data; }
+			inline JobNode* const* begin() const { return Data; }
+			inline JobNode** end() { return Data + Num; }
+			inline JobNode* const* end() const { return Data + Num; }
 		};
 
 		// 执行体 
@@ -46,10 +54,13 @@ namespace Fuko::Job
 		JobArr		m_JobsDependSelf;
 		// 自己依赖的节点 
 		JobArr		m_SelfDependJobs;
+		// Flag 
+		uint32_t	m_Flags;
 
-
+		// 当前所属的计划表 
+		JobPlan*	m_CurPlan;
 		// 依赖计数 
-		std::atomic<uint32>			m_SelfDependJobCount;
+		std::atomic<uint32>			m_JoinCount;
 
 		//=========================Begin help function==========================		
 		inline void _Precede(JobNode* InNode);
@@ -71,10 +82,16 @@ namespace Fuko::Job
 		inline uint32_t NumPrecede() const { return m_JobsDependSelf.Num; }
 		inline EJobType	Type() const { return m_JobType; }
 		inline bool		IsValid() const { return m_Executable.IsValid(); }
-	public:
-		friend class JobBucket;
-		friend class JobExecuter;
+		inline bool		HasFlag(EJobFlag Flag) const { return (m_Flags & Flag) == Flag; }
+		inline void		SetFlag(EJobFlag Flag) { m_Flags |= Flag; }
+		inline void		EraseFlag(EJobFlag Flag) { m_Flags &= ~Flag; }
+		inline void		ClearFlag() { m_Flags = 0; }
 
+		// Execute process 
+		inline void		Prepare();	// Prepare for execute 
+		inline void		Resume();	// Resume job for next execute 
+
+	private:
 		JobNode();
 	};
 }
@@ -133,7 +150,8 @@ namespace Fuko::Job
 {
 	//=================================Private Functions=================================
 	inline JobNode::JobNode()
-		: m_SelfDependJobCount(0)
+		: m_JoinCount(0)
+		, m_Flags(0)
 		, m_JobType(EJobType::PlaceHolder)
 	{}
 
@@ -149,21 +167,17 @@ namespace Fuko::Job
 	{
 		using TRet = decltype(Fun());
 
-		if constexpr (std::is_same_v<TRet, uint32_t>)
+		if constexpr (std::is_integral_v<TRet>)
 		{
 			// condition 
 			m_JobType = EJobType::Condition;
-
-			if (m_Executable.IsValid()) m_Executable.Destroy();
 			m_Executable.BindCondition(std::forward<TFun>(Fun));
 		}
 		else
 		{
 			// Static 
 			m_JobType = EJobType::Static;
-
-			if (m_Executable.IsValid()) m_Executable.Destroy();
-			m_Executable.BindNormal(std::forward<TFun>(Fun));
+			m_Executable.BindStatic(std::forward<TFun>(Fun));
 		}
 	}
 
@@ -176,7 +190,7 @@ namespace Fuko::Job
 	template<typename...Ts>
 	inline void JobNode::Precede(Ts...Args)
 	{
-		switch (m_JobType)
+ 		switch (m_JobType)
 		{
 		case EJobType::Condition:
 		{
@@ -228,6 +242,24 @@ namespace Fuko::Job
 			if ((*It)->m_JobType == EJobType::Condition) ++Count;
 		}
 		return Count;
+	}
+
+	inline void JobNode::Prepare()
+	{
+		ClearFlag();
+		for (JobNode* It : m_SelfDependJobs)
+		{
+			if (It->Type() == EJobType::Condition) SetFlag(EJobFlag::BRANCH);
+		}
+		m_JoinCount = NumDependentsStroge();
+	}
+
+	inline void JobNode::Resume()
+	{
+		if (HasFlag(EJobFlag::BRANCH))
+			m_JoinCount = NumDependentsStroge();
+		else
+			m_JoinCount = NumDependents();
 	}
 }
 

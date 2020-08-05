@@ -3,7 +3,7 @@
 
 namespace Fuko::Job
 {
-	using NormalExec = void(*)(void*);
+	using StaticExec = void(*)(void*);
 	using ConditionExec = uint32_t(*)(void*);
 	using BranchExec = bool(*)(void*);
 
@@ -22,12 +22,12 @@ namespace Fuko::Job
 		inline void Destroy();
 		
 		// Invoke 
-		inline void			InvokeNormal() { ((NormalExec)(ExecuteFunc))(Storage); }
+		inline void			InvokeStatic() { ((StaticExec)(ExecuteFunc))(Storage); }
 		inline uint32_t		InvokeCondition() { return ((ConditionExec)(ExecuteFunc))(Storage); }
 		inline bool			InvokeBranch() { return ((BranchExec)(ExecuteFunc))(Storage); }
 
 		// Bind 
-		template<typename TFun> inline void	BindNormal(TFun&& Fun);
+		template<typename TFun> inline void	BindStatic(TFun&& Fun);
 		template<typename TFun> inline void BindCondition(TFun&& Fun);
 		template<typename TFun> inline void BindBranch(TFun&& Fun);
 	};
@@ -57,7 +57,7 @@ namespace Fuko::Job
 	}
 
 	template<typename TFun>
-	inline void	Executable::BindNormal(TFun&& Fun)
+	inline void	Executable::BindStatic(TFun&& Fun)
 	{
 		using RealTFun = std::remove_reference_t<TFun>;
 
@@ -66,7 +66,7 @@ namespace Fuko::Job
 		Storage = AllocExecutable(sizeof(RealTFun), alignof(RealTFun));
 		new(Storage) RealTFun(std::forward<TFun>(Fun));
 
-		NormalExec Exec;
+		StaticExec Exec;
 		Exec = [](void* InPtr) { (*(RealTFun*)(InPtr))(); };
 
 		ExecuteFunc = Exec;
@@ -84,7 +84,7 @@ namespace Fuko::Job
 		new(Storage) RealTFun(std::forward<TFun>(Fun));
 
 		ConditionExec Exec;
-		Exec = [](void* InPtr) { return (*(RealTFun*)(InPtr))(); };
+		Exec = [](void* InPtr) { return (uint32_t)(*(RealTFun*)(InPtr))(); };
 
 		ExecuteFunc = Exec;
 		DestroyFunc = [](void* InPtr) { ((RealTFun*)InPtr)->~RealTFun(); };
