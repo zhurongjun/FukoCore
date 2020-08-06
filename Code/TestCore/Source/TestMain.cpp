@@ -15,6 +15,7 @@
 #include <TestString.h>
 #include <TestPool.h>
 #include <JobSystem/JobSystem.h>
+#include <filesystem>
 
 int main()
 {
@@ -29,15 +30,9 @@ int main()
 // 	TestPool();
 // 	TestName();
 // 	TestString();
-	{
-		Fuko::Job::JobExecuter Executer;
-		Fuko::Job::JobBucket BucketA;
-		Fuko::Job::JobBucket BucketB;
-
-		Executer.Execute(BucketA).Sync(1);
-		Executer.Execute(BucketB).Sync(1);
-		Executer.WaitForAll();
-	}
+	
+	std::filesystem::path Path(L"c:/");
+	std::cout << std::filesystem::exists(Path) << std::endl;
 
 	system("pause");
 	return 0;

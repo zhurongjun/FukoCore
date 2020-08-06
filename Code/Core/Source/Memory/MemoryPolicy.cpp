@@ -70,6 +70,7 @@ namespace Fuko
 		}
 		}
 	}
+	
 	CORE_API void*	PoolRealloc(void* Ptr, size_t InSize, size_t InAlign)
 	{
 		size_t LastSize = PoolMSize(Ptr);
@@ -86,6 +87,7 @@ namespace Fuko
 		PoolFree(Ptr);
 		return NewPtr;
 	}
+	
 	CORE_API void	PoolFree(void* Ptr)
 	{
 		int32* RawPtr = (((int32*)Ptr) - 4);
@@ -117,6 +119,7 @@ namespace Fuko
 		}
 		}
 	}
+	
 	CORE_API size_t PoolMSize(void* Ptr)
 	{
 		if (Ptr == 0) return 0;
