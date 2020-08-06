@@ -16,10 +16,11 @@ namespace Fuko::Job
 
 		inline Executable();
 		inline ~Executable() { Destroy(); }
+		inline void Destroy();
 
+		// check 
 		inline bool IsValid() const { return Storage && ExecuteFunc; }
 		inline bool IsDestroyed() const { return DestroyFunc == nullptr; }
-		inline void Destroy();
 		
 		// Invoke 
 		inline void			InvokeStatic() { ((StaticExec)(ExecuteFunc))(Storage); }

@@ -8,6 +8,7 @@ namespace Fuko::Job
 {
 	class SingleQueueExecuter final
 	{
+		friend class TPlanBuilder<SingleQueueExecuter>;
 		using PlanBuilder = TPlanBuilder<SingleQueueExecuter>;
 
 		JobVector<std::thread>	m_AllThread;
@@ -30,12 +31,12 @@ namespace Fuko::Job
 		SingleQueueExecuter(uint32_t NumWorkers = std::thread::hardware_concurrency());
 		~SingleQueueExecuter();
 
-		PlanBuilder Execute(JobBucket* Bucket);
-		void Execute(JobPlan* Plan);
+		PlanBuilder Execute(JobBucket& Bucket);
 
 		void WaitForAll();
 
 	private:
+		void Execute(JobPlan* Plan);
 		void _AddWorker();
 
 		inline bool _WaitForJob(JobNode*& Node);
@@ -77,10 +78,10 @@ namespace Fuko::Job
 			it.join();
 	}
 
-	TPlanBuilder<SingleQueueExecuter> SingleQueueExecuter::Execute(JobBucket* Bucket)
+	TPlanBuilder<SingleQueueExecuter> SingleQueueExecuter::Execute(JobBucket& Bucket)
 	{
 		// create plan 
-		return TPlanBuilder<SingleQueueExecuter>(*JobNew<JobPlan>(Bucket), *this);
+		return TPlanBuilder<SingleQueueExecuter>(*JobNew<JobPlan>(&Bucket), *this);
 	}
 	
 	void SingleQueueExecuter::Execute(JobPlan* Plan)

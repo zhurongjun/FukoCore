@@ -9,7 +9,7 @@
 
 #define JobAssert(Pred) assert(Pred)
 
-// Job config policy 
+// Job config  
 namespace Fuko::Job
 {
 	// Normal alloc policy
@@ -27,6 +27,7 @@ namespace Fuko::Job
 	// Memory operator
 	void	Memcpy(void* Dest, void* Src, int32_t Size);
 
+	//================================Helper================================
 	// JobAllocator 
 	template<class T>
 	class JobAllocator : public std::allocator<T>
@@ -73,31 +74,32 @@ namespace Fuko::Job
 
 //================================Fuko core policy================================
 #include <Memory/MemoryOps.h>
+#include <Memory/MemoryPolicy.h>
 namespace Fuko::Job
 {
 	void* Alloc(int32_t InSize, int32_t InAlign)
 	{
-		return _aligned_malloc(InSize, InAlign);
+		return PoolMAlloc(InSize, InAlign);
 	}
 	void Free(void* Ptr)
 	{
-		_aligned_free(Ptr);
+		PoolFree(Ptr);
 	}
 	FORCEINLINE void* AllocExecutable(int32_t InSize, int32_t InAlign)
 	{ 
-		return _aligned_malloc(InSize, InAlign); 
+		return PoolMAlloc(InSize, InAlign);
 	}
 	FORCEINLINE void FreeExecutable(void* Ptr)
 	{
-		_aligned_free(Ptr);
+		PoolFree(Ptr);
 	}
 	FORCEINLINE void* AllocContainer(int32_t InSize, int32_t InAlign)
 	{
-		return _aligned_malloc(InSize, InAlign);
+		return PoolMAlloc(InSize, InAlign);
 	}
 	FORCEINLINE void FreeContainer(void* Ptr)
 	{
-		_aligned_free(Ptr);
+		PoolFree(Ptr);
 	}
 
 	FORCEINLINE void Memcpy(void* Dest, void* Src, int32_t Size)

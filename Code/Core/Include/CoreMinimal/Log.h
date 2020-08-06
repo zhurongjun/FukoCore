@@ -18,6 +18,7 @@ namespace Fuko::Log
 	{
 		std::chrono::time_point		LogTime;
 		ELogType					LogLevel;
+		Name						LogCategory;
 		String						LogStr;
 	};
 
@@ -40,6 +41,7 @@ namespace Fuko::Log
 	class LogSystem
 	{
 		TArray<ILogDevice*>		m_Devices;
+		TArray<LogItem>			m_LogItem;
 	public:
 
 	};

@@ -14,21 +14,31 @@
 #include <TestName.h>
 #include <TestString.h>
 #include <TestPool.h>
-
+#include <JobSystem/JobSystem.h>
 
 int main()
 {
-	TestArray();
-	TestBitArray();
-	TestSparseArray();
-	TestSet();
-	TestMap();
-	TestRingQueue();
-	
-	TestDelegate();
-	TestPool();
-	TestName();
-	TestString();
+// 	TestArray();
+// 	TestBitArray();
+// 	TestSparseArray();
+// 	TestSet();
+// 	TestMap();
+// 	TestRingQueue();
+// 	
+// 	TestDelegate();
+// 	TestPool();
+// 	TestName();
+// 	TestString();
+	{
+		Fuko::Job::JobExecuter Executer;
+		Fuko::Job::JobBucket BucketA;
+		Fuko::Job::JobBucket BucketB;
+
+		Executer.Execute(BucketA).Sync(1);
+		Executer.Execute(BucketB).Sync(1);
+		Executer.WaitForAll();
+	}
+
 	system("pause");
 	return 0;
 }

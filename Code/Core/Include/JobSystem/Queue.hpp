@@ -26,6 +26,14 @@ namespace Fuko::Job
 		{
 			Reserve(InMax);
 		}
+		~MutexQueue()
+		{
+			if (m_Data)
+			{
+				FreeContainer(m_Data);
+				m_Data = nullptr;
+			}
+		}
 
 		void Reserve(uint32_t InMax)
 		{

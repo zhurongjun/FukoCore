@@ -87,16 +87,45 @@ namespace Fuko::Job
 		inline void		EraseFlag(EJobFlag Flag) { m_Flags &= ~Flag; }
 		inline void		ClearFlag() { m_Flags = 0; }
 
+	private:
 		// Execute process 
 		inline void		Prepare();	// Prepare for execute 
 		inline void		Resume();	// Resume job for next execute 
-
-	private:
 		JobNode();
 	};
 }
 
-// Job Arr 
+// Job
+namespace Fuko::Job
+{
+	class Job
+	{
+		friend class JobBucket;
+		friend class JobBucketBuilder;
+
+		JobNode*		m_Node;
+
+		explicit Job(JobNode* InNode) : m_Node(InNode) {}
+	public:
+		template<typename TFun> inline Job& Bind(TFun&& Fun) { m_Node->Bind(std::forward<TFun>(Fun)); return *this; }
+		template<typename...Ts> inline Job& Precede(Ts...Args) { m_Node->Precede(Args.m_Node ...); return *this; }
+		template<typename...Ts> inline Job& Depend(Ts...Args) { m_Node->Depend(Args.m_Node ...); return *this; }
+		inline Job& Unbind() { m_Node->Unbind(); return *this; }
+
+		inline uint32_t NumDependentsStroge() const		{ return m_Node->NumDependentsStroge(); }
+		inline uint32_t NumDependentsWeak() const		{ return m_Node->NumDependentsWeak(); }
+		inline uint32_t NumDependents() const			{ return m_Node->NumDependents(); }
+		inline uint32_t NumPrecede() const				{ return m_Node->NumPrecede(); }
+		inline EJobType	Type() const					{ return m_Node->Type(); }
+		inline bool		IsValid() const					{ return m_Node->IsValid(); }
+		inline bool		HasFlag(EJobFlag Flag) const	{ return m_Node->HasFlag(Flag); }
+		inline Job&		SetFlag(EJobFlag Flag)			{ m_Node->SetFlag(Flag); return *this; }
+		inline Job&		EraseFlag(EJobFlag Flag)		{ m_Node->EraseFlag(Flag); return *this; }
+		inline Job&		ClearFlag()						{ m_Node->ClearFlag(); return *this; }
+	};
+}
+
+// Job Arr Impl
 namespace Fuko::Job
 {
 	inline JobNode::JobArr::JobArr()
@@ -145,7 +174,7 @@ namespace Fuko::Job
 	}
 }
 
-// Job Node
+// Job Node Impl
 namespace Fuko::Job
 {
 	//=================================Private Functions=================================
@@ -262,8 +291,3 @@ namespace Fuko::Job
 			m_JoinCount = NumDependents();
 	}
 }
-
-
-
-
-

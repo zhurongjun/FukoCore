@@ -17,8 +17,8 @@ namespace Fuko::Job
 		JobBucket();
 		~JobBucket();
 
-		
 		void	Prepare();
+		void	Reset();
 	private:
 	};
 }
@@ -36,6 +36,10 @@ namespace Fuko::Job
 	
 	JobBucket::~JobBucket()
 	{
+		for (JobNode* Node : m_AllNodes)
+		{
+			JobDelete(Node);
+		}
 	}
 
 	void JobBucket::Prepare()
@@ -46,5 +50,10 @@ namespace Fuko::Job
 			Node->Prepare();
 		}
 		m_HasPrepare = true;
+	}
+
+	void JobBucket::Reset()
+	{
+		m_HasPrepare = false;
 	}
 }

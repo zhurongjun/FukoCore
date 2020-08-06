@@ -145,8 +145,8 @@ namespace Fuko
 	template<typename T>
 	TName<T>::TName(const T* InStr)
 	{
-		auto Len = TCString<T>::Strlen(InStr);
-		auto NameSize = (Len + 1) * sizeof(T);
+		uint32 Len = TCString<T>::Strlen(InStr);
+		uint32 NameSize = (Len + 1) * sizeof(T);
 		NameElement Element = { InStr,Len };
 		uint32 NameHash = GetTypeHash(Element);
 

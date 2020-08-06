@@ -30,6 +30,7 @@ namespace Fuko
 	static_assert(sizeof(TBlock<32>) == 48);
 
 	// global pool 
+	TPool<TBlock<16>, MutexLock, BaseAlloc>		g_Block16(128, 4);
 	TPool<TBlock<32>, MutexLock, BaseAlloc>		g_Block32(64, 4);
 	TPool<TBlock<64>, MutexLock, BaseAlloc>		g_Block64(32, 4);
 	TPool<TBlock<128>, MutexLock, BaseAlloc>	g_Block128(16, 4);
@@ -45,10 +46,12 @@ namespace Fuko
 		{
 		case 0: 
 			return nullptr;
+		case 1:
 		case 2:
 		case 4:
 		case 8:
 		case 16:
+			return &g_Block16.New()->Memory;
 		case 32:
 			return &g_Block32.New()->Memory;
 		case 64:
@@ -89,6 +92,9 @@ namespace Fuko
 		int32 BlockSize = *RawPtr;
 		switch (BlockSize)
 		{
+		case 16:
+			g_Block16.Free((TBlock<16>*)RawPtr);
+			break;
 		case 32:
 			g_Block32.Free((TBlock<32>*)RawPtr);
 			break;
@@ -103,6 +109,7 @@ namespace Fuko
 			break;
 		case 512:
 			g_Block512.Free((TBlock<512>*)RawPtr);
+			break;
 		default:
 		{
 			check(BlockSize > 512);

@@ -47,6 +47,11 @@ namespace Fuko::Job
 		TPlanBuilder(JobPlan& InPlan, T& InExecuter) : m_Plan(InPlan), m_Executer(InExecuter) {}
 		~TPlanBuilder() { m_Executer.Execute(&m_Plan); }
 
+		TPlanBuilder(TPlanBuilder&&) = delete;
+		TPlanBuilder(const TPlanBuilder&) = delete;
+		TPlanBuilder& operator=(const TPlanBuilder&) = delete;
+		TPlanBuilder& operator=(TPlanBuilder&&) = delete;
+
 		inline TPlanBuilder& Future(std::future<void>& Future) { Future = m_Plan.m_Promise.get_future(); return *this; }
 		inline TPlanBuilder& Sync(uint32_t SyncFlag) { m_Plan.m_PlanFlag |= SyncFlag; return *this; }
 		template<typename TFun>
@@ -55,6 +60,7 @@ namespace Fuko::Job
 		inline TPlanBuilder& OnPrepare(TFun&& Fun) { m_Plan.m_OnPrepare.BindStatic(std::forward<TFun>(Fun)); return *this; }
 		template<typename TFun>
 		inline TPlanBuilder& OnDone(TFun&& Fun) { m_Plan.m_OnDone.BindStatic(std::forward<TFun>(Fun)); return *this; }
+		inline TPlanBuilder& DoN(uint32_t N) { m_Plan.m_Predicate.BindBranch([N]() mutable { return --N == 0; }); return *this; }
 	};
 }
 
