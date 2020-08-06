@@ -110,7 +110,7 @@ namespace Fuko
 // String
 namespace Fuko
 {
-	template<typename T, typename TAlloc = TBlockAlloc<PmrAlloc>>
+	template<typename T, typename TAlloc = BlockAlloc>
 	class TString
 	{
 		using StringSP = TStringSP<T, TAlloc>;

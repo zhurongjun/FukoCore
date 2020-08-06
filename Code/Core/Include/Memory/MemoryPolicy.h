@@ -27,27 +27,18 @@ namespace Fuko
 
 		// help 
 		template<typename T>
-		FORCEINLINE T* TAlloc(size_t Count = 1)
-		{
-			return (T*)Alloc(Count * sizeof(T), alignof(T));
-		}
+		FORCEINLINE T* TAlloc(size_t Count = 1) { return (T*)Alloc(Count * sizeof(T), alignof(T)); }
 		template<typename T>
-		FORCEINLINE T* TRealloc(T* Ptr, size_t Count = 1)
-		{
-			return (T*)Realloc(Ptr, Count * sizeof(T), alignof(T));
-		}
+		FORCEINLINE T* TRealloc(T* Ptr, size_t Count = 1) { return (T*)Realloc(Ptr, Count * sizeof(T), alignof(T)); }
 		template<typename T>
-		FORCEINLINE void TFree(T* Ptr)
-		{
-			Free(Ptr);
-		}
+		FORCEINLINE void TFree(T* Ptr) { Free(Ptr); }
 	};
 }
 
 // Heap allocator
 namespace Fuko
 {
-	class HeapAllocator : public IAllocator
+	class CORE_API HeapAllocator : public IAllocator
 	{
 		int	m_Count = 0;
 	public:
@@ -86,6 +77,18 @@ namespace Fuko
 namespace Fuko
 {
 	CORE_API IAllocator* DefaultAllocator();
+
+	// Default malloc 
+	FORCEINLINE void*	MAlloc(size_t InSize, size_t InAlign) { return DefaultAllocator()->Alloc(InSize, InAlign); }
+	FORCEINLINE void*	Realloc(void* Ptr, size_t InSize, size_t InAlign) { return DefaultAllocator()->Realloc(Ptr, InSize, InAlign); }
+	FORCEINLINE void	Free(void* Ptr) { DefaultAllocator()->Free(Ptr); }
+	FORCEINLINE size_t MSize(void* Ptr) { return DefaultAllocator()->Size(Ptr); }
+
+	// Pool malloc 
+	CORE_API void*	PoolMAlloc(size_t InSize, size_t InAlign);
+	CORE_API void*	PoolRealloc(void* Ptr, size_t InSize, size_t InAlign);
+	CORE_API void	PoolFree(void* Ptr);
+	CORE_API size_t PoolMSize(void* Ptr); 
 
 	// Global block pool
 	// only support block of 32 / 64 / 128 / 56 

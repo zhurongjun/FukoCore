@@ -7,7 +7,7 @@
 // forward 
 namespace Fuko
 {
-	template<typename TFun, typename TAlloc = TBlockAlloc<PmrAlloc>>
+	template<typename TFun, typename TAlloc = BlockAlloc>
 	class TDelegate;
 	template<typename TFun>
 	class TBaseDelegate;

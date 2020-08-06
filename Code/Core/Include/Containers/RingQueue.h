@@ -222,8 +222,8 @@ namespace Fuko
 		}
 
 		// access 
-		FORCEINLINE T* Tail() { return m_Tail >= m_Head ? &m_Data[(m_Tail - 1) % m_Max] : nullptr; }
-		FORCEINLINE T* Head() { return m_Tail >= m_Head ? &m_Data[m_Head % m_Max] : nullptr; }
+		FORCEINLINE T* Tail() { return m_Data ? m_Tail >= m_Head ? &m_Data[(m_Tail - 1) % m_Max] : nullptr : nullptr; }
+		FORCEINLINE T* Head() { return m_Data ? m_Tail >= m_Head ? &m_Data[m_Head % m_Max] : nullptr : nullptr; }
 		FORCEINLINE const T* Tail() const { return const_cast<TRingQueue*>(this)->Tail(); }
 		FORCEINLINE const T* Head() const { return const_cast<TRingQueue*>(this)->Head(); }
 	};
