@@ -16,6 +16,7 @@
 #include <TestPool.h>
 #include <JobSystem/JobSystem.h>
 #include <filesystem>
+#include <CoreMinimal/SmartPtr.h>
 
 int main()
 {
@@ -31,8 +32,11 @@ int main()
 // 	TestName();
 // 	TestString();
 	
-	std::filesystem::path Path(L"c:/");
-	std::cout << std::filesystem::exists(Path) << std::endl;
+	Fuko::PtrCore a(nullptr, nullptr);
+	std::cout << a.TimeToDie() << std::endl;
+	std::cout << a.IsValid() << std::endl;
+
+	Fuko::UP<int> p();
 
 	system("pause");
 	return 0;

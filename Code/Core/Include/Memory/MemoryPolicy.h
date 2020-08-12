@@ -82,17 +82,11 @@ namespace Fuko
 	FORCEINLINE void*	MAlloc(size_t InSize, size_t InAlign) { return DefaultAllocator()->Alloc(InSize, InAlign); }
 	FORCEINLINE void*	Realloc(void* Ptr, size_t InSize, size_t InAlign) { return DefaultAllocator()->Realloc(Ptr, InSize, InAlign); }
 	FORCEINLINE void	Free(void* Ptr) { DefaultAllocator()->Free(Ptr); }
-	FORCEINLINE size_t MSize(void* Ptr) { return DefaultAllocator()->Size(Ptr); }
+	FORCEINLINE size_t	MSize(void* Ptr) { return DefaultAllocator()->Size(Ptr); }
 
 	// Pool malloc 
 	CORE_API void*	PoolMAlloc(size_t InSize, size_t InAlign);
 	CORE_API void*	PoolRealloc(void* Ptr, size_t InSize, size_t InAlign);
 	CORE_API void	PoolFree(void* Ptr);
 	CORE_API size_t PoolMSize(void* Ptr); 
-
-	// Global block pool
-	// only support block of 32 / 64 / 128 / 56 
-	CORE_API void*	RequirBlock(size_t BlockSize);
-	CORE_API bool	ReleaseBlock(void* Block);
-	CORE_API int32  GetBlockSize(void* Block);
 }
