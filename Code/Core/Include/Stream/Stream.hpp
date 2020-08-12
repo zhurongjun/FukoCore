@@ -1,6 +1,7 @@
 #pragma once
 #include <CoreConfig.h>
 #include <CoreType.h>
+#include <atomic>
 
 namespace Fuko
 {
@@ -23,8 +24,8 @@ namespace Fuko
 			, m_bEOF(false)
 			, m_bFailed(false)
 			, m_bCrashed(false)
-			, m_bWriting(false)
-			, m_bReading(false)
+			, m_bWriting(0)
+			, m_bReading(0)
 		{}
 		virtual ~Stream() {}
 
@@ -47,19 +48,18 @@ namespace Fuko
 		// Read write 
 		virtual uint32	Read(void* Buffer, uint32 Size) = 0;
 		virtual uint32	Write(void* Buffer, uint32 Size) = 0;
-		virtual uint32	Peek(void* Buffer, uint32 Size) = 0;
 
 		// Size 
 		virtual uint32	Size() = 0;
-		virtual void	Reserve(uint32 NewSize) {}
+		virtual bool	Reserve(uint32 NewSize) { return false; }
 		
 		// Position 
 		virtual uint32	Tell() = 0;
-		virtual bool	Seek(uint32 Offset, ESeekMode Mode = ESeekMode::Begin) = 0;
+		virtual bool	Seek(int32 Offset, ESeekMode Mode = ESeekMode::Begin) = 0;
 
 		// Device operator 
-		virtual bool	Flush() {}
-		virtual bool	Close() {}
+		virtual bool	Flush() { return true; }
+		virtual bool	Close() { return true; }
 
 	protected:
 		// Options 
@@ -73,7 +73,9 @@ namespace Fuko
 		uint8	m_bEOF : 1;			// 是否结束
 		uint8	m_bFailed : 1;		// 失败(可恢复) 
 		uint8	m_bCrashed : 1;		// 错误(不可恢复) 
-		uint8	m_bWriting : 1;		// 正在读取 
-		uint8	m_bReading : 1;		// 正在写入 
+		
+		// for async 
+		std::atomic<uint8>	m_bWriting;		// 正在读取 
+		std::atomic<uint8>	m_bReading;		// 正在写入 
 	};
 }

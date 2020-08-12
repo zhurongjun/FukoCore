@@ -31,7 +31,7 @@ int main()
 // 	TestPool();
 // 	TestName();
 // 	TestString();
-	
+
 	Fuko::PtrCore a(nullptr, nullptr);
 	std::cout << a.TimeToDie() << std::endl;
 	std::cout << a.IsValid() << std::endl;
