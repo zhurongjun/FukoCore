@@ -1,6 +1,6 @@
-#include "CoreMinimal/Crc.h"
+#include "Misc/Crc.h"
 #include "Templates/UtilityTemp.h"
-#include "CoreMinimal/ByteSwap.h"
+#include "Misc/ByteSwap.h"
 
 enum { Crc32Poly = 0x04c11db7 };
 

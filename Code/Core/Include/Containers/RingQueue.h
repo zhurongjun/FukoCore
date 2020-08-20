@@ -4,13 +4,8 @@
 #include <mutex>
 #include "Allocator.h"
 #include "LockPolicy.h"
+#include "ContainerFwd.h"
 
-// forward
-namespace Fuko
-{
-	template<typename T, typename TLockPolicy = NoLock, typename Alloc = PmrAlloc>
-	class TRingQueue;
-}
 
 // no lock ring queue 
 namespace Fuko

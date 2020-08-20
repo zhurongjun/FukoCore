@@ -16,7 +16,7 @@
 #include <TestPool.h>
 #include <JobSystem/JobSystem.h>
 #include <filesystem>
-#include <CoreMinimal/SmartPtr.h>
+#include <Misc/SmartPtr.h>
 
 int main()
 {
@@ -31,12 +31,6 @@ int main()
 // 	TestPool();
 // 	TestName();
 // 	TestString();
-
-	Fuko::PtrCore a(nullptr, nullptr);
-	std::cout << a.TimeToDie() << std::endl;
-	std::cout << a.IsValid() << std::endl;
-
-	Fuko::UP<int> p();
 
 	system("pause");
 	return 0;

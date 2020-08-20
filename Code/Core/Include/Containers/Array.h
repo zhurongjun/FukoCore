@@ -4,16 +4,17 @@
 #include "Math/MathUtility.h"
 #include "Templates/UtilityTemp.h"
 #include "Algo/Sort.h"
-#include "CoreMinimal/Assert.h"
+#include "Misc/Assert.h"
 #include "Allocator.h"
 #include <Algo/Find.h>
 #include <Algo/Sort.h>
 #include <Algo/StableSort.h>
+#include "ContainerFwd.h"
 
 // Array
 namespace Fuko
 {
-	template<typename T, typename Alloc = PmrAlloc>
+	template<typename T, typename Alloc>
 	class TArray
 	{
 		using SizeType = typename Alloc::USizeType;

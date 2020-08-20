@@ -56,28 +56,4 @@ struct TAlignedBytes
 template<typename T, int N = 1>
 struct TStorage : public TAlignedBytes<sizeof(T) * N, alignof(T)> {};
 
-// 手动构造析构的Warpper 
-template<typename T, bool AutoDestory = false>
-class TLazyObject;
 
-template<typename T>
-class TLazyObject<T, false>
-{
-	TStorage<T>		m_Storage;
-public:
-	TLazyObject() = default;
-	
-	template<typename...Ts>
-	void New(Ts&&...Args)
-	{
-		new(&m_Storage)T(std::forward<Ts>(Args)...);
-	}
-	void Delete()
-	{
-		((T*)&m_Storage)->~T();
-	}
-
-	T& operator*() const { return *(T*)&m_Storage; }
-	T* operator->() const { return (T*)&m_Storage; }
-	operator T*() const { return (T*)&m_Storage; }
-};

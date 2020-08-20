@@ -2,6 +2,7 @@
 #include <CoreConfig.h>
 #include <CoreType.h>
 #include <Memory/MemoryPolicy.h>
+#include <atomic>
 
 // PtrCore 
 namespace Fuko
@@ -10,11 +11,13 @@ namespace Fuko
 	class PtrCore final
 	{
 		using TDestructor = void(*)(void*);
+		using TSelfDestructor = void(*)(PtrCore*);
 
-		std::atomic<TDestructor>	m_Destructor;
-		std::atomic<void*>			m_Ptr;
-		std::atomic<uint32>			m_StrongCount;
-		std::atomic<uint32>			m_WeakCount;
+		std::atomic<TDestructor>		m_Destructor;
+		std::atomic<TSelfDestructor>	m_SelfDestructor;
+		std::atomic<void*>				m_Ptr;
+		std::atomic<uint32>				m_StrongCount;
+		std::atomic<uint32>				m_WeakCount;
 	public:
 		FORCEINLINE void _DestructPtr()
 		{
@@ -23,12 +26,15 @@ namespace Fuko
 			m_Destructor = nullptr;
 			m_Ptr = nullptr;
 		}
-		FORCEINLINE PtrCore(void* Ptr,TDestructor Destructor) 
+		FORCEINLINE PtrCore(void* Ptr,TDestructor Destructor,TSelfDestructor SelfDestructor = &FreeCore) 
 			: m_Destructor(Destructor)
+			, m_SelfDestructor(SelfDestructor)
 			, m_Ptr(Ptr)
 			, m_StrongCount(0)
 			, m_WeakCount(0) 
 		{}
+
+		FORCEINLINE TSelfDestructor SelfDestructor() { return m_SelfDestructor; }
 
 		FORCEINLINE bool TimeToDie() const { return m_WeakCount == 0 && m_StrongCount == 0; }
 		FORCEINLINE bool IsValid() const { return m_Ptr != nullptr && m_Destructor != nullptr; }
@@ -61,9 +67,10 @@ namespace Fuko
 // DestroyPolicy
 namespace Fuko
 {
-	template<typename T> struct TRawDeleter  { static void Destroy(void* Obj) { delete (T*)Obj; } };
-	template<typename T> struct TFukoDeleter { static void Destroy(void* Obj) { ((T*)Obj)->~T(); Free(Obj); } };
-	template<typename T> struct TPoolDeleter { static void Destroy(void* Obj) { ((T*)Obj)->~T(); PoolFree(Obj); } };
+	template<typename T> struct TRawDeleter		{ static void Destroy(void* Obj) { delete (T*)Obj; } };
+	template<typename T> struct TFukoDeleter	{ static void Destroy(void* Obj) { ((T*)Obj)->~T(); Free(Obj); } };
+	template<typename T> struct TPoolDeleter	{ static void Destroy(void* Obj) { ((T*)Obj)->~T(); PoolFree(Obj); } };
+	template<typename T> struct TNoFreeDeleter	{ static void Destroy(void* Obj) { ((T*)Obj)->~T(); } };
 }
 
 // SP
@@ -83,7 +90,7 @@ namespace Fuko
 		FORCEINLINE SP(T* Inptr);
 		template<typename Deleter>
 		FORCEINLINE SP(T* InPtr, Deleter);
-		FORCEINLINE SP(PtrCore* Core);
+		FORCEINLINE explicit SP(PtrCore* Core);
 
 		FORCEINLINE ~SP() { _Detach(); }
 
@@ -116,7 +123,7 @@ namespace Fuko
 	template<typename T,typename...Ts>
 	FORCEINLINE SP<T> MakeSP(Ts&&...Args)
 	{
-		T* Memory = (T*)Alloc(sizeof(T), alignof(T));
+		T* Memory = (T*)MAlloc(sizeof(T), alignof(T));
 		return SP<T>(new(Memory)T(std::forward<Ts>(Args)...));
 	}
 }
@@ -222,7 +229,7 @@ namespace Fuko
 			m_Core->SRelease();
 			if (m_Core->TimeToDie())
 			{
-				PtrCore::FreeCore(m_Core);
+				if(m_Core->SelfDestructor()) m_Core->SelfDestructor()(m_Core);
 			}
 			m_Core = nullptr;
 		}
@@ -307,7 +314,7 @@ namespace Fuko
 			m_Core->WRelease();
 			if (m_Core->TimeToDie())
 			{
-				PtrCore::FreeCore(m_Core);
+				if(m_Core->SelfDestructor()) m_Core->SelfDestructor()(m_Core);
 			}
 			m_Core = nullptr;
 		}

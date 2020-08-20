@@ -9,6 +9,7 @@
 #include <Templates/Pair.h>
 #include <String/Name.h>
 #include <String/CString.h>
+#include <mutex>
 
 // Name Element
 namespace Fuko

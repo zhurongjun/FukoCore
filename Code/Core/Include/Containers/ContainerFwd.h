@@ -19,7 +19,6 @@ namespace Fuko
 	struct TSpinLock;
 }
 
-
 // container
 namespace Fuko
 {

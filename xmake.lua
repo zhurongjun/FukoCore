@@ -41,3 +41,4 @@ end
 -- modules
 includes(codePath .. "Core")
 includes(codePath .. "TestCore")
+includes(codePath .. "Gfx")

@@ -2,7 +2,9 @@
 #include <CoreType.h>
 #include <CoreConfig.h>
 #include <Containers/Allocator.h>
-#include "../Algo/Find.h"
+#include <Algo/Find.h>
+#include <Containers/Array.h>
+#include "CString.h"
 
 // String shared ptr
 namespace Fuko

@@ -2,18 +2,13 @@
 #include "CoreConfig.h"
 #include "CoreType.h"
 #include "Templates/TypeTraits.h"
-#include "CoreMinimal/Assert.h"
+#include "Misc/Assert.h"
 #include "SparseArray.h"
 #include <Memory/MemoryOps.h>
 #include <Memory/MemoryPolicy.h>
 #include "../Templates/Functor.h"
+#include "ContainerFwd.h"
 
-// forward
-namespace Fuko
-{
-	template<typename T, typename Alloc = PmrAlloc, typename KeyFuncs = DefaultKeyFuncs<T>>
-	class TSet;
-}
 
 // Key functions 
 namespace Fuko

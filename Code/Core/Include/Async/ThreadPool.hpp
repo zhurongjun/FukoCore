@@ -3,7 +3,7 @@
 #include <CoreConfig.h>
 #include <Containers/RingQueue.h>
 #include <mutex>
-#include <CoreMinimal/Delegate.h>
+#include <Misc/Delegate.h>
 
 namespace Fuko
 {

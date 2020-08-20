@@ -4,15 +4,9 @@
 #include <Memory/MemoryOps.h>
 #include <Memory/MemoryPolicy.h>
 #include "Array.h"
-#include "CoreMinimal/Assert.h"
+#include "Misc/Assert.h"
 #include "BitArray.h"
-
-// forward
-namespace Fuko
-{
-	template<typename T,typename Alloc = PmrAlloc>
-	class TSparseArray;
-}
+#include "ContainerFwd.h"
 
 // Structs
 namespace Fuko

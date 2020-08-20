@@ -3,13 +3,7 @@
 #include <CoreType.h>
 #include "LockPolicy.h"
 #include "Array.h"
-
-// Forward 
-namespace Fuko
-{
-	template<typename T, typename TLockPolicy = NoLock, typename TAlloc = PmrAlloc>
-	class TPool;
-}
+#include "ContainerFwd.h"
 
 // TPool NoLock 
 namespace Fuko

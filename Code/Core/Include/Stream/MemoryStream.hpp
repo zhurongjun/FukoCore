@@ -1,5 +1,5 @@
 #pragma once
-#include <CoreMinimal/SmartPtr.h>
+#include <Misc/SmartPtr.h>
 #include "Stream.hpp"
 
 namespace Fuko

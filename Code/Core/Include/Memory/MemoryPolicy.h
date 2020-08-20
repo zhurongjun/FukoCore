@@ -1,9 +1,10 @@
 #pragma once
 #include <CoreConfig.h>
 #include <CoreType.h>
-#include <CoreMinimal/Assert.h>
+#include <Misc/Assert.h>
 #include <Memory/MemoryOps.h>
 #include <Memory/MemoryPolicy.h>
+#include <Misc/Assert.h>
 
 // Allocator interface
 namespace Fuko

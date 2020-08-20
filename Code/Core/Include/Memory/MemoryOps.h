@@ -2,7 +2,7 @@
 #include <CoreConfig.h>
 #include <CoreType.h>
 #include <Templates/TypeTraits.h>
-#include <CoreMinimal/Assert.h>
+#include <Misc/Assert.h>
 #include <Math/MathUtility.h>
 
 #include <corecrt_malloc.h>

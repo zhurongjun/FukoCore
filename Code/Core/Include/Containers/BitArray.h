@@ -2,18 +2,12 @@
 #include <CoreConfig.h>
 #include <CoreType.h>
 #include <Math/MathUtility.h>
-#include <CoreMinimal/Assert.h>
+#include <Misc/Assert.h>
 #include <Memory/MemoryOps.h>
 #include <Memory/MemoryPolicy.h>
 #include <Containers/Allocator.h>
 #include <Algo/Container/BitArray.h>
-
-// forward
-namespace Fuko
-{
-	template<typename Alloc = PmrAlloc>
-	class TBitArray;
-}
+#include "ContainerFwd.h"
 
 // Bit reference
 namespace Fuko

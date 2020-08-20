@@ -4,6 +4,7 @@
 #include <Memory/MemoryPolicy.h>
 #include <Memory/MemoryOps.h>
 #include <corecrt_malloc.h>
+#include <Misc/Assert.h>
 
 // alloc template 
 namespace Fuko

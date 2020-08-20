@@ -1,5 +1,5 @@
 #pragma once
-#include <CoreMinimal/Delegate.h>
+#include <Misc/Delegate.h>
 #include <functional>
 
 using Fuko::TDelegate;

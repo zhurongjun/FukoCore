@@ -1,7 +1,7 @@
 #pragma once
 #include <CoreConfig.h>
 #include <CoreType.h>
-#include <CoreMinimal/Assert.h>
+#include <Misc/Assert.h>
 #include <Templates/UtilityTemp.h>
 #include <string.h>
 #include "Char.h"

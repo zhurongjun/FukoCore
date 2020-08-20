@@ -5,6 +5,7 @@
 #include "Set.h"
 #include <Memory/MemoryOps.h>
 #include <Memory/MemoryPolicy.h>
+#include "ContainerFwd.h"
 
 // KeyFunctions 
 namespace Fuko
@@ -326,9 +327,7 @@ namespace Fuko
 // Signal map
 namespace Fuko
 {
-	template<typename KeyType, typename ValueType
-		, typename Alloc = PmrAlloc
-		, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType, ValueType, false>>
+	template<typename KeyType, typename ValueType , typename Alloc , typename KeyFuncs>
 	class TMap : public TMapBase<KeyType, ValueType, Alloc, KeyFuncs>
 	{
 		static_assert(!KeyFuncs::bAllowDuplicateKeys, "TMap cannot be instantiated with a KeyFuncs which allows duplicate keys");
@@ -415,9 +414,7 @@ namespace Fuko
 // Multi map
 namespace Fuko
 {
-	template<typename KeyType, typename ValueType
-		, typename Alloc = PmrAlloc
-		, typename KeyFuncs = TDefaultMapKeyFuncs<KeyType, ValueType, true>>
+	template<typename KeyType, typename ValueType , typename Alloc , typename KeyFuncs>
 	class TMultiMap : public TMapBase<KeyType, ValueType, Alloc, KeyFuncs>
 	{
 		static_assert(KeyFuncs::bAllowDuplicateKeys, "TMultiMap cannot be instantiated with a KeyFuncs which disallows duplicate keys");

@@ -3,7 +3,7 @@
 #include <CoreConfig.h>
 #include "TypeTraits.h"
 #include "UtilityTemp.h"
-#include "CoreMinimal/Crc.h"
+#include "Misc/Crc.h"
 
 namespace Fuko
 {
