@@ -13,19 +13,19 @@
 namespace Fuko::Job
 {
 	// Normal alloc policy
-	void*	Alloc(int32_t InSize, int32_t InAlign);
-	void	Free(void* Ptr);
+	inline void*	Alloc(int32_t InSize, int32_t InAlign);
+	inline void		Free(void* Ptr);
 
 	// Executable alloc policy 
-	void*	AllocExecutable(int32_t InSize, int32_t InAlign);
-	void	FreeExecutable(void* Ptr);
+	inline void*	AllocExecutable(int32_t InSize, int32_t InAlign);
+	inline void		FreeExecutable(void* Ptr);
 
 	// Container alloc policy
-	void*	AllocContainer(int32_t InSize, int32_t InAlign);
-	void	FreeContainer(void* Ptr);
+	inline void*	AllocContainer(int32_t InSize, int32_t InAlign);
+	inline void		FreeContainer(void* Ptr);
 
 	// Memory operator
-	void	Memcpy(void* Dest, void* Src, int32_t Size);
+	inline void		Memcpy(void* Dest, void* Src, int32_t Size);
 
 	//================================Helper================================
 	// JobAllocator 
@@ -38,18 +38,18 @@ namespace Fuko::Job
 		template<class Other>
 		struct rebind { using other = JobAllocator<Other>; };
 
-		JobAllocator() {}
+		inline JobAllocator() {}
 
-		JobAllocator(JobAllocator<T> const&) {}
+		inline JobAllocator(JobAllocator<T> const&) {}
 
-		JobAllocator<T>& operator=(JobAllocator<T> const&) { return (*this); }
+		inline JobAllocator<T>& operator=(JobAllocator<T> const&) { return (*this); }
 
-		template<class Other> JobAllocator(JobAllocator<Other> const&) {}
+		template<class Other> inline JobAllocator(JobAllocator<Other> const&) {}
 
-		template<class Other> JobAllocator<T>& operator=(JobAllocator<Other> const&) { return (*this); }
+		template<class Other> inline JobAllocator<T>& operator=(JobAllocator<Other> const&) { return (*this); }
 
-		pointer allocate(size_type count) { return (pointer)AllocContainer(count * sizeof(T), alignof(T)); }
-		void deallocate(pointer ptr, size_type count) { FreeContainer(ptr); }
+		inline pointer allocate(size_type count) { return (pointer)AllocContainer(count * sizeof(T), alignof(T)); }
+		inline void deallocate(pointer ptr, size_type count) { FreeContainer(ptr); }
 	};
 
 	// container
@@ -59,13 +59,13 @@ namespace Fuko::Job
 	
 	// helpers 
 	template<typename T,typename...Ts>
-	T*		JobNew(Ts&&...Args)
+	inline T*		JobNew(Ts&&...Args)
 	{
 		void* Memory = Alloc(sizeof(T), alignof(T));
 		return new(Memory)T(std::forward<Ts>(Args)...);
 	}
 	template<typename T>
-	void    JobDelete(T* Ptr)
+	inline void    JobDelete(T* Ptr)
 	{
 		Ptr->~T();
 		Free(Ptr);
@@ -77,11 +77,11 @@ namespace Fuko::Job
 #include <Memory/MemoryPolicy.h>
 namespace Fuko::Job
 {
-	void* Alloc(int32_t InSize, int32_t InAlign)
+	inline void* Alloc(int32_t InSize, int32_t InAlign)
 	{
 		return PoolMAlloc(InSize, InAlign);
 	}
-	void Free(void* Ptr)
+	inline void Free(void* Ptr)
 	{
 		PoolFree(Ptr);
 	}

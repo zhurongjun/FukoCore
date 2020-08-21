@@ -10,13 +10,13 @@
 #pragma once
 
 #ifndef __cplusplus
-#error DirectX Math requires C++
+#error Fuko Math requires C++
 #endif
 
 #define DIRECTX_MATH_VERSION 315
 
 #if defined(_MSC_VER) && (_MSC_VER < 1910)
-#error DirectX Math requires Visual C++ 2017 or later.
+#error Fuko Math requires Visual C++ 2017 or later.
 #endif
 
 #if defined(_MSC_VER) && !defined(_M_ARM) && !defined(_M_ARM64) && !defined(_M_HYBRID_X86_ARM64) && (!_MANAGED) && (!_M_CEE) && (!defined(_M_IX86_FP) || (_M_IX86_FP > 1)) && !defined(_XM_NO_INTRINSICS_) && !defined(_XM_VECTORCALL_)
@@ -85,7 +85,7 @@
 #elif defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || __arm__ || __aarch64__
 #define _XM_ARM_NEON_INTRINSICS_
 #elif !defined(_XM_NO_INTRINSICS_)
-#error DirectX Math does not support this target
+#error Fuko Math does not support this target
 #endif
 #endif // !_XM_ARM_NEON_INTRINSICS_ && !_XM_SSE_INTRINSICS_ && !_XM_NO_INTRINSICS_
 
@@ -206,7 +206,7 @@
 
 #endif // _XM_ARM_NEON_INTRINSICS_ && !_XM_NO_INTRINSICS_
 
-namespace DirectX
+namespace Fuko
 {
 
     /****************************************************************************
@@ -2153,7 +2153,7 @@ namespace DirectX
         assert(DivExponent < 32);
 #if defined(_XM_NO_INTRINSICS_)
 
-        using DirectX::XMConvertVectorIntToFloat;
+        using Fuko::XMConvertVectorIntToFloat;
 
         XMVECTORI32 V = { { { IntConstant, IntConstant, IntConstant, IntConstant } } };
         return XMConvertVectorIntToFloat(V.v, DivExponent);
@@ -2219,5 +2219,5 @@ namespace DirectX
 
 #pragma warning(pop)
 
-} // namespace DirectX
+} // namespace Fuko
 

@@ -7,10 +7,7 @@ namespace Fuko
 {
 	// 手动构造析构的Warpper 
 	template<typename T>
-	class TLazyObject;
-
-	template<typename T>
-	class TLazyObject<T>
+	class TLazyObject
 	{
 		TStorage<T>			m_Storage;
 		TStorage<PtrCore>	m_Core;

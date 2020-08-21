@@ -13,7 +13,7 @@
 // Key functions 
 namespace Fuko
 {
-	template<typename T, bool bInAllowDuplicateKeys = false>
+	template<typename T, bool bInAllowDuplicateKeys>
 	struct DefaultKeyFuncs
 	{
 		using KeyType = T;

@@ -44,13 +44,13 @@ namespace Fuko::Job
 		JobPlan&	m_Plan;
 		T&			m_Executer;
 	public:
-		TPlanBuilder(JobPlan& InPlan, T& InExecuter) : m_Plan(InPlan), m_Executer(InExecuter) {}
-		~TPlanBuilder() { m_Executer.Execute(&m_Plan); }
+		inline 	TPlanBuilder(JobPlan& InPlan, T& InExecuter) : m_Plan(InPlan), m_Executer(InExecuter) {}
+		inline ~TPlanBuilder() { m_Executer.Execute(&m_Plan); }
 
-		TPlanBuilder(TPlanBuilder&&) = delete;
-		TPlanBuilder(const TPlanBuilder&) = delete;
-		TPlanBuilder& operator=(const TPlanBuilder&) = delete;
-		TPlanBuilder& operator=(TPlanBuilder&&) = delete;
+		inline TPlanBuilder(TPlanBuilder&&) = delete;
+		inline TPlanBuilder(const TPlanBuilder&) = delete;
+		inline TPlanBuilder& operator=(const TPlanBuilder&) = delete;
+		inline TPlanBuilder& operator=(TPlanBuilder&&) = delete;
 
 		inline TPlanBuilder& Future(std::future<void>& Future) { Future = m_Plan.m_Promise.get_future(); return *this; }
 		inline TPlanBuilder& Sync(uint32_t SyncFlag) { m_Plan.m_PlanFlag |= SyncFlag; return *this; }
@@ -67,7 +67,7 @@ namespace Fuko::Job
 // Impl
 namespace Fuko::Job
 {
-	JobPlan::JobPlan(JobBucket* Bucket)
+	inline JobPlan::JobPlan(JobBucket* Bucket)
 		: m_Bucket(Bucket)
 		, m_JoinCount(0)
 		, m_PlanFlag(0)
@@ -82,7 +82,7 @@ namespace Fuko::Job
 		}
 	}
 
-	void JobPlan::Prepare()
+	inline void JobPlan::Prepare()
 	{
 		if (m_OnPrepare.IsValid()) m_OnPrepare.InvokeStatic();
 		for (JobNode* Node : m_Bucket->m_AllNodes)
@@ -92,7 +92,7 @@ namespace Fuko::Job
 		m_JoinCount = m_Entries.size();
 	}
 
-	void JobPlan::Resume()
+	inline void JobPlan::Resume()
 	{
 		m_JoinCount = m_Entries.size();
 	}

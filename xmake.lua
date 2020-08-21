@@ -11,6 +11,11 @@ else
 	add_defines("FUKO_DEBUG = 0")
 end
 
+-- win include 
+if is_plat("windows") then
+    add_includedirs("D:/Windows Kits/10/Include/10.0.17763.0/um")
+end
+
 -- modules function 
 codePath = path.absolute("./Code/") .. "/"
 function static_module(Name)
@@ -40,5 +45,7 @@ end
 
 -- modules
 includes(codePath .. "Core")
-includes(codePath .. "TestCore")
+includes(codePath .. "JobSystem")
 includes(codePath .. "Gfx")
+includes(codePath .. "TestCore")
+includes(codePath .. "TestGfx")

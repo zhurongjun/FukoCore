@@ -81,6 +81,8 @@ namespace Fuko
 	{
 		template<typename T>
 		friend class WP;
+		template<typename T>
+		friend class SP;
 
 		PtrCore*	m_Core;
 
@@ -96,6 +98,11 @@ namespace Fuko
 
 		FORCEINLINE SP(const SP& Rhs);
 		FORCEINLINE SP(SP&& Rhs);
+
+		template<typename Other>
+		FORCEINLINE SP(const SP<Other>& Rhs);
+		template<typename Other>
+		FORCEINLINE SP(SP<Other>&& Rhs);
 
 		FORCEINLINE SP& operator=(const SP& Rhs);
 		FORCEINLINE SP& operator=(SP&& Rhs);
@@ -272,6 +279,22 @@ namespace Fuko
 
 	template<typename T>
 	FORCEINLINE SP<T>::SP(SP<T>&& Rhs)
+		: m_Core(Rhs.m_Core)
+	{
+		Rhs.m_Core = nullptr;
+	}
+
+	template<typename T>
+	template<typename Other>
+	FORCEINLINE SP<T>::SP(const SP<Other>& Rhs)
+		: m_Core(Rhs.m_Core)
+	{
+		if (m_Core) m_Core->SRetain();
+	}
+
+	template<typename T>
+	template<typename Other>
+	FORCEINLINE SP<T>::SP(SP<Other>&& Rhs)
 		: m_Core(Rhs.m_Core)
 	{
 		Rhs.m_Core = nullptr;

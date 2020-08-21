@@ -5,7 +5,7 @@
 namespace Fuko
 {
 	template<typename TAlloc = PmrAlloc>
-	class DynamicMemoryStream : public Stream, private TAlloc final
+	class DynamicMemoryStream final : public IStream, private TAlloc
 	{
 		void*		m_Buffer;
 		uint32		m_Pos;

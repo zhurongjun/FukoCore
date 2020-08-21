@@ -11,7 +11,7 @@
 
 #include "DirectXMath.h"
 
-namespace DirectX
+namespace Fuko
 {
 
     namespace Colors
@@ -161,5 +161,5 @@ namespace DirectX
 
     } // namespace Colors
 
-} // namespace DirectX
+} // namespace Fuko
 

@@ -3,6 +3,7 @@
 #include <CoreType.h>
 #include <Containers/Allocator.h>
 #include <Templates/TypeList.h>
+#include <Templates/Tuple.h>
 
 // forward 
 namespace Fuko

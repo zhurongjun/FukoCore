@@ -14,11 +14,11 @@ namespace Fuko::Job
 		JobString			m_BucketName;
 		bool				m_HasPrepare;
 	public:
-		JobBucket();
-		~JobBucket();
+		inline JobBucket();
+		inline ~JobBucket();
 
-		void	Prepare();
-		void	Reset();
+		inline void	Prepare();
+		inline void	Reset();
 	private:
 	};
 }
@@ -26,7 +26,7 @@ namespace Fuko::Job
 // Impl
 namespace Fuko::Job
 {
-	JobBucket::JobBucket()
+	inline JobBucket::JobBucket()
 		: JobBucketBuilder(m_AllNodes)
 		, m_AllNodes()
 		, m_HasPrepare(false)
@@ -34,7 +34,7 @@ namespace Fuko::Job
 		m_AllNodes.reserve(64);
 	}
 	
-	JobBucket::~JobBucket()
+	inline JobBucket::~JobBucket()
 	{
 		for (JobNode* Node : m_AllNodes)
 		{
@@ -42,7 +42,7 @@ namespace Fuko::Job
 		}
 	}
 
-	void JobBucket::Prepare()
+	inline void JobBucket::Prepare()
 	{
 		if (m_HasPrepare) return;
 		for (JobNode* Node : m_AllNodes)
@@ -52,7 +52,7 @@ namespace Fuko::Job
 		m_HasPrepare = true;
 	}
 
-	void JobBucket::Reset()
+	inline void JobBucket::Reset()
 	{
 		m_HasPrepare = false;
 	}

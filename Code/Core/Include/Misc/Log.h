@@ -107,5 +107,6 @@ namespace Fuko
 	CORE_API LogSystem& GlobalLogDevice();
 }
 
-#define F_LOG(Level,Category,Fmt,...) ::Fuko::GlobalLogDevice().Log(Level,Category,FmtString(Fmt,...));
+#define F_LOG(Level,Category,Fmt,...)
+#define LOG_CATE(Category)
 

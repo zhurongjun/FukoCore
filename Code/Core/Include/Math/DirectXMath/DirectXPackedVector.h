@@ -11,7 +11,7 @@
 
 #include "DirectXMath.h"
 
-namespace DirectX
+namespace Fuko
 {
 
     namespace PackedVector
@@ -1212,5 +1212,5 @@ namespace DirectX
 
     } // namespace PackedVector
 
-} // namespace DirectX
+} // namespace Fuko
 

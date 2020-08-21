@@ -12,10 +12,10 @@ namespace Fuko
 		End ,
 	};
 
-	class Stream
+	class IStream
 	{
 	public:
-		FORCEINLINE Stream()
+		FORCEINLINE IStream()
 			: m_bReadable(false)
 			, m_bWritable(false)
 			, m_bSeekable(false)
@@ -27,7 +27,7 @@ namespace Fuko
 			, m_bWriting(0)
 			, m_bReading(0)
 		{}
-		virtual ~Stream() {}
+		virtual ~IStream() {}
 
 		// Get info 
 		FORCEINLINE bool IsReadable() { return m_bReadable; }

@@ -166,18 +166,4 @@ namespace Fuko::Job
 			}
 		}
 	};
-
-	template<typename T>
-	class LockFreeQueue
-	{
-
-	};
-
-	template<typename T>
-	class WorkStealingQueue
-	{
-		static_assert(std::is_pointer_v<T>, "T must be a pointer type");
-
-
-	};
 }

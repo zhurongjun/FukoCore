@@ -4,7 +4,7 @@
 
 namespace Fuko
 {
-	class MemoryStream : public Stream final
+	class MemoryStream : public IStream
 	{
 		SP<void*>	m_Buffer;
 		uint32		m_Pos;
@@ -36,10 +36,11 @@ namespace Fuko
 		: m_Buffer(InBuffer)
 		, m_Size(InSize)
 		, m_Pos(0)
-		, m_bWritable(Writable)
-		, m_bReadable(Readable)
-		, m_bSeekable(true)
-	{}
+	{
+		m_bWritable = Writable;
+		m_bReadable = Readable;
+		m_bSeekable = true;
+	}
 
 	FORCEINLINE uint32 MemoryStream::Read(void* Buffer, uint32 Size)
 	{

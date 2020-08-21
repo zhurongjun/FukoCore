@@ -153,7 +153,7 @@ inline RECT Rectangle::Union(const RECT& rcta, const RECT& rctb) noexcept
 
 inline bool Vector2::operator == (const Vector2& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&V);
     return XMVector2Equal(v1, v2);
@@ -161,7 +161,7 @@ inline bool Vector2::operator == (const Vector2& V) const noexcept
 
 inline bool Vector2::operator != (const Vector2& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&V);
     return XMVector2NotEqual(v1, v2);
@@ -173,7 +173,7 @@ inline bool Vector2::operator != (const Vector2& V) const noexcept
 
 inline Vector2& Vector2::operator+= (const Vector2& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&V);
     XMVECTOR X = XMVectorAdd(v1, v2);
@@ -183,7 +183,7 @@ inline Vector2& Vector2::operator+= (const Vector2& V) noexcept
 
 inline Vector2& Vector2::operator-= (const Vector2& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&V);
     XMVECTOR X = XMVectorSubtract(v1, v2);
@@ -193,7 +193,7 @@ inline Vector2& Vector2::operator-= (const Vector2& V) noexcept
 
 inline Vector2& Vector2::operator*= (const Vector2& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&V);
     XMVECTOR X = XMVectorMultiply(v1, v2);
@@ -203,7 +203,7 @@ inline Vector2& Vector2::operator*= (const Vector2& V) noexcept
 
 inline Vector2& Vector2::operator*= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR X = XMVectorScale(v1, S);
     XMStoreFloat2(this, X);
@@ -212,7 +212,7 @@ inline Vector2& Vector2::operator*= (float S) noexcept
 
 inline Vector2& Vector2::operator/= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     assert(S != 0.0f);
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR X = XMVectorScale(v1, 1.f / S);
@@ -226,7 +226,7 @@ inline Vector2& Vector2::operator/= (float S) noexcept
 
 inline Vector2 operator+ (const Vector2& V1, const Vector2& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&V1);
     XMVECTOR v2 = XMLoadFloat2(&V2);
     XMVECTOR X = XMVectorAdd(v1, v2);
@@ -237,7 +237,7 @@ inline Vector2 operator+ (const Vector2& V1, const Vector2& V2) noexcept
 
 inline Vector2 operator- (const Vector2& V1, const Vector2& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&V1);
     XMVECTOR v2 = XMLoadFloat2(&V2);
     XMVECTOR X = XMVectorSubtract(v1, v2);
@@ -248,7 +248,7 @@ inline Vector2 operator- (const Vector2& V1, const Vector2& V2) noexcept
 
 inline Vector2 operator* (const Vector2& V1, const Vector2& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&V1);
     XMVECTOR v2 = XMLoadFloat2(&V2);
     XMVECTOR X = XMVectorMultiply(v1, v2);
@@ -259,7 +259,7 @@ inline Vector2 operator* (const Vector2& V1, const Vector2& V2) noexcept
 
 inline Vector2 operator* (const Vector2& V, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&V);
     XMVECTOR X = XMVectorScale(v1, S);
     Vector2 R;
@@ -269,7 +269,7 @@ inline Vector2 operator* (const Vector2& V, float S) noexcept
 
 inline Vector2 operator/ (const Vector2& V1, const Vector2& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&V1);
     XMVECTOR v2 = XMLoadFloat2(&V2);
     XMVECTOR X = XMVectorDivide(v1, v2);
@@ -280,7 +280,7 @@ inline Vector2 operator/ (const Vector2& V1, const Vector2& V2) noexcept
 
 inline Vector2 operator/ (const Vector2& V, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&V);
     XMVECTOR X = XMVectorScale(v1, 1.f / S);
     Vector2 R;
@@ -290,7 +290,7 @@ inline Vector2 operator/ (const Vector2& V, float S) noexcept
 
 inline Vector2 operator* (float S, const Vector2& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&V);
     XMVECTOR X = XMVectorScale(v1, S);
     Vector2 R;
@@ -304,7 +304,7 @@ inline Vector2 operator* (float S, const Vector2& V) noexcept
 
 inline bool Vector2::InBounds(const Vector2& Bounds) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&Bounds);
     return XMVector2InBounds(v1, v2);
@@ -312,7 +312,7 @@ inline bool Vector2::InBounds(const Vector2& Bounds) const noexcept
 
 inline float Vector2::Length() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR X = XMVector2Length(v1);
     return XMVectorGetX(X);
@@ -320,7 +320,7 @@ inline float Vector2::Length() const noexcept
 
 inline float Vector2::LengthSquared() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR X = XMVector2LengthSq(v1);
     return XMVectorGetX(X);
@@ -328,7 +328,7 @@ inline float Vector2::LengthSquared() const noexcept
 
 inline float Vector2::Dot(const Vector2& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&V);
     XMVECTOR X = XMVector2Dot(v1, v2);
@@ -337,7 +337,7 @@ inline float Vector2::Dot(const Vector2& V) const noexcept
 
 inline void Vector2::Cross(const Vector2& V, Vector2& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&V);
     XMVECTOR R = XMVector2Cross(v1, v2);
@@ -346,7 +346,7 @@ inline void Vector2::Cross(const Vector2& V, Vector2& result) const noexcept
 
 inline Vector2 Vector2::Cross(const Vector2& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&V);
     XMVECTOR R = XMVector2Cross(v1, v2);
@@ -358,7 +358,7 @@ inline Vector2 Vector2::Cross(const Vector2& V) const noexcept
 
 inline void Vector2::Normalize() noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR X = XMVector2Normalize(v1);
     XMStoreFloat2(this, X);
@@ -366,7 +366,7 @@ inline void Vector2::Normalize() noexcept
 
 inline void Vector2::Normalize(Vector2& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR X = XMVector2Normalize(v1);
     XMStoreFloat2(&result, X);
@@ -374,7 +374,7 @@ inline void Vector2::Normalize(Vector2& result) const noexcept
 
 inline void Vector2::Clamp(const Vector2& vmin, const Vector2& vmax) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&vmin);
     XMVECTOR v3 = XMLoadFloat2(&vmax);
@@ -384,7 +384,7 @@ inline void Vector2::Clamp(const Vector2& vmin, const Vector2& vmax) noexcept
 
 inline void Vector2::Clamp(const Vector2& vmin, const Vector2& vmax, Vector2& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(this);
     XMVECTOR v2 = XMLoadFloat2(&vmin);
     XMVECTOR v3 = XMLoadFloat2(&vmax);
@@ -398,7 +398,7 @@ inline void Vector2::Clamp(const Vector2& vmin, const Vector2& vmax, Vector2& re
 
 inline float Vector2::Distance(const Vector2& v1, const Vector2& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR V = XMVectorSubtract(x2, x1);
@@ -408,7 +408,7 @@ inline float Vector2::Distance(const Vector2& v1, const Vector2& v2) noexcept
 
 inline float Vector2::DistanceSquared(const Vector2& v1, const Vector2& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR V = XMVectorSubtract(x2, x1);
@@ -418,7 +418,7 @@ inline float Vector2::DistanceSquared(const Vector2& v1, const Vector2& v2) noex
 
 inline void Vector2::Min(const Vector2& v1, const Vector2& v2, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR X = XMVectorMin(x1, x2);
@@ -427,7 +427,7 @@ inline void Vector2::Min(const Vector2& v1, const Vector2& v2, Vector2& result) 
 
 inline Vector2 Vector2::Min(const Vector2& v1, const Vector2& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR X = XMVectorMin(x1, x2);
@@ -439,7 +439,7 @@ inline Vector2 Vector2::Min(const Vector2& v1, const Vector2& v2) noexcept
 
 inline void Vector2::Max(const Vector2& v1, const Vector2& v2, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR X = XMVectorMax(x1, x2);
@@ -448,7 +448,7 @@ inline void Vector2::Max(const Vector2& v1, const Vector2& v2, Vector2& result) 
 
 inline Vector2 Vector2::Max(const Vector2& v1, const Vector2& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR X = XMVectorMax(x1, x2);
@@ -460,7 +460,7 @@ inline Vector2 Vector2::Max(const Vector2& v1, const Vector2& v2) noexcept
 
 inline void Vector2::Lerp(const Vector2& v1, const Vector2& v2, float t, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR X = XMVectorLerp(x1, x2, t);
@@ -469,7 +469,7 @@ inline void Vector2::Lerp(const Vector2& v1, const Vector2& v2, float t, Vector2
 
 inline Vector2 Vector2::Lerp(const Vector2& v1, const Vector2& v2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR X = XMVectorLerp(x1, x2, t);
@@ -481,7 +481,7 @@ inline Vector2 Vector2::Lerp(const Vector2& v1, const Vector2& v2, float t) noex
 
 inline void Vector2::SmoothStep(const Vector2& v1, const Vector2& v2, float t, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     t = (t > 1.0f) ? 1.0f : ((t < 0.0f) ? 0.0f : t);  // Clamp value to 0 to 1
     t = t * t*(3.f - 2.f*t);
     XMVECTOR x1 = XMLoadFloat2(&v1);
@@ -492,7 +492,7 @@ inline void Vector2::SmoothStep(const Vector2& v1, const Vector2& v2, float t, V
 
 inline Vector2 Vector2::SmoothStep(const Vector2& v1, const Vector2& v2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     t = (t > 1.0f) ? 1.0f : ((t < 0.0f) ? 0.0f : t);  // Clamp value to 0 to 1
     t = t * t*(3.f - 2.f*t);
     XMVECTOR x1 = XMLoadFloat2(&v1);
@@ -506,7 +506,7 @@ inline Vector2 Vector2::SmoothStep(const Vector2& v1, const Vector2& v2, float t
 
 inline void Vector2::Barycentric(const Vector2& v1, const Vector2& v2, const Vector2& v3, float f, float g, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR x3 = XMLoadFloat2(&v3);
@@ -516,7 +516,7 @@ inline void Vector2::Barycentric(const Vector2& v1, const Vector2& v2, const Vec
 
 inline Vector2 Vector2::Barycentric(const Vector2& v1, const Vector2& v2, const Vector2& v3, float f, float g) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR x3 = XMLoadFloat2(&v3);
@@ -529,7 +529,7 @@ inline Vector2 Vector2::Barycentric(const Vector2& v1, const Vector2& v2, const 
 
 inline void Vector2::CatmullRom(const Vector2& v1, const Vector2& v2, const Vector2& v3, const Vector2& v4, float t, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR x3 = XMLoadFloat2(&v3);
@@ -540,7 +540,7 @@ inline void Vector2::CatmullRom(const Vector2& v1, const Vector2& v2, const Vect
 
 inline Vector2 Vector2::CatmullRom(const Vector2& v1, const Vector2& v2, const Vector2& v3, const Vector2& v4, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&v2);
     XMVECTOR x3 = XMLoadFloat2(&v3);
@@ -554,7 +554,7 @@ inline Vector2 Vector2::CatmullRom(const Vector2& v1, const Vector2& v2, const V
 
 inline void Vector2::Hermite(const Vector2& v1, const Vector2& t1, const Vector2& v2, const Vector2& t2, float t, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&t1);
     XMVECTOR x3 = XMLoadFloat2(&v2);
@@ -565,7 +565,7 @@ inline void Vector2::Hermite(const Vector2& v1, const Vector2& t1, const Vector2
 
 inline Vector2 Vector2::Hermite(const Vector2& v1, const Vector2& t1, const Vector2& v2, const Vector2& t2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat2(&v1);
     XMVECTOR x2 = XMLoadFloat2(&t1);
     XMVECTOR x3 = XMLoadFloat2(&v2);
@@ -579,7 +579,7 @@ inline Vector2 Vector2::Hermite(const Vector2& v1, const Vector2& t1, const Vect
 
 inline void Vector2::Reflect(const Vector2& ivec, const Vector2& nvec, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat2(&ivec);
     XMVECTOR n = XMLoadFloat2(&nvec);
     XMVECTOR X = XMVector2Reflect(i, n);
@@ -588,7 +588,7 @@ inline void Vector2::Reflect(const Vector2& ivec, const Vector2& nvec, Vector2& 
 
 inline Vector2 Vector2::Reflect(const Vector2& ivec, const Vector2& nvec) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat2(&ivec);
     XMVECTOR n = XMLoadFloat2(&nvec);
     XMVECTOR X = XMVector2Reflect(i, n);
@@ -600,7 +600,7 @@ inline Vector2 Vector2::Reflect(const Vector2& ivec, const Vector2& nvec) noexce
 
 inline void Vector2::Refract(const Vector2& ivec, const Vector2& nvec, float refractionIndex, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat2(&ivec);
     XMVECTOR n = XMLoadFloat2(&nvec);
     XMVECTOR X = XMVector2Refract(i, n, refractionIndex);
@@ -609,7 +609,7 @@ inline void Vector2::Refract(const Vector2& ivec, const Vector2& nvec, float ref
 
 inline Vector2 Vector2::Refract(const Vector2& ivec, const Vector2& nvec, float refractionIndex) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat2(&ivec);
     XMVECTOR n = XMLoadFloat2(&nvec);
     XMVECTOR X = XMVector2Refract(i, n, refractionIndex);
@@ -621,7 +621,7 @@ inline Vector2 Vector2::Refract(const Vector2& ivec, const Vector2& nvec, float 
 
 inline void Vector2::Transform(const Vector2& v, const Quaternion& quat, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -630,7 +630,7 @@ inline void Vector2::Transform(const Vector2& v, const Quaternion& quat, Vector2
 
 inline Vector2 Vector2::Transform(const Vector2& v, const Quaternion& quat) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -642,7 +642,7 @@ inline Vector2 Vector2::Transform(const Vector2& v, const Quaternion& quat) noex
 
 inline void Vector2::Transform(const Vector2& v, const Matrix& m, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector2TransformCoord(v1, M);
@@ -651,7 +651,7 @@ inline void Vector2::Transform(const Vector2& v, const Matrix& m, Vector2& resul
 
 inline Vector2 Vector2::Transform(const Vector2& v, const Matrix& m) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector2TransformCoord(v1, M);
@@ -664,14 +664,14 @@ inline Vector2 Vector2::Transform(const Vector2& v, const Matrix& m) noexcept
 _Use_decl_annotations_
 inline void Vector2::Transform(const Vector2* varray, size_t count, const Matrix& m, Vector2* resultArray) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVector2TransformCoordStream(resultArray, sizeof(XMFLOAT2), varray, sizeof(XMFLOAT2), count, M);
 }
 
 inline void Vector2::Transform(const Vector2& v, const Matrix& m, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector2Transform(v1, M);
@@ -681,14 +681,14 @@ inline void Vector2::Transform(const Vector2& v, const Matrix& m, Vector4& resul
 _Use_decl_annotations_
 inline void Vector2::Transform(const Vector2* varray, size_t count, const Matrix& m, Vector4* resultArray) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVector2TransformStream(resultArray, sizeof(XMFLOAT4), varray, sizeof(XMFLOAT2), count, M);
 }
 
 inline void Vector2::TransformNormal(const Vector2& v, const Matrix& m, Vector2& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector2TransformNormal(v1, M);
@@ -697,7 +697,7 @@ inline void Vector2::TransformNormal(const Vector2& v, const Matrix& m, Vector2&
 
 inline Vector2 Vector2::TransformNormal(const Vector2& v, const Matrix& m) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector2TransformNormal(v1, M);
@@ -710,7 +710,7 @@ inline Vector2 Vector2::TransformNormal(const Vector2& v, const Matrix& m) noexc
 _Use_decl_annotations_
 inline void Vector2::TransformNormal(const Vector2* varray, size_t count, const Matrix& m, Vector2* resultArray) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVector2TransformNormalStream(resultArray, sizeof(XMFLOAT2), varray, sizeof(XMFLOAT2), count, M);
 }
@@ -728,7 +728,7 @@ inline void Vector2::TransformNormal(const Vector2* varray, size_t count, const 
 
 inline bool Vector3::operator == (const Vector3& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&V);
     return XMVector3Equal(v1, v2);
@@ -736,7 +736,7 @@ inline bool Vector3::operator == (const Vector3& V) const noexcept
 
 inline bool Vector3::operator != (const Vector3& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&V);
     return XMVector3NotEqual(v1, v2);
@@ -748,7 +748,7 @@ inline bool Vector3::operator != (const Vector3& V) const noexcept
 
 inline Vector3& Vector3::operator+= (const Vector3& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&V);
     XMVECTOR X = XMVectorAdd(v1, v2);
@@ -758,7 +758,7 @@ inline Vector3& Vector3::operator+= (const Vector3& V) noexcept
 
 inline Vector3& Vector3::operator-= (const Vector3& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&V);
     XMVECTOR X = XMVectorSubtract(v1, v2);
@@ -768,7 +768,7 @@ inline Vector3& Vector3::operator-= (const Vector3& V) noexcept
 
 inline Vector3& Vector3::operator*= (const Vector3& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&V);
     XMVECTOR X = XMVectorMultiply(v1, v2);
@@ -778,7 +778,7 @@ inline Vector3& Vector3::operator*= (const Vector3& V) noexcept
 
 inline Vector3& Vector3::operator*= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR X = XMVectorScale(v1, S);
     XMStoreFloat3(this, X);
@@ -787,7 +787,7 @@ inline Vector3& Vector3::operator*= (float S) noexcept
 
 inline Vector3& Vector3::operator/= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     assert(S != 0.0f);
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR X = XMVectorScale(v1, 1.f / S);
@@ -801,7 +801,7 @@ inline Vector3& Vector3::operator/= (float S) noexcept
 
 inline Vector3 Vector3::operator- () const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR X = XMVectorNegate(v1);
     Vector3 R;
@@ -815,7 +815,7 @@ inline Vector3 Vector3::operator- () const noexcept
 
 inline Vector3 operator+ (const Vector3& V1, const Vector3& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&V1);
     XMVECTOR v2 = XMLoadFloat3(&V2);
     XMVECTOR X = XMVectorAdd(v1, v2);
@@ -826,7 +826,7 @@ inline Vector3 operator+ (const Vector3& V1, const Vector3& V2) noexcept
 
 inline Vector3 operator- (const Vector3& V1, const Vector3& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&V1);
     XMVECTOR v2 = XMLoadFloat3(&V2);
     XMVECTOR X = XMVectorSubtract(v1, v2);
@@ -837,7 +837,7 @@ inline Vector3 operator- (const Vector3& V1, const Vector3& V2) noexcept
 
 inline Vector3 operator* (const Vector3& V1, const Vector3& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&V1);
     XMVECTOR v2 = XMLoadFloat3(&V2);
     XMVECTOR X = XMVectorMultiply(v1, v2);
@@ -848,7 +848,7 @@ inline Vector3 operator* (const Vector3& V1, const Vector3& V2) noexcept
 
 inline Vector3 operator* (const Vector3& V, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&V);
     XMVECTOR X = XMVectorScale(v1, S);
     Vector3 R;
@@ -858,7 +858,7 @@ inline Vector3 operator* (const Vector3& V, float S) noexcept
 
 inline Vector3 operator/ (const Vector3& V1, const Vector3& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&V1);
     XMVECTOR v2 = XMLoadFloat3(&V2);
     XMVECTOR X = XMVectorDivide(v1, v2);
@@ -869,7 +869,7 @@ inline Vector3 operator/ (const Vector3& V1, const Vector3& V2) noexcept
 
 inline Vector3 operator/ (const Vector3& V, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&V);
     XMVECTOR X = XMVectorScale(v1, 1.f / S);
     Vector3 R;
@@ -879,7 +879,7 @@ inline Vector3 operator/ (const Vector3& V, float S) noexcept
 
 inline Vector3 operator* (float S, const Vector3& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&V);
     XMVECTOR X = XMVectorScale(v1, S);
     Vector3 R;
@@ -893,7 +893,7 @@ inline Vector3 operator* (float S, const Vector3& V) noexcept
 
 inline bool Vector3::InBounds(const Vector3& Bounds) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&Bounds);
     return XMVector3InBounds(v1, v2);
@@ -901,7 +901,7 @@ inline bool Vector3::InBounds(const Vector3& Bounds) const noexcept
 
 inline float Vector3::Length() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR X = XMVector3Length(v1);
     return XMVectorGetX(X);
@@ -909,7 +909,7 @@ inline float Vector3::Length() const noexcept
 
 inline float Vector3::LengthSquared() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR X = XMVector3LengthSq(v1);
     return XMVectorGetX(X);
@@ -917,7 +917,7 @@ inline float Vector3::LengthSquared() const noexcept
 
 inline float Vector3::Dot(const Vector3& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&V);
     XMVECTOR X = XMVector3Dot(v1, v2);
@@ -926,7 +926,7 @@ inline float Vector3::Dot(const Vector3& V) const noexcept
 
 inline void Vector3::Cross(const Vector3& V, Vector3& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&V);
     XMVECTOR R = XMVector3Cross(v1, v2);
@@ -935,7 +935,7 @@ inline void Vector3::Cross(const Vector3& V, Vector3& result) const noexcept
 
 inline Vector3 Vector3::Cross(const Vector3& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&V);
     XMVECTOR R = XMVector3Cross(v1, v2);
@@ -947,7 +947,7 @@ inline Vector3 Vector3::Cross(const Vector3& V) const noexcept
 
 inline void Vector3::Normalize() noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR X = XMVector3Normalize(v1);
     XMStoreFloat3(this, X);
@@ -955,7 +955,7 @@ inline void Vector3::Normalize() noexcept
 
 inline void Vector3::Normalize(Vector3& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR X = XMVector3Normalize(v1);
     XMStoreFloat3(&result, X);
@@ -963,7 +963,7 @@ inline void Vector3::Normalize(Vector3& result) const noexcept
 
 inline void Vector3::Clamp(const Vector3& vmin, const Vector3& vmax) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&vmin);
     XMVECTOR v3 = XMLoadFloat3(&vmax);
@@ -973,7 +973,7 @@ inline void Vector3::Clamp(const Vector3& vmin, const Vector3& vmax) noexcept
 
 inline void Vector3::Clamp(const Vector3& vmin, const Vector3& vmax, Vector3& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(this);
     XMVECTOR v2 = XMLoadFloat3(&vmin);
     XMVECTOR v3 = XMLoadFloat3(&vmax);
@@ -987,7 +987,7 @@ inline void Vector3::Clamp(const Vector3& vmin, const Vector3& vmax, Vector3& re
 
 inline float Vector3::Distance(const Vector3& v1, const Vector3& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR V = XMVectorSubtract(x2, x1);
@@ -997,7 +997,7 @@ inline float Vector3::Distance(const Vector3& v1, const Vector3& v2) noexcept
 
 inline float Vector3::DistanceSquared(const Vector3& v1, const Vector3& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR V = XMVectorSubtract(x2, x1);
@@ -1007,7 +1007,7 @@ inline float Vector3::DistanceSquared(const Vector3& v1, const Vector3& v2) noex
 
 inline void Vector3::Min(const Vector3& v1, const Vector3& v2, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR X = XMVectorMin(x1, x2);
@@ -1016,7 +1016,7 @@ inline void Vector3::Min(const Vector3& v1, const Vector3& v2, Vector3& result) 
 
 inline Vector3 Vector3::Min(const Vector3& v1, const Vector3& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR X = XMVectorMin(x1, x2);
@@ -1028,7 +1028,7 @@ inline Vector3 Vector3::Min(const Vector3& v1, const Vector3& v2) noexcept
 
 inline void Vector3::Max(const Vector3& v1, const Vector3& v2, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR X = XMVectorMax(x1, x2);
@@ -1037,7 +1037,7 @@ inline void Vector3::Max(const Vector3& v1, const Vector3& v2, Vector3& result) 
 
 inline Vector3 Vector3::Max(const Vector3& v1, const Vector3& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR X = XMVectorMax(x1, x2);
@@ -1049,7 +1049,7 @@ inline Vector3 Vector3::Max(const Vector3& v1, const Vector3& v2) noexcept
 
 inline void Vector3::Lerp(const Vector3& v1, const Vector3& v2, float t, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR X = XMVectorLerp(x1, x2, t);
@@ -1058,7 +1058,7 @@ inline void Vector3::Lerp(const Vector3& v1, const Vector3& v2, float t, Vector3
 
 inline Vector3 Vector3::Lerp(const Vector3& v1, const Vector3& v2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR X = XMVectorLerp(x1, x2, t);
@@ -1070,7 +1070,7 @@ inline Vector3 Vector3::Lerp(const Vector3& v1, const Vector3& v2, float t) noex
 
 inline void Vector3::SmoothStep(const Vector3& v1, const Vector3& v2, float t, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     t = (t > 1.0f) ? 1.0f : ((t < 0.0f) ? 0.0f : t);  // Clamp value to 0 to 1
     t = t * t*(3.f - 2.f*t);
     XMVECTOR x1 = XMLoadFloat3(&v1);
@@ -1081,7 +1081,7 @@ inline void Vector3::SmoothStep(const Vector3& v1, const Vector3& v2, float t, V
 
 inline Vector3 Vector3::SmoothStep(const Vector3& v1, const Vector3& v2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     t = (t > 1.0f) ? 1.0f : ((t < 0.0f) ? 0.0f : t);  // Clamp value to 0 to 1
     t = t * t*(3.f - 2.f*t);
     XMVECTOR x1 = XMLoadFloat3(&v1);
@@ -1095,7 +1095,7 @@ inline Vector3 Vector3::SmoothStep(const Vector3& v1, const Vector3& v2, float t
 
 inline void Vector3::Barycentric(const Vector3& v1, const Vector3& v2, const Vector3& v3, float f, float g, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR x3 = XMLoadFloat3(&v3);
@@ -1105,7 +1105,7 @@ inline void Vector3::Barycentric(const Vector3& v1, const Vector3& v2, const Vec
 
 inline Vector3 Vector3::Barycentric(const Vector3& v1, const Vector3& v2, const Vector3& v3, float f, float g) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR x3 = XMLoadFloat3(&v3);
@@ -1118,7 +1118,7 @@ inline Vector3 Vector3::Barycentric(const Vector3& v1, const Vector3& v2, const 
 
 inline void Vector3::CatmullRom(const Vector3& v1, const Vector3& v2, const Vector3& v3, const Vector3& v4, float t, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR x3 = XMLoadFloat3(&v3);
@@ -1129,7 +1129,7 @@ inline void Vector3::CatmullRom(const Vector3& v1, const Vector3& v2, const Vect
 
 inline Vector3 Vector3::CatmullRom(const Vector3& v1, const Vector3& v2, const Vector3& v3, const Vector3& v4, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&v2);
     XMVECTOR x3 = XMLoadFloat3(&v3);
@@ -1143,7 +1143,7 @@ inline Vector3 Vector3::CatmullRom(const Vector3& v1, const Vector3& v2, const V
 
 inline void Vector3::Hermite(const Vector3& v1, const Vector3& t1, const Vector3& v2, const Vector3& t2, float t, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&t1);
     XMVECTOR x3 = XMLoadFloat3(&v2);
@@ -1154,7 +1154,7 @@ inline void Vector3::Hermite(const Vector3& v1, const Vector3& t1, const Vector3
 
 inline Vector3 Vector3::Hermite(const Vector3& v1, const Vector3& t1, const Vector3& v2, const Vector3& t2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat3(&v1);
     XMVECTOR x2 = XMLoadFloat3(&t1);
     XMVECTOR x3 = XMLoadFloat3(&v2);
@@ -1168,7 +1168,7 @@ inline Vector3 Vector3::Hermite(const Vector3& v1, const Vector3& t1, const Vect
 
 inline void Vector3::Reflect(const Vector3& ivec, const Vector3& nvec, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat3(&ivec);
     XMVECTOR n = XMLoadFloat3(&nvec);
     XMVECTOR X = XMVector3Reflect(i, n);
@@ -1177,7 +1177,7 @@ inline void Vector3::Reflect(const Vector3& ivec, const Vector3& nvec, Vector3& 
 
 inline Vector3 Vector3::Reflect(const Vector3& ivec, const Vector3& nvec) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat3(&ivec);
     XMVECTOR n = XMLoadFloat3(&nvec);
     XMVECTOR X = XMVector3Reflect(i, n);
@@ -1189,7 +1189,7 @@ inline Vector3 Vector3::Reflect(const Vector3& ivec, const Vector3& nvec) noexce
 
 inline void Vector3::Refract(const Vector3& ivec, const Vector3& nvec, float refractionIndex, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat3(&ivec);
     XMVECTOR n = XMLoadFloat3(&nvec);
     XMVECTOR X = XMVector3Refract(i, n, refractionIndex);
@@ -1198,7 +1198,7 @@ inline void Vector3::Refract(const Vector3& ivec, const Vector3& nvec, float ref
 
 inline Vector3 Vector3::Refract(const Vector3& ivec, const Vector3& nvec, float refractionIndex) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat3(&ivec);
     XMVECTOR n = XMLoadFloat3(&nvec);
     XMVECTOR X = XMVector3Refract(i, n, refractionIndex);
@@ -1210,7 +1210,7 @@ inline Vector3 Vector3::Refract(const Vector3& ivec, const Vector3& nvec, float 
 
 inline void Vector3::Transform(const Vector3& v, const Quaternion& quat, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -1219,7 +1219,7 @@ inline void Vector3::Transform(const Vector3& v, const Quaternion& quat, Vector3
 
 inline Vector3 Vector3::Transform(const Vector3& v, const Quaternion& quat) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -1231,7 +1231,7 @@ inline Vector3 Vector3::Transform(const Vector3& v, const Quaternion& quat) noex
 
 inline void Vector3::Transform(const Vector3& v, const Matrix& m, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector3TransformCoord(v1, M);
@@ -1240,7 +1240,7 @@ inline void Vector3::Transform(const Vector3& v, const Matrix& m, Vector3& resul
 
 inline Vector3 Vector3::Transform(const Vector3& v, const Matrix& m) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector3TransformCoord(v1, M);
@@ -1253,14 +1253,14 @@ inline Vector3 Vector3::Transform(const Vector3& v, const Matrix& m) noexcept
 _Use_decl_annotations_
 inline void Vector3::Transform(const Vector3* varray, size_t count, const Matrix& m, Vector3* resultArray) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVector3TransformCoordStream(resultArray, sizeof(XMFLOAT3), varray, sizeof(XMFLOAT3), count, M);
 }
 
 inline void Vector3::Transform(const Vector3& v, const Matrix& m, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector3Transform(v1, M);
@@ -1270,14 +1270,14 @@ inline void Vector3::Transform(const Vector3& v, const Matrix& m, Vector4& resul
 _Use_decl_annotations_
 inline void Vector3::Transform(const Vector3* varray, size_t count, const Matrix& m, Vector4* resultArray) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVector3TransformStream(resultArray, sizeof(XMFLOAT4), varray, sizeof(XMFLOAT3), count, M);
 }
 
 inline void Vector3::TransformNormal(const Vector3& v, const Matrix& m, Vector3& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector3TransformNormal(v1, M);
@@ -1286,7 +1286,7 @@ inline void Vector3::TransformNormal(const Vector3& v, const Matrix& m, Vector3&
 
 inline Vector3 Vector3::TransformNormal(const Vector3& v, const Matrix& m) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector3TransformNormal(v1, M);
@@ -1299,7 +1299,7 @@ inline Vector3 Vector3::TransformNormal(const Vector3& v, const Matrix& m) noexc
 _Use_decl_annotations_
 inline void Vector3::TransformNormal(const Vector3* varray, size_t count, const Matrix& m, Vector3* resultArray) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVector3TransformNormalStream(resultArray, sizeof(XMFLOAT3), varray, sizeof(XMFLOAT3), count, M);
 }
@@ -1317,7 +1317,7 @@ inline void Vector3::TransformNormal(const Vector3* varray, size_t count, const 
 
 inline bool Vector4::operator == (const Vector4& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR v2 = XMLoadFloat4(&V);
     return XMVector4Equal(v1, v2);
@@ -1325,7 +1325,7 @@ inline bool Vector4::operator == (const Vector4& V) const noexcept
 
 inline bool Vector4::operator != (const Vector4& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR v2 = XMLoadFloat4(&V);
     return XMVector4NotEqual(v1, v2);
@@ -1337,7 +1337,7 @@ inline bool Vector4::operator != (const Vector4& V) const noexcept
 
 inline Vector4& Vector4::operator+= (const Vector4& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR v2 = XMLoadFloat4(&V);
     XMVECTOR X = XMVectorAdd(v1, v2);
@@ -1347,7 +1347,7 @@ inline Vector4& Vector4::operator+= (const Vector4& V) noexcept
 
 inline Vector4& Vector4::operator-= (const Vector4& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR v2 = XMLoadFloat4(&V);
     XMVECTOR X = XMVectorSubtract(v1, v2);
@@ -1357,7 +1357,7 @@ inline Vector4& Vector4::operator-= (const Vector4& V) noexcept
 
 inline Vector4& Vector4::operator*= (const Vector4& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR v2 = XMLoadFloat4(&V);
     XMVECTOR X = XMVectorMultiply(v1, v2);
@@ -1367,7 +1367,7 @@ inline Vector4& Vector4::operator*= (const Vector4& V) noexcept
 
 inline Vector4& Vector4::operator*= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR X = XMVectorScale(v1, S);
     XMStoreFloat4(this, X);
@@ -1376,7 +1376,7 @@ inline Vector4& Vector4::operator*= (float S) noexcept
 
 inline Vector4& Vector4::operator/= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     assert(S != 0.0f);
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR X = XMVectorScale(v1, 1.f / S);
@@ -1390,7 +1390,7 @@ inline Vector4& Vector4::operator/= (float S) noexcept
 
 inline Vector4 Vector4::operator- () const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR X = XMVectorNegate(v1);
     Vector4 R;
@@ -1404,7 +1404,7 @@ inline Vector4 Vector4::operator- () const noexcept
 
 inline Vector4 operator+ (const Vector4& V1, const Vector4& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&V1);
     XMVECTOR v2 = XMLoadFloat4(&V2);
     XMVECTOR X = XMVectorAdd(v1, v2);
@@ -1415,7 +1415,7 @@ inline Vector4 operator+ (const Vector4& V1, const Vector4& V2) noexcept
 
 inline Vector4 operator- (const Vector4& V1, const Vector4& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&V1);
     XMVECTOR v2 = XMLoadFloat4(&V2);
     XMVECTOR X = XMVectorSubtract(v1, v2);
@@ -1426,7 +1426,7 @@ inline Vector4 operator- (const Vector4& V1, const Vector4& V2) noexcept
 
 inline Vector4 operator* (const Vector4& V1, const Vector4& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&V1);
     XMVECTOR v2 = XMLoadFloat4(&V2);
     XMVECTOR X = XMVectorMultiply(v1, v2);
@@ -1437,7 +1437,7 @@ inline Vector4 operator* (const Vector4& V1, const Vector4& V2) noexcept
 
 inline Vector4 operator* (const Vector4& V, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&V);
     XMVECTOR X = XMVectorScale(v1, S);
     Vector4 R;
@@ -1447,7 +1447,7 @@ inline Vector4 operator* (const Vector4& V, float S) noexcept
 
 inline Vector4 operator/ (const Vector4& V1, const Vector4& V2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&V1);
     XMVECTOR v2 = XMLoadFloat4(&V2);
     XMVECTOR X = XMVectorDivide(v1, v2);
@@ -1458,7 +1458,7 @@ inline Vector4 operator/ (const Vector4& V1, const Vector4& V2) noexcept
 
 inline Vector4 operator/ (const Vector4& V, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&V);
     XMVECTOR X = XMVectorScale(v1, 1.f / S);
     Vector4 R;
@@ -1468,7 +1468,7 @@ inline Vector4 operator/ (const Vector4& V, float S) noexcept
 
 inline Vector4 operator* (float S, const Vector4& V) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&V);
     XMVECTOR X = XMVectorScale(v1, S);
     Vector4 R;
@@ -1482,7 +1482,7 @@ inline Vector4 operator* (float S, const Vector4& V) noexcept
 
 inline bool Vector4::InBounds(const Vector4& Bounds) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR v2 = XMLoadFloat4(&Bounds);
     return XMVector4InBounds(v1, v2);
@@ -1490,7 +1490,7 @@ inline bool Vector4::InBounds(const Vector4& Bounds) const noexcept
 
 inline float Vector4::Length() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR X = XMVector4Length(v1);
     return XMVectorGetX(X);
@@ -1498,7 +1498,7 @@ inline float Vector4::Length() const noexcept
 
 inline float Vector4::LengthSquared() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR X = XMVector4LengthSq(v1);
     return XMVectorGetX(X);
@@ -1506,7 +1506,7 @@ inline float Vector4::LengthSquared() const noexcept
 
 inline float Vector4::Dot(const Vector4& V) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR v2 = XMLoadFloat4(&V);
     XMVECTOR X = XMVector4Dot(v1, v2);
@@ -1515,7 +1515,7 @@ inline float Vector4::Dot(const Vector4& V) const noexcept
 
 inline void Vector4::Cross(const Vector4& v1, const Vector4& v2, Vector4& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(this);
     XMVECTOR x2 = XMLoadFloat4(&v1);
     XMVECTOR x3 = XMLoadFloat4(&v2);
@@ -1525,7 +1525,7 @@ inline void Vector4::Cross(const Vector4& v1, const Vector4& v2, Vector4& result
 
 inline Vector4 Vector4::Cross(const Vector4& v1, const Vector4& v2) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(this);
     XMVECTOR x2 = XMLoadFloat4(&v1);
     XMVECTOR x3 = XMLoadFloat4(&v2);
@@ -1538,7 +1538,7 @@ inline Vector4 Vector4::Cross(const Vector4& v1, const Vector4& v2) const noexce
 
 inline void Vector4::Normalize() noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR X = XMVector4Normalize(v1);
     XMStoreFloat4(this, X);
@@ -1546,7 +1546,7 @@ inline void Vector4::Normalize() noexcept
 
 inline void Vector4::Normalize(Vector4& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR X = XMVector4Normalize(v1);
     XMStoreFloat4(&result, X);
@@ -1554,7 +1554,7 @@ inline void Vector4::Normalize(Vector4& result) const noexcept
 
 inline void Vector4::Clamp(const Vector4& vmin, const Vector4& vmax) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR v2 = XMLoadFloat4(&vmin);
     XMVECTOR v3 = XMLoadFloat4(&vmax);
@@ -1564,7 +1564,7 @@ inline void Vector4::Clamp(const Vector4& vmin, const Vector4& vmax) noexcept
 
 inline void Vector4::Clamp(const Vector4& vmin, const Vector4& vmax, Vector4& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(this);
     XMVECTOR v2 = XMLoadFloat4(&vmin);
     XMVECTOR v3 = XMLoadFloat4(&vmax);
@@ -1578,7 +1578,7 @@ inline void Vector4::Clamp(const Vector4& vmin, const Vector4& vmax, Vector4& re
 
 inline float Vector4::Distance(const Vector4& v1, const Vector4& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR V = XMVectorSubtract(x2, x1);
@@ -1588,7 +1588,7 @@ inline float Vector4::Distance(const Vector4& v1, const Vector4& v2) noexcept
 
 inline float Vector4::DistanceSquared(const Vector4& v1, const Vector4& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR V = XMVectorSubtract(x2, x1);
@@ -1598,7 +1598,7 @@ inline float Vector4::DistanceSquared(const Vector4& v1, const Vector4& v2) noex
 
 inline void Vector4::Min(const Vector4& v1, const Vector4& v2, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR X = XMVectorMin(x1, x2);
@@ -1607,7 +1607,7 @@ inline void Vector4::Min(const Vector4& v1, const Vector4& v2, Vector4& result) 
 
 inline Vector4 Vector4::Min(const Vector4& v1, const Vector4& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR X = XMVectorMin(x1, x2);
@@ -1619,7 +1619,7 @@ inline Vector4 Vector4::Min(const Vector4& v1, const Vector4& v2) noexcept
 
 inline void Vector4::Max(const Vector4& v1, const Vector4& v2, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR X = XMVectorMax(x1, x2);
@@ -1628,7 +1628,7 @@ inline void Vector4::Max(const Vector4& v1, const Vector4& v2, Vector4& result) 
 
 inline Vector4 Vector4::Max(const Vector4& v1, const Vector4& v2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR X = XMVectorMax(x1, x2);
@@ -1640,7 +1640,7 @@ inline Vector4 Vector4::Max(const Vector4& v1, const Vector4& v2) noexcept
 
 inline void Vector4::Lerp(const Vector4& v1, const Vector4& v2, float t, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR X = XMVectorLerp(x1, x2, t);
@@ -1649,7 +1649,7 @@ inline void Vector4::Lerp(const Vector4& v1, const Vector4& v2, float t, Vector4
 
 inline Vector4 Vector4::Lerp(const Vector4& v1, const Vector4& v2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR X = XMVectorLerp(x1, x2, t);
@@ -1661,7 +1661,7 @@ inline Vector4 Vector4::Lerp(const Vector4& v1, const Vector4& v2, float t) noex
 
 inline void Vector4::SmoothStep(const Vector4& v1, const Vector4& v2, float t, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     t = (t > 1.0f) ? 1.0f : ((t < 0.0f) ? 0.0f : t);  // Clamp value to 0 to 1
     t = t * t*(3.f - 2.f*t);
     XMVECTOR x1 = XMLoadFloat4(&v1);
@@ -1672,7 +1672,7 @@ inline void Vector4::SmoothStep(const Vector4& v1, const Vector4& v2, float t, V
 
 inline Vector4 Vector4::SmoothStep(const Vector4& v1, const Vector4& v2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     t = (t > 1.0f) ? 1.0f : ((t < 0.0f) ? 0.0f : t);  // Clamp value to 0 to 1
     t = t * t*(3.f - 2.f*t);
     XMVECTOR x1 = XMLoadFloat4(&v1);
@@ -1686,7 +1686,7 @@ inline Vector4 Vector4::SmoothStep(const Vector4& v1, const Vector4& v2, float t
 
 inline void Vector4::Barycentric(const Vector4& v1, const Vector4& v2, const Vector4& v3, float f, float g, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR x3 = XMLoadFloat4(&v3);
@@ -1696,7 +1696,7 @@ inline void Vector4::Barycentric(const Vector4& v1, const Vector4& v2, const Vec
 
 inline Vector4 Vector4::Barycentric(const Vector4& v1, const Vector4& v2, const Vector4& v3, float f, float g) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR x3 = XMLoadFloat4(&v3);
@@ -1709,7 +1709,7 @@ inline Vector4 Vector4::Barycentric(const Vector4& v1, const Vector4& v2, const 
 
 inline void Vector4::CatmullRom(const Vector4& v1, const Vector4& v2, const Vector4& v3, const Vector4& v4, float t, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR x3 = XMLoadFloat4(&v3);
@@ -1720,7 +1720,7 @@ inline void Vector4::CatmullRom(const Vector4& v1, const Vector4& v2, const Vect
 
 inline Vector4 Vector4::CatmullRom(const Vector4& v1, const Vector4& v2, const Vector4& v3, const Vector4& v4, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&v2);
     XMVECTOR x3 = XMLoadFloat4(&v3);
@@ -1734,7 +1734,7 @@ inline Vector4 Vector4::CatmullRom(const Vector4& v1, const Vector4& v2, const V
 
 inline void Vector4::Hermite(const Vector4& v1, const Vector4& t1, const Vector4& v2, const Vector4& t2, float t, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&t1);
     XMVECTOR x3 = XMLoadFloat4(&v2);
@@ -1745,7 +1745,7 @@ inline void Vector4::Hermite(const Vector4& v1, const Vector4& t1, const Vector4
 
 inline Vector4 Vector4::Hermite(const Vector4& v1, const Vector4& t1, const Vector4& v2, const Vector4& t2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(&v1);
     XMVECTOR x2 = XMLoadFloat4(&t1);
     XMVECTOR x3 = XMLoadFloat4(&v2);
@@ -1759,7 +1759,7 @@ inline Vector4 Vector4::Hermite(const Vector4& v1, const Vector4& t1, const Vect
 
 inline void Vector4::Reflect(const Vector4& ivec, const Vector4& nvec, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat4(&ivec);
     XMVECTOR n = XMLoadFloat4(&nvec);
     XMVECTOR X = XMVector4Reflect(i, n);
@@ -1768,7 +1768,7 @@ inline void Vector4::Reflect(const Vector4& ivec, const Vector4& nvec, Vector4& 
 
 inline Vector4 Vector4::Reflect(const Vector4& ivec, const Vector4& nvec) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat4(&ivec);
     XMVECTOR n = XMLoadFloat4(&nvec);
     XMVECTOR X = XMVector4Reflect(i, n);
@@ -1780,7 +1780,7 @@ inline Vector4 Vector4::Reflect(const Vector4& ivec, const Vector4& nvec) noexce
 
 inline void Vector4::Refract(const Vector4& ivec, const Vector4& nvec, float refractionIndex, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat4(&ivec);
     XMVECTOR n = XMLoadFloat4(&nvec);
     XMVECTOR X = XMVector4Refract(i, n, refractionIndex);
@@ -1789,7 +1789,7 @@ inline void Vector4::Refract(const Vector4& ivec, const Vector4& nvec, float ref
 
 inline Vector4 Vector4::Refract(const Vector4& ivec, const Vector4& nvec, float refractionIndex) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR i = XMLoadFloat4(&ivec);
     XMVECTOR n = XMLoadFloat4(&nvec);
     XMVECTOR X = XMVector4Refract(i, n, refractionIndex);
@@ -1801,7 +1801,7 @@ inline Vector4 Vector4::Refract(const Vector4& ivec, const Vector4& nvec, float 
 
 inline void Vector4::Transform(const Vector2& v, const Quaternion& quat, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -1811,7 +1811,7 @@ inline void Vector4::Transform(const Vector2& v, const Quaternion& quat, Vector4
 
 inline Vector4 Vector4::Transform(const Vector2& v, const Quaternion& quat) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat2(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -1824,7 +1824,7 @@ inline Vector4 Vector4::Transform(const Vector2& v, const Quaternion& quat) noex
 
 inline void Vector4::Transform(const Vector3& v, const Quaternion& quat, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -1834,7 +1834,7 @@ inline void Vector4::Transform(const Vector3& v, const Quaternion& quat, Vector4
 
 inline Vector4 Vector4::Transform(const Vector3& v, const Quaternion& quat) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat3(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -1847,7 +1847,7 @@ inline Vector4 Vector4::Transform(const Vector3& v, const Quaternion& quat) noex
 
 inline void Vector4::Transform(const Vector4& v, const Quaternion& quat, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -1857,7 +1857,7 @@ inline void Vector4::Transform(const Vector4& v, const Quaternion& quat, Vector4
 
 inline Vector4 Vector4::Transform(const Vector4& v, const Quaternion& quat) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&v);
     XMVECTOR q = XMLoadFloat4(&quat);
     XMVECTOR X = XMVector3Rotate(v1, q);
@@ -1870,7 +1870,7 @@ inline Vector4 Vector4::Transform(const Vector4& v, const Quaternion& quat) noex
 
 inline void Vector4::Transform(const Vector4& v, const Matrix& m, Vector4& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector4Transform(v1, M);
@@ -1879,7 +1879,7 @@ inline void Vector4::Transform(const Vector4& v, const Matrix& m, Vector4& resul
 
 inline Vector4 Vector4::Transform(const Vector4& v, const Matrix& m) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(&v);
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVECTOR X = XMVector4Transform(v1, M);
@@ -1892,7 +1892,7 @@ inline Vector4 Vector4::Transform(const Vector4& v, const Matrix& m) noexcept
 _Use_decl_annotations_
 inline void Vector4::Transform(const Vector4* varray, size_t count, const Matrix& m, Vector4* resultArray) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(&m);
     XMVector4TransformStream(resultArray, sizeof(XMFLOAT4), varray, sizeof(XMFLOAT4), count, M);
 }
@@ -1910,7 +1910,7 @@ inline void Vector4::Transform(const Vector4* varray, size_t count, const Matrix
 
 inline bool Matrix::operator == (const Matrix& M) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_31));
@@ -1929,7 +1929,7 @@ inline bool Matrix::operator == (const Matrix& M) const noexcept
 
 inline bool Matrix::operator != (const Matrix& M) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_31));
@@ -1986,7 +1986,7 @@ inline Matrix& Matrix::operator= (const XMFLOAT4X3& M) noexcept
 
 inline Matrix& Matrix::operator+= (const Matrix& M) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_31));
@@ -2011,7 +2011,7 @@ inline Matrix& Matrix::operator+= (const Matrix& M) noexcept
 
 inline Matrix& Matrix::operator-= (const Matrix& M) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_31));
@@ -2036,7 +2036,7 @@ inline Matrix& Matrix::operator-= (const Matrix& M) noexcept
 
 inline Matrix& Matrix::operator*= (const Matrix& M) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M1 = XMLoadFloat4x4(this);
     XMMATRIX M2 = XMLoadFloat4x4(&M);
     XMMATRIX X = XMMatrixMultiply(M1, M2);
@@ -2046,7 +2046,7 @@ inline Matrix& Matrix::operator*= (const Matrix& M) noexcept
 
 inline Matrix& Matrix::operator*= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_31));
@@ -2066,7 +2066,7 @@ inline Matrix& Matrix::operator*= (float S) noexcept
 
 inline Matrix& Matrix::operator/= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     assert(S != 0.f);
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_21));
@@ -2089,7 +2089,7 @@ inline Matrix& Matrix::operator/= (float S) noexcept
 
 inline Matrix& Matrix::operator/= (const Matrix& M) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_31));
@@ -2118,7 +2118,7 @@ inline Matrix& Matrix::operator/= (const Matrix& M) noexcept
 
 inline Matrix Matrix::operator- () const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_11));
     XMVECTOR v2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_21));
     XMVECTOR v3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&_31));
@@ -2143,7 +2143,7 @@ inline Matrix Matrix::operator- () const noexcept
 
 inline Matrix operator+ (const Matrix& M1, const Matrix& M2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._31));
@@ -2169,7 +2169,7 @@ inline Matrix operator+ (const Matrix& M1, const Matrix& M2) noexcept
 
 inline Matrix operator- (const Matrix& M1, const Matrix& M2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._31));
@@ -2195,7 +2195,7 @@ inline Matrix operator- (const Matrix& M1, const Matrix& M2) noexcept
 
 inline Matrix operator* (const Matrix& M1, const Matrix& M2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX m1 = XMLoadFloat4x4(&M1);
     XMMATRIX m2 = XMLoadFloat4x4(&M2);
     XMMATRIX X = XMMatrixMultiply(m1, m2);
@@ -2207,7 +2207,7 @@ inline Matrix operator* (const Matrix& M1, const Matrix& M2) noexcept
 
 inline Matrix operator* (const Matrix& M, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M._11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M._21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M._31));
@@ -2228,7 +2228,7 @@ inline Matrix operator* (const Matrix& M, float S) noexcept
 
 inline Matrix operator/ (const Matrix& M, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     assert(S != 0.f);
 
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M._11));
@@ -2253,7 +2253,7 @@ inline Matrix operator/ (const Matrix& M, float S) noexcept
 
 inline Matrix operator/ (const Matrix& M1, const Matrix& M2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._31));
@@ -2279,7 +2279,7 @@ inline Matrix operator/ (const Matrix& M1, const Matrix& M2) noexcept
 
 inline Matrix operator* (float S, const Matrix& M) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
 
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M._11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M._21));
@@ -2305,7 +2305,7 @@ inline Matrix operator* (float S, const Matrix& M) noexcept
 
 inline bool Matrix::Decompose(Vector3& scale, Quaternion& rotation, Vector3& translation) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
 
     XMVECTOR s, r, t;
 
@@ -2321,7 +2321,7 @@ inline bool Matrix::Decompose(Vector3& scale, Quaternion& rotation, Vector3& tra
 
 inline Matrix Matrix::Transpose() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(this);
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixTranspose(M));
@@ -2330,14 +2330,14 @@ inline Matrix Matrix::Transpose() const noexcept
 
 inline void Matrix::Transpose(Matrix& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(this);
     XMStoreFloat4x4(&result, XMMatrixTranspose(M));
 }
 
 inline Matrix Matrix::Invert() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(this);
     Matrix R;
     XMVECTOR det;
@@ -2347,7 +2347,7 @@ inline Matrix Matrix::Invert() const noexcept
 
 inline void Matrix::Invert(Matrix& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(this);
     XMVECTOR det;
     XMStoreFloat4x4(&result, XMMatrixInverse(&det, M));
@@ -2355,7 +2355,7 @@ inline void Matrix::Invert(Matrix& result) const noexcept
 
 inline float Matrix::Determinant() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M = XMLoadFloat4x4(this);
     return XMVectorGetX(XMMatrixDeterminant(M));
 }
@@ -2371,7 +2371,7 @@ inline Matrix Matrix::CreateBillboard(
     const Vector3& cameraUp,
     const Vector3* cameraForward) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR O = XMLoadFloat3(&object);
     XMVECTOR C = XMLoadFloat3(&cameraPosition);
     XMVECTOR Z = XMVectorSubtract(O, C);
@@ -2417,7 +2417,7 @@ inline Matrix Matrix::CreateConstrainedBillboard(
     const Vector3* cameraForward,
     const Vector3* objectForward) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
 
     static const XMVECTORF32 s_minAngle = { { { 0.99825467075f, 0.99825467075f, 0.99825467075f, 0.99825467075f } } }; // 1.0 - XMConvertToRadians( 0.1f );
 
@@ -2491,7 +2491,7 @@ inline Matrix Matrix::CreateConstrainedBillboard(
 
 inline Matrix Matrix::CreateTranslation(const Vector3& position) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixTranslation(position.x, position.y, position.z));
     return R;
@@ -2499,7 +2499,7 @@ inline Matrix Matrix::CreateTranslation(const Vector3& position) noexcept
 
 inline Matrix Matrix::CreateTranslation(float x, float y, float z) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixTranslation(x, y, z));
     return R;
@@ -2507,7 +2507,7 @@ inline Matrix Matrix::CreateTranslation(float x, float y, float z) noexcept
 
 inline Matrix Matrix::CreateScale(const Vector3& scales) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixScaling(scales.x, scales.y, scales.z));
     return R;
@@ -2515,7 +2515,7 @@ inline Matrix Matrix::CreateScale(const Vector3& scales) noexcept
 
 inline Matrix Matrix::CreateScale(float xs, float ys, float zs) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixScaling(xs, ys, zs));
     return R;
@@ -2523,7 +2523,7 @@ inline Matrix Matrix::CreateScale(float xs, float ys, float zs) noexcept
 
 inline Matrix Matrix::CreateScale(float scale) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixScaling(scale, scale, scale));
     return R;
@@ -2531,7 +2531,7 @@ inline Matrix Matrix::CreateScale(float scale) noexcept
 
 inline Matrix Matrix::CreateRotationX(float radians) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixRotationX(radians));
     return R;
@@ -2539,7 +2539,7 @@ inline Matrix Matrix::CreateRotationX(float radians) noexcept
 
 inline Matrix Matrix::CreateRotationY(float radians) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixRotationY(radians));
     return R;
@@ -2547,7 +2547,7 @@ inline Matrix Matrix::CreateRotationY(float radians) noexcept
 
 inline Matrix Matrix::CreateRotationZ(float radians) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixRotationZ(radians));
     return R;
@@ -2555,7 +2555,7 @@ inline Matrix Matrix::CreateRotationZ(float radians) noexcept
 
 inline Matrix Matrix::CreateFromAxisAngle(const Vector3& axis, float angle) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMVECTOR a = XMLoadFloat3(&axis);
     XMStoreFloat4x4(&R, XMMatrixRotationAxis(a, angle));
@@ -2564,7 +2564,7 @@ inline Matrix Matrix::CreateFromAxisAngle(const Vector3& axis, float angle) noex
 
 inline Matrix Matrix::CreatePerspectiveFieldOfView(float fov, float aspectRatio, float nearPlane, float farPlane) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixPerspectiveFovRH(fov, aspectRatio, nearPlane, farPlane));
     return R;
@@ -2572,7 +2572,7 @@ inline Matrix Matrix::CreatePerspectiveFieldOfView(float fov, float aspectRatio,
 
 inline Matrix Matrix::CreatePerspective(float width, float height, float nearPlane, float farPlane) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixPerspectiveRH(width, height, nearPlane, farPlane));
     return R;
@@ -2580,7 +2580,7 @@ inline Matrix Matrix::CreatePerspective(float width, float height, float nearPla
 
 inline Matrix Matrix::CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlane, float farPlane) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixPerspectiveOffCenterRH(left, right, bottom, top, nearPlane, farPlane));
     return R;
@@ -2588,7 +2588,7 @@ inline Matrix Matrix::CreatePerspectiveOffCenter(float left, float right, float 
 
 inline Matrix Matrix::CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixOrthographicRH(width, height, zNearPlane, zFarPlane));
     return R;
@@ -2596,7 +2596,7 @@ inline Matrix Matrix::CreateOrthographic(float width, float height, float zNearP
 
 inline Matrix Matrix::CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixOrthographicOffCenterRH(left, right, bottom, top, zNearPlane, zFarPlane));
     return R;
@@ -2604,7 +2604,7 @@ inline Matrix Matrix::CreateOrthographicOffCenter(float left, float right, float
 
 inline Matrix Matrix::CreateLookAt(const Vector3& eye, const Vector3& target, const Vector3& up) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMVECTOR eyev = XMLoadFloat3(&eye);
     XMVECTOR targetv = XMLoadFloat3(&target);
@@ -2615,7 +2615,7 @@ inline Matrix Matrix::CreateLookAt(const Vector3& eye, const Vector3& target, co
 
 inline Matrix Matrix::CreateWorld(const Vector3& position, const Vector3& forward, const Vector3& up) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR zaxis = XMVector3Normalize(XMVectorNegate(XMLoadFloat3(&forward)));
     XMVECTOR yaxis = XMLoadFloat3(&up);
     XMVECTOR xaxis = XMVector3Normalize(XMVector3Cross(yaxis, zaxis));
@@ -2633,7 +2633,7 @@ inline Matrix Matrix::CreateWorld(const Vector3& position, const Vector3& forwar
 
 inline Matrix Matrix::CreateFromQuaternion(const Quaternion& rotation) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMVECTOR quatv = XMLoadFloat4(&rotation);
     XMStoreFloat4x4(&R, XMMatrixRotationQuaternion(quatv));
@@ -2642,7 +2642,7 @@ inline Matrix Matrix::CreateFromQuaternion(const Quaternion& rotation) noexcept
 
 inline Matrix Matrix::CreateFromYawPitchRoll(float yaw, float pitch, float roll) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMStoreFloat4x4(&R, XMMatrixRotationRollPitchYaw(pitch, yaw, roll));
     return R;
@@ -2650,7 +2650,7 @@ inline Matrix Matrix::CreateFromYawPitchRoll(float yaw, float pitch, float roll)
 
 inline Matrix Matrix::CreateShadow(const Vector3& lightDir, const Plane& plane) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMVECTOR light = XMLoadFloat3(&lightDir);
     XMVECTOR planev = XMLoadFloat4(&plane);
@@ -2660,7 +2660,7 @@ inline Matrix Matrix::CreateShadow(const Vector3& lightDir, const Plane& plane) 
 
 inline Matrix Matrix::CreateReflection(const Plane& plane) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Matrix R;
     XMVECTOR planev = XMLoadFloat4(&plane);
     XMStoreFloat4x4(&R, XMMatrixReflect(planev));
@@ -2669,7 +2669,7 @@ inline Matrix Matrix::CreateReflection(const Plane& plane) noexcept
 
 inline void Matrix::Lerp(const Matrix& M1, const Matrix& M2, float t, Matrix& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._31));
@@ -2693,7 +2693,7 @@ inline void Matrix::Lerp(const Matrix& M1, const Matrix& M2, float t, Matrix& re
 
 inline Matrix Matrix::Lerp(const Matrix& M1, const Matrix& M2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR x1 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._11));
     XMVECTOR x2 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._21));
     XMVECTOR x3 = XMLoadFloat4(reinterpret_cast<const XMFLOAT4*>(&M1._31));
@@ -2719,7 +2719,7 @@ inline Matrix Matrix::Lerp(const Matrix& M1, const Matrix& M2, float t) noexcept
 
 inline void Matrix::Transform(const Matrix& M, const Quaternion& rotation, Matrix& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR quatv = XMLoadFloat4(&rotation);
 
     XMMATRIX M0 = XMLoadFloat4x4(&M);
@@ -2730,7 +2730,7 @@ inline void Matrix::Transform(const Matrix& M, const Quaternion& rotation, Matri
 
 inline Matrix Matrix::Transform(const Matrix& M, const Quaternion& rotation) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR quatv = XMLoadFloat4(&rotation);
 
     XMMATRIX M0 = XMLoadFloat4x4(&M);
@@ -2750,7 +2750,7 @@ inline Matrix Matrix::Transform(const Matrix& M, const Quaternion& rotation) noe
 
 inline Plane::Plane(const Vector3& point1, const Vector3& point2, const Vector3& point3) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR P0 = XMLoadFloat3(&point1);
     XMVECTOR P1 = XMLoadFloat3(&point2);
     XMVECTOR P2 = XMLoadFloat3(&point3);
@@ -2759,7 +2759,7 @@ inline Plane::Plane(const Vector3& point1, const Vector3& point2, const Vector3&
 
 inline Plane::Plane(const Vector3& point, const Vector3& normal) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR P = XMLoadFloat3(&point);
     XMVECTOR N = XMLoadFloat3(&normal);
     XMStoreFloat4(this, XMPlaneFromPointNormal(P, N));
@@ -2771,7 +2771,7 @@ inline Plane::Plane(const Vector3& point, const Vector3& normal) noexcept
 
 inline bool Plane::operator == (const Plane& p) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p1 = XMLoadFloat4(this);
     XMVECTOR p2 = XMLoadFloat4(&p);
     return XMPlaneEqual(p1, p2);
@@ -2779,7 +2779,7 @@ inline bool Plane::operator == (const Plane& p) const noexcept
 
 inline bool Plane::operator != (const Plane& p) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p1 = XMLoadFloat4(this);
     XMVECTOR p2 = XMLoadFloat4(&p);
     return XMPlaneNotEqual(p1, p2);
@@ -2791,21 +2791,21 @@ inline bool Plane::operator != (const Plane& p) const noexcept
 
 inline void Plane::Normalize() noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p = XMLoadFloat4(this);
     XMStoreFloat4(this, XMPlaneNormalize(p));
 }
 
 inline void Plane::Normalize(Plane& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p = XMLoadFloat4(this);
     XMStoreFloat4(&result, XMPlaneNormalize(p));
 }
 
 inline float Plane::Dot(const Vector4& v) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p = XMLoadFloat4(this);
     XMVECTOR v0 = XMLoadFloat4(&v);
     return XMVectorGetX(XMPlaneDot(p, v0));
@@ -2813,7 +2813,7 @@ inline float Plane::Dot(const Vector4& v) const noexcept
 
 inline float Plane::DotCoordinate(const Vector3& position) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p = XMLoadFloat4(this);
     XMVECTOR v0 = XMLoadFloat3(&position);
     return XMVectorGetX(XMPlaneDotCoord(p, v0));
@@ -2821,7 +2821,7 @@ inline float Plane::DotCoordinate(const Vector3& position) const noexcept
 
 inline float Plane::DotNormal(const Vector3& normal) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p = XMLoadFloat4(this);
     XMVECTOR n0 = XMLoadFloat3(&normal);
     return XMVectorGetX(XMPlaneDotNormal(p, n0));
@@ -2833,7 +2833,7 @@ inline float Plane::DotNormal(const Vector3& normal) const noexcept
 
 inline void Plane::Transform(const Plane& plane, const Matrix& M, Plane& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p = XMLoadFloat4(&plane);
     XMMATRIX m0 = XMLoadFloat4x4(&M);
     XMStoreFloat4(&result, XMPlaneTransform(p, m0));
@@ -2841,7 +2841,7 @@ inline void Plane::Transform(const Plane& plane, const Matrix& M, Plane& result)
 
 inline Plane Plane::Transform(const Plane& plane, const Matrix& M) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p = XMLoadFloat4(&plane);
     XMMATRIX m0 = XMLoadFloat4x4(&M);
 
@@ -2852,7 +2852,7 @@ inline Plane Plane::Transform(const Plane& plane, const Matrix& M) noexcept
 
 inline void Plane::Transform(const Plane& plane, const Quaternion& rotation, Plane& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p = XMLoadFloat4(&plane);
     XMVECTOR q = XMLoadFloat4(&rotation);
     XMVECTOR X = XMVector3Rotate(p, q);
@@ -2862,7 +2862,7 @@ inline void Plane::Transform(const Plane& plane, const Quaternion& rotation, Pla
 
 inline Plane Plane::Transform(const Plane& plane, const Quaternion& rotation) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR p = XMLoadFloat4(&plane);
     XMVECTOR q = XMLoadFloat4(&rotation);
     XMVECTOR X = XMVector3Rotate(p, q);
@@ -2886,7 +2886,7 @@ inline Plane Plane::Transform(const Plane& plane, const Quaternion& rotation) no
 
 inline bool Quaternion::operator == (const Quaternion& q) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(this);
     XMVECTOR q2 = XMLoadFloat4(&q);
     return XMQuaternionEqual(q1, q2);
@@ -2894,7 +2894,7 @@ inline bool Quaternion::operator == (const Quaternion& q) const noexcept
 
 inline bool Quaternion::operator != (const Quaternion& q) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(this);
     XMVECTOR q2 = XMLoadFloat4(&q);
     return XMQuaternionNotEqual(q1, q2);
@@ -2906,7 +2906,7 @@ inline bool Quaternion::operator != (const Quaternion& q) const noexcept
 
 inline Quaternion& Quaternion::operator+= (const Quaternion& q) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(this);
     XMVECTOR q2 = XMLoadFloat4(&q);
     XMStoreFloat4(this, XMVectorAdd(q1, q2));
@@ -2915,7 +2915,7 @@ inline Quaternion& Quaternion::operator+= (const Quaternion& q) noexcept
 
 inline Quaternion& Quaternion::operator-= (const Quaternion& q) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(this);
     XMVECTOR q2 = XMLoadFloat4(&q);
     XMStoreFloat4(this, XMVectorSubtract(q1, q2));
@@ -2924,7 +2924,7 @@ inline Quaternion& Quaternion::operator-= (const Quaternion& q) noexcept
 
 inline Quaternion& Quaternion::operator*= (const Quaternion& q) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(this);
     XMVECTOR q2 = XMLoadFloat4(&q);
     XMStoreFloat4(this, XMQuaternionMultiply(q1, q2));
@@ -2933,7 +2933,7 @@ inline Quaternion& Quaternion::operator*= (const Quaternion& q) noexcept
 
 inline Quaternion& Quaternion::operator*= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(this);
     XMStoreFloat4(this, XMVectorScale(q, S));
     return *this;
@@ -2941,7 +2941,7 @@ inline Quaternion& Quaternion::operator*= (float S) noexcept
 
 inline Quaternion& Quaternion::operator/= (const Quaternion& q) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(this);
     XMVECTOR q2 = XMLoadFloat4(&q);
     q2 = XMQuaternionInverse(q2);
@@ -2955,7 +2955,7 @@ inline Quaternion& Quaternion::operator/= (const Quaternion& q) noexcept
 
 inline Quaternion Quaternion::operator- () const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(this);
 
     Quaternion R;
@@ -2969,7 +2969,7 @@ inline Quaternion Quaternion::operator- () const noexcept
 
 inline Quaternion operator+ (const Quaternion& Q1, const Quaternion& Q2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(&Q1);
     XMVECTOR q2 = XMLoadFloat4(&Q2);
 
@@ -2980,7 +2980,7 @@ inline Quaternion operator+ (const Quaternion& Q1, const Quaternion& Q2) noexcep
 
 inline Quaternion operator- (const Quaternion& Q1, const Quaternion& Q2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(&Q1);
     XMVECTOR q2 = XMLoadFloat4(&Q2);
 
@@ -2991,7 +2991,7 @@ inline Quaternion operator- (const Quaternion& Q1, const Quaternion& Q2) noexcep
 
 inline Quaternion operator* (const Quaternion& Q1, const Quaternion& Q2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(&Q1);
     XMVECTOR q2 = XMLoadFloat4(&Q2);
 
@@ -3002,7 +3002,7 @@ inline Quaternion operator* (const Quaternion& Q1, const Quaternion& Q2) noexcep
 
 inline Quaternion operator* (const Quaternion& Q, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(&Q);
 
     Quaternion R;
@@ -3012,7 +3012,7 @@ inline Quaternion operator* (const Quaternion& Q, float S) noexcept
 
 inline Quaternion operator/ (const Quaternion& Q1, const Quaternion& Q2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(&Q1);
     XMVECTOR q2 = XMLoadFloat4(&Q2);
     q2 = XMQuaternionInverse(q2);
@@ -3024,7 +3024,7 @@ inline Quaternion operator/ (const Quaternion& Q1, const Quaternion& Q2) noexcep
 
 inline Quaternion operator* (float S, const Quaternion& Q) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(&Q);
 
     Quaternion R;
@@ -3038,56 +3038,56 @@ inline Quaternion operator* (float S, const Quaternion& Q) noexcept
 
 inline float Quaternion::Length() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(this);
     return XMVectorGetX(XMQuaternionLength(q));
 }
 
 inline float Quaternion::LengthSquared() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(this);
     return XMVectorGetX(XMQuaternionLengthSq(q));
 }
 
 inline void Quaternion::Normalize() noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(this);
     XMStoreFloat4(this, XMQuaternionNormalize(q));
 }
 
 inline void Quaternion::Normalize(Quaternion& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(this);
     XMStoreFloat4(&result, XMQuaternionNormalize(q));
 }
 
 inline void Quaternion::Conjugate() noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(this);
     XMStoreFloat4(this, XMQuaternionConjugate(q));
 }
 
 inline void Quaternion::Conjugate(Quaternion& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(this);
     XMStoreFloat4(&result, XMQuaternionConjugate(q));
 }
 
 inline void Quaternion::Inverse(Quaternion& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q = XMLoadFloat4(this);
     XMStoreFloat4(&result, XMQuaternionInverse(q));
 }
 
 inline float Quaternion::Dot(const Quaternion& q) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR q1 = XMLoadFloat4(this);
     XMVECTOR q2 = XMLoadFloat4(&q);
     return XMVectorGetX(XMQuaternionDot(q1, q2));
@@ -3099,7 +3099,7 @@ inline float Quaternion::Dot(const Quaternion& q) const noexcept
 
 inline Quaternion Quaternion::CreateFromAxisAngle(const Vector3& axis, float angle) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR a = XMLoadFloat3(&axis);
 
     Quaternion R;
@@ -3109,7 +3109,7 @@ inline Quaternion Quaternion::CreateFromAxisAngle(const Vector3& axis, float ang
 
 inline Quaternion Quaternion::CreateFromYawPitchRoll(float yaw, float pitch, float roll) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     Quaternion R;
     XMStoreFloat4(&R, XMQuaternionRotationRollPitchYaw(pitch, yaw, roll));
     return R;
@@ -3117,7 +3117,7 @@ inline Quaternion Quaternion::CreateFromYawPitchRoll(float yaw, float pitch, flo
 
 inline Quaternion Quaternion::CreateFromRotationMatrix(const Matrix& M) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMMATRIX M0 = XMLoadFloat4x4(&M);
 
     Quaternion R;
@@ -3127,7 +3127,7 @@ inline Quaternion Quaternion::CreateFromRotationMatrix(const Matrix& M) noexcept
 
 inline void Quaternion::Lerp(const Quaternion& q1, const Quaternion& q2, float t, Quaternion& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR Q0 = XMLoadFloat4(&q1);
     XMVECTOR Q1 = XMLoadFloat4(&q2);
 
@@ -3152,7 +3152,7 @@ inline void Quaternion::Lerp(const Quaternion& q1, const Quaternion& q2, float t
 
 inline Quaternion Quaternion::Lerp(const Quaternion& q1, const Quaternion& q2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR Q0 = XMLoadFloat4(&q1);
     XMVECTOR Q1 = XMLoadFloat4(&q2);
 
@@ -3179,7 +3179,7 @@ inline Quaternion Quaternion::Lerp(const Quaternion& q1, const Quaternion& q2, f
 
 inline void Quaternion::Slerp(const Quaternion& q1, const Quaternion& q2, float t, Quaternion& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR Q0 = XMLoadFloat4(&q1);
     XMVECTOR Q1 = XMLoadFloat4(&q2);
     XMStoreFloat4(&result, XMQuaternionSlerp(Q0, Q1, t));
@@ -3187,7 +3187,7 @@ inline void Quaternion::Slerp(const Quaternion& q1, const Quaternion& q2, float 
 
 inline Quaternion Quaternion::Slerp(const Quaternion& q1, const Quaternion& q2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR Q0 = XMLoadFloat4(&q1);
     XMVECTOR Q1 = XMLoadFloat4(&q2);
 
@@ -3198,7 +3198,7 @@ inline Quaternion Quaternion::Slerp(const Quaternion& q1, const Quaternion& q2, 
 
 inline void Quaternion::Concatenate(const Quaternion& q1, const Quaternion& q2, Quaternion& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR Q0 = XMLoadFloat4(&q1);
     XMVECTOR Q1 = XMLoadFloat4(&q2);
     XMStoreFloat4(&result, XMQuaternionMultiply(Q1, Q0));
@@ -3206,7 +3206,7 @@ inline void Quaternion::Concatenate(const Quaternion& q1, const Quaternion& q2, 
 
 inline Quaternion Quaternion::Concatenate(const Quaternion& q1, const Quaternion& q2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR Q0 = XMLoadFloat4(&q1);
     XMVECTOR Q1 = XMLoadFloat4(&q2);
 
@@ -3222,15 +3222,15 @@ inline Quaternion Quaternion::Concatenate(const Quaternion& q1, const Quaternion
  *
  ****************************************************************************/
 
-inline Color::Color(const DirectX::PackedVector::XMCOLOR& Packed) noexcept
+inline Color::Color(const Fuko::PackedVector::XMCOLOR& Packed) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMStoreFloat4(this, PackedVector::XMLoadColor(&Packed));
 }
 
-inline Color::Color(const DirectX::PackedVector::XMUBYTEN4& Packed) noexcept
+inline Color::Color(const Fuko::PackedVector::XMUBYTEN4& Packed) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMStoreFloat4(this, PackedVector::XMLoadUByteN4(&Packed));
 }
 
@@ -3239,7 +3239,7 @@ inline Color::Color(const DirectX::PackedVector::XMUBYTEN4& Packed) noexcept
 //------------------------------------------------------------------------------
 inline bool Color::operator == (const Color& c) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(this);
     XMVECTOR c2 = XMLoadFloat4(&c);
     return XMColorEqual(c1, c2);
@@ -3247,7 +3247,7 @@ inline bool Color::operator == (const Color& c) const noexcept
 
 inline bool Color::operator != (const Color& c) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(this);
     XMVECTOR c2 = XMLoadFloat4(&c);
     return XMColorNotEqual(c1, c2);
@@ -3257,23 +3257,23 @@ inline bool Color::operator != (const Color& c) const noexcept
 // Assignment operators
 //------------------------------------------------------------------------------
 
-inline Color& Color::operator= (const DirectX::PackedVector::XMCOLOR& Packed) noexcept
+inline Color& Color::operator= (const Fuko::PackedVector::XMCOLOR& Packed) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMStoreFloat4(this, PackedVector::XMLoadColor(&Packed));
     return *this;
 }
 
-inline Color& Color::operator= (const DirectX::PackedVector::XMUBYTEN4& Packed) noexcept
+inline Color& Color::operator= (const Fuko::PackedVector::XMUBYTEN4& Packed) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMStoreFloat4(this, PackedVector::XMLoadUByteN4(&Packed));
     return *this;
 }
 
 inline Color& Color::operator+= (const Color& c) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(this);
     XMVECTOR c2 = XMLoadFloat4(&c);
     XMStoreFloat4(this, XMVectorAdd(c1, c2));
@@ -3282,7 +3282,7 @@ inline Color& Color::operator+= (const Color& c) noexcept
 
 inline Color& Color::operator-= (const Color& c) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(this);
     XMVECTOR c2 = XMLoadFloat4(&c);
     XMStoreFloat4(this, XMVectorSubtract(c1, c2));
@@ -3291,7 +3291,7 @@ inline Color& Color::operator-= (const Color& c) noexcept
 
 inline Color& Color::operator*= (const Color& c) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(this);
     XMVECTOR c2 = XMLoadFloat4(&c);
     XMStoreFloat4(this, XMVectorMultiply(c1, c2));
@@ -3300,7 +3300,7 @@ inline Color& Color::operator*= (const Color& c) noexcept
 
 inline Color& Color::operator*= (float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMStoreFloat4(this, XMVectorScale(c, S));
     return *this;
@@ -3308,7 +3308,7 @@ inline Color& Color::operator*= (float S) noexcept
 
 inline Color& Color::operator/= (const Color& c) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(this);
     XMVECTOR c2 = XMLoadFloat4(&c);
     XMStoreFloat4(this, XMVectorDivide(c1, c2));
@@ -3321,7 +3321,7 @@ inline Color& Color::operator/= (const Color& c) noexcept
 
 inline Color Color::operator- () const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     Color R;
     XMStoreFloat4(&R, XMVectorNegate(c));
@@ -3334,7 +3334,7 @@ inline Color Color::operator- () const noexcept
 
 inline Color operator+ (const Color& C1, const Color& C2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(&C1);
     XMVECTOR c2 = XMLoadFloat4(&C2);
     Color R;
@@ -3344,7 +3344,7 @@ inline Color operator+ (const Color& C1, const Color& C2) noexcept
 
 inline Color operator- (const Color& C1, const Color& C2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(&C1);
     XMVECTOR c2 = XMLoadFloat4(&C2);
     Color R;
@@ -3354,7 +3354,7 @@ inline Color operator- (const Color& C1, const Color& C2) noexcept
 
 inline Color operator* (const Color& C1, const Color& C2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(&C1);
     XMVECTOR c2 = XMLoadFloat4(&C2);
     Color R;
@@ -3364,7 +3364,7 @@ inline Color operator* (const Color& C1, const Color& C2) noexcept
 
 inline Color operator* (const Color& C, float S) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(&C);
     Color R;
     XMStoreFloat4(&R, XMVectorScale(c, S));
@@ -3373,7 +3373,7 @@ inline Color operator* (const Color& C, float S) noexcept
 
 inline Color operator/ (const Color& C1, const Color& C2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(&C1);
     XMVECTOR c2 = XMLoadFloat4(&C2);
     Color R;
@@ -3383,7 +3383,7 @@ inline Color operator/ (const Color& C1, const Color& C2) noexcept
 
 inline Color operator* (float S, const Color& C) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c1 = XMLoadFloat4(&C);
     Color R;
     XMStoreFloat4(&R, XMVectorScale(c1, S));
@@ -3394,18 +3394,18 @@ inline Color operator* (float S, const Color& C) noexcept
 // Color operations
 //------------------------------------------------------------------------------
 
-inline DirectX::PackedVector::XMCOLOR Color::BGRA() const noexcept
+inline Fuko::PackedVector::XMCOLOR Color::BGRA() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR clr = XMLoadFloat4(this);
     PackedVector::XMCOLOR Packed;
     PackedVector::XMStoreColor(&Packed, clr);
     return Packed;
 }
 
-inline DirectX::PackedVector::XMUBYTEN4 Color::RGBA() const noexcept
+inline Fuko::PackedVector::XMUBYTEN4 Color::RGBA() const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR clr = XMLoadFloat4(this);
     PackedVector::XMUBYTEN4 Packed;
     PackedVector::XMStoreUByteN4(&Packed, clr);
@@ -3424,35 +3424,35 @@ inline Vector4 Color::ToVector4() const noexcept
 
 inline void Color::Negate() noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMStoreFloat4(this, XMColorNegative(c));
 }
 
 inline void Color::Negate(Color& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMStoreFloat4(&result, XMColorNegative(c));
 }
 
 inline void Color::Saturate() noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMStoreFloat4(this, XMVectorSaturate(c));
 }
 
 inline void Color::Saturate(Color& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMStoreFloat4(&result, XMVectorSaturate(c));
 }
 
 inline void Color::Premultiply() noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMVECTOR a = XMVectorSplatW(c);
     a = XMVectorSelect(g_XMIdentityR3, a, g_XMSelect1110);
@@ -3461,7 +3461,7 @@ inline void Color::Premultiply() noexcept
 
 inline void Color::Premultiply(Color& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMVECTOR a = XMVectorSplatW(c);
     a = XMVectorSelect(g_XMIdentityR3, a, g_XMSelect1110);
@@ -3470,28 +3470,28 @@ inline void Color::Premultiply(Color& result) const noexcept
 
 inline void Color::AdjustSaturation(float sat) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMStoreFloat4(this, XMColorAdjustSaturation(c, sat));
 }
 
 inline void Color::AdjustSaturation(float sat, Color& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMStoreFloat4(&result, XMColorAdjustSaturation(c, sat));
 }
 
 inline void Color::AdjustContrast(float contrast) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMStoreFloat4(this, XMColorAdjustContrast(c, contrast));
 }
 
 inline void Color::AdjustContrast(float contrast, Color& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR c = XMLoadFloat4(this);
     XMStoreFloat4(&result, XMColorAdjustContrast(c, contrast));
 }
@@ -3502,7 +3502,7 @@ inline void Color::AdjustContrast(float contrast, Color& result) const noexcept
 
 inline void Color::Modulate(const Color& c1, const Color& c2, Color& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR C0 = XMLoadFloat4(&c1);
     XMVECTOR C1 = XMLoadFloat4(&c2);
     XMStoreFloat4(&result, XMColorModulate(C0, C1));
@@ -3510,7 +3510,7 @@ inline void Color::Modulate(const Color& c1, const Color& c2, Color& result) noe
 
 inline Color Color::Modulate(const Color& c1, const Color& c2) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR C0 = XMLoadFloat4(&c1);
     XMVECTOR C1 = XMLoadFloat4(&c2);
 
@@ -3521,7 +3521,7 @@ inline Color Color::Modulate(const Color& c1, const Color& c2) noexcept
 
 inline void Color::Lerp(const Color& c1, const Color& c2, float t, Color& result) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR C0 = XMLoadFloat4(&c1);
     XMVECTOR C1 = XMLoadFloat4(&c2);
     XMStoreFloat4(&result, XMVectorLerp(C0, C1, t));
@@ -3529,7 +3529,7 @@ inline void Color::Lerp(const Color& c1, const Color& c2, float t, Color& result
 
 inline Color Color::Lerp(const Color& c1, const Color& c2, float t) noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR C0 = XMLoadFloat4(&c1);
     XMVECTOR C1 = XMLoadFloat4(&c2);
 
@@ -3550,7 +3550,7 @@ inline Color Color::Lerp(const Color& c1, const Color& c2, float t) noexcept
 //------------------------------------------------------------------------------
 inline bool Ray::operator == (const Ray& r) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR r1p = XMLoadFloat3(&position);
     XMVECTOR r2p = XMLoadFloat3(&r.position);
     XMVECTOR r1d = XMLoadFloat3(&direction);
@@ -3560,7 +3560,7 @@ inline bool Ray::operator == (const Ray& r) const noexcept
 
 inline bool Ray::operator != (const Ray& r) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR r1p = XMLoadFloat3(&position);
     XMVECTOR r2p = XMLoadFloat3(&r.position);
     XMVECTOR r1d = XMLoadFloat3(&direction);
@@ -3584,12 +3584,12 @@ inline bool Ray::Intersects(const BoundingBox& box, _Out_ float& Dist) const noe
 
 inline bool Ray::Intersects(const Vector3& tri0, const Vector3& tri1, const Vector3& tri2, _Out_ float& Dist) const noexcept
 {
-    return DirectX::TriangleTests::Intersects(position, direction, tri0, tri1, tri2, Dist);
+    return Fuko::TriangleTests::Intersects(position, direction, tri0, tri1, tri2, Dist);
 }
 
 inline bool Ray::Intersects(const Plane& plane, _Out_ float& Dist) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
 
     XMVECTOR p = XMLoadFloat4(&plane);
     XMVECTOR dir = XMLoadFloat3(&direction);
@@ -3674,7 +3674,7 @@ inline float Viewport::AspectRatio() const noexcept
 
 inline Vector3 Viewport::Project(const Vector3& p, const Matrix& proj, const Matrix& view, const Matrix& world) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v = XMLoadFloat3(&p);
     XMMATRIX projection = XMLoadFloat4x4(&proj);
     v = XMVector3Project(v, x, y, width, height, minDepth, maxDepth, projection, view, world);
@@ -3685,7 +3685,7 @@ inline Vector3 Viewport::Project(const Vector3& p, const Matrix& proj, const Mat
 
 inline void Viewport::Project(const Vector3& p, const Matrix& proj, const Matrix& view, const Matrix& world, Vector3& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v = XMLoadFloat3(&p);
     XMMATRIX projection = XMLoadFloat4x4(&proj);
     v = XMVector3Project(v, x, y, width, height, minDepth, maxDepth, projection, view, world);
@@ -3694,7 +3694,7 @@ inline void Viewport::Project(const Vector3& p, const Matrix& proj, const Matrix
 
 inline Vector3 Viewport::Unproject(const Vector3& p, const Matrix& proj, const Matrix& view, const Matrix& world) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v = XMLoadFloat3(&p);
     XMMATRIX projection = XMLoadFloat4x4(&proj);
     v = XMVector3Unproject(v, x, y, width, height, minDepth, maxDepth, projection, view, world);
@@ -3705,7 +3705,7 @@ inline Vector3 Viewport::Unproject(const Vector3& p, const Matrix& proj, const M
 
 inline void Viewport::Unproject(const Vector3& p, const Matrix& proj, const Matrix& view, const Matrix& world, Vector3& result) const noexcept
 {
-    using namespace DirectX;
+    using namespace Fuko;
     XMVECTOR v = XMLoadFloat3(&p);
     XMMATRIX projection = XMLoadFloat4x4(&proj);
     v = XMVector3Unproject(v, x, y, width, height, minDepth, maxDepth, projection, view, world);

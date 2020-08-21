@@ -1588,9 +1588,9 @@ inline XMVECTOR XM_CALLCONV XMColorHSLToRGB(FXMVECTOR hsl) noexcept
 
         XMVECTOR p = XMVectorSubtract(XMVectorMultiply(g_XMTwo, l), q);
 
-        XMVECTOR r = DirectX::Internal::XMColorHue2Clr(p, q, XMVectorAdd(h, oneThird));
-        XMVECTOR g = DirectX::Internal::XMColorHue2Clr(p, q, h);
-        XMVECTOR b = DirectX::Internal::XMColorHue2Clr(p, q, XMVectorSubtract(h, oneThird));
+        XMVECTOR r = Fuko::Internal::XMColorHue2Clr(p, q, XMVectorAdd(h, oneThird));
+        XMVECTOR g = Fuko::Internal::XMColorHue2Clr(p, q, h);
+        XMVECTOR b = Fuko::Internal::XMColorHue2Clr(p, q, XMVectorSubtract(h, oneThird));
 
         XMVECTOR rg = XMVectorSelect(g, r, g_XMSelect1000);
         XMVECTOR ba = XMVectorSelect(hsl, b, g_XMSelect1110);

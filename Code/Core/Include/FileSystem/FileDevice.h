@@ -6,6 +6,7 @@
 
 namespace Fuko
 {
+	class IStream;
 	enum EFileOpenFlag
 	{
 		Read	= 1 << 0,	// 读模式 

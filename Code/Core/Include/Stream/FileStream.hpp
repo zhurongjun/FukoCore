@@ -2,21 +2,23 @@
 #include "Stream.hpp"
 #include <fileapi.h>
 #include <stdio.h>
+#include <corecrt_io.h>
 
 // FileStream 
 namespace Fuko
 {
-	class FileStream : public Stream final
+	class FileStream final : public IStream
 	{
 		HANDLE	m_File;
 	public:
 		FileStream(HANDLE FileHandle, bool Writable, bool Readable)
 			: m_File(FileHandle)
-			, m_bWritable(Writable)
-			, m_bReadable(Readable)
-			, m_bSeekable(true)
-			, m_bResizable(true)
-		{}
+		{
+			m_bWritable = Writable;
+			m_bReadable = Readable;
+			m_bSeekable = true;
+			m_bResizable = true;
+		}
 		~FileStream() { Close(); }
 
 		// Read write 
@@ -37,10 +39,10 @@ namespace Fuko
 			DWORD WriteByte;
 			BOOL Done = ::WriteFile(m_File, Buffer, (DWORD)Size, &WriteByte, nullptr);
 
-			m_bEOF = Done && ReadByte < Size;
+			m_bEOF = Done && WriteByte < Size;
 			m_bFailed = !Done;
 
-			return ReadByte;
+			return WriteByte;
 		}
 
 		// Size 
@@ -61,7 +63,7 @@ namespace Fuko
 			LARGE_INTEGER Pos;
 			LARGE_INTEGER EndSize;
 			EndSize.QuadPart = NewSize;
-			if (m_bFailed = !::GetFileSizeEx(m_File, LastPos)) return false;
+			if (m_bFailed = !::GetFileSizeEx(m_File, &LastPos)) return false;
 			if (m_bFailed = !::SetFilePointerEx(m_File, EndSize, &Pos, FILE_BEGIN)) return false;
 			if (m_bFailed = !::SetEndOfFile(m_File)) return false;
 			if (m_bFailed = !::SetFilePointerEx(m_File, LastPos, &Pos, FILE_BEGIN)) return false;
@@ -124,18 +126,19 @@ namespace Fuko
 // BufferedFileStream 
 namespace Fuko
 {
-	class BufferedFileStream : public Stream final
+	class BufferedFileStream final : public IStream
 	{
 		FILE*		m_File;
 	public:
 		BufferedFileStream(FILE* FileHandle, bool Writable, bool Readable)
 			: m_File(FileHandle)
-			, m_bWritable(Writable)
-			, m_bReadable(Readable)
-			, m_bSeekable(true)
-			, m_bResizable(true)
-			, m_bBuffered(true)
-		{}
+		{
+			m_bWritable = Writable;
+			m_bReadable = Readable;
+			m_bSeekable = true;
+			m_bResizable = true;
+			m_bBuffered = true;
+		}
 		// Read write 
 		virtual uint32	Read(void* Buffer, uint32 Size) override
 		{
@@ -200,7 +203,7 @@ namespace Fuko
 			LARGE_INTEGER Pos;
 			LARGE_INTEGER EndSize;
 			EndSize.QuadPart = NewSize;
-			if (m_bFailed = !::GetFileSizeEx(H, LastPos)) return false;
+			if (m_bFailed = !::GetFileSizeEx(H, &LastPos)) return false;
 			if (m_bFailed = !::SetFilePointerEx(H, EndSize, &Pos, FILE_BEGIN)) return false;
 			if (m_bFailed = !::SetEndOfFile(H)) return false;
 			if (m_bFailed = !::SetFilePointerEx(H, LastPos, &Pos, FILE_BEGIN)) return false;

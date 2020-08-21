@@ -2,6 +2,7 @@
 #include <CoreType.h>
 #include <CoreConfig.h>
 #include <Containers/RingQueue.h>
+#include <Containers/Array.h>
 #include <mutex>
 #include <Misc/Delegate.h>
 

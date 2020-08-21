@@ -28,16 +28,16 @@ namespace Fuko::Job
 		std::atomic<uint32_t>	m_NumActive;
 		bool					m_TimeToDie;
 	public:
-		SingleQueueExecuter(uint32_t NumWorkers = std::thread::hardware_concurrency());
-		~SingleQueueExecuter();
+		inline SingleQueueExecuter(uint32_t NumWorkers = std::thread::hardware_concurrency());
+		inline ~SingleQueueExecuter();
 
-		PlanBuilder Execute(JobBucket& Bucket);
+		inline PlanBuilder Execute(JobBucket& Bucket);
 
-		void WaitForAll();
+		inline void WaitForAll();
 
 	private:
-		void Execute(JobPlan* Plan);
-		void _AddWorker();
+		inline void Execute(JobPlan* Plan);
+		inline void _AddWorker();
 
 		inline bool _WaitForJob(JobNode*& Node);
 		inline void _Schedule(JobNode* Node);
@@ -56,7 +56,7 @@ namespace Fuko::Job
 // Impl 
 namespace Fuko::Job
 {
-	SingleQueueExecuter::SingleQueueExecuter(uint32_t NumWorkers)
+	inline SingleQueueExecuter::SingleQueueExecuter(uint32_t NumWorkers)
 		: m_AllThread()
 		, m_NumActive(0)
 		, m_TimeToDie(false)
@@ -66,7 +66,7 @@ namespace Fuko::Job
 		for (uint32_t i = 0; i < NumWorkers; ++i) _AddWorker();
 	}
 
-	SingleQueueExecuter::~SingleQueueExecuter()
+	inline SingleQueueExecuter::~SingleQueueExecuter()
 	{
 		WaitForAll();
 		m_TimeToDie = true;
@@ -78,13 +78,13 @@ namespace Fuko::Job
 			it.join();
 	}
 
-	TPlanBuilder<SingleQueueExecuter> SingleQueueExecuter::Execute(JobBucket& Bucket)
+	inline TPlanBuilder<SingleQueueExecuter> SingleQueueExecuter::Execute(JobBucket& Bucket)
 	{
 		// create plan 
 		return TPlanBuilder<SingleQueueExecuter>(*JobNew<JobPlan>(&Bucket), *this);
 	}
 	
-	void SingleQueueExecuter::Execute(JobPlan* Plan)
+	inline void SingleQueueExecuter::Execute(JobPlan* Plan)
 	{
 		// the plan will never done 
 		if (Plan->m_Entries.empty())
@@ -121,7 +121,7 @@ namespace Fuko::Job
 		}
 	}
 
-	void SingleQueueExecuter::WaitForAll()
+	inline void SingleQueueExecuter::WaitForAll()
 	{
 		auto Lck = std::unique_lock(m_WaitWorkerMtx);
 		while (m_DoingPlan.size() || m_WaitingPlan.size() || m_JobQueue.Num())
@@ -130,7 +130,7 @@ namespace Fuko::Job
 		}
 	}
 
-	void SingleQueueExecuter::_AddWorker()
+	inline void SingleQueueExecuter::_AddWorker()
 	{
 		m_AllThread.emplace_back(
 		[this]()

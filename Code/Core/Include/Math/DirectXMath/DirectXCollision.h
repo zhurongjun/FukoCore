@@ -11,7 +11,7 @@
 
 #include "DirectXMath.h"
 
-namespace DirectX
+namespace Fuko
 {
 
     enum ContainmentType
@@ -349,5 +349,5 @@ namespace DirectX
 
 #pragma warning(pop)
 
-} // namespace DirectX
+} // namespace Fuko
 

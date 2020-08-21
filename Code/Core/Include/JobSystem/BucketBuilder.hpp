@@ -8,10 +8,10 @@ namespace Fuko::Job
 		JobVector<JobNode*>&	m_Nodes;
 		//=======================Begin help functions=======================
 		template<typename TFun>
-		Job _Emplace(TFun&& InFun);
+		inline Job _Emplace(TFun&& InFun);
 		//========================End help functions========================
 	public:
-		JobBucketBuilder(JobVector<JobNode*>& InVector);
+		inline JobBucketBuilder(JobVector<JobNode*>& InVector);
 
 		// 创建一个占位符Job 
 		inline Job PlaceHolder();
@@ -22,11 +22,11 @@ namespace Fuko::Job
 
 		// 并行for循环 
 		template<typename TFun>
-		std::pair<Job, Job> ParallelFor(uint32_t InLoopNum, TFun&& InFun, uint32_t InChunkNum = 0);
+		inline std::pair<Job, Job> ParallelFor(uint32_t InLoopNum, TFun&& InFun, uint32_t InChunkNum = 0);
 
 		// 并行foreach循环 
 		template<typename It, typename TFun>
-		std::pair<Job, Job> ParallelEach(It Begin, It End, TFun&& InFun, uint32_t InChunkNum = 0);
+		inline std::pair<Job, Job> ParallelEach(It Begin, It End, TFun&& InFun, uint32_t InChunkNum = 0);
 
 	};
 }
@@ -34,12 +34,12 @@ namespace Fuko::Job
 // Impl
 namespace Fuko::Job
 {
-	JobBucketBuilder::JobBucketBuilder(JobVector<JobNode *>& InVector)
+	inline JobBucketBuilder::JobBucketBuilder(JobVector<JobNode *>& InVector)
 		: m_Nodes(InVector)
 	{}
 
 	template<typename TFun>
-	Job JobBucketBuilder::_Emplace(TFun&& InFun)
+	inline Job JobBucketBuilder::_Emplace(TFun&& InFun)
 	{
 		Job Node = PlaceHolder();
 		Node.Bind(std::forward<TFun>(InFun));
@@ -64,7 +64,7 @@ namespace Fuko::Job
 	}
 
 	template<typename TFun>
-	std::pair<Job, Job> JobBucketBuilder::ParallelFor(uint32_t InLoopNum, TFun&& InFun, uint32_t InChunkNum)
+	inline std::pair<Job, Job> JobBucketBuilder::ParallelFor(uint32_t InLoopNum, TFun&& InFun, uint32_t InChunkNum)
 	{
 		Job Begin = PlaceHolder();
 		Job End = PlaceHolder();
@@ -102,7 +102,7 @@ namespace Fuko::Job
 	}
 
 	template<typename It, typename TFun>
-	std::pair<Job, Job> JobBucketBuilder::ParallelEach(It BeginIt, It EndIt, TFun&& InFun, uint32_t InChunkNum)
+	inline std::pair<Job, Job> JobBucketBuilder::ParallelEach(It BeginIt, It EndIt, TFun&& InFun, uint32_t InChunkNum)
 	{
 		Job Begin = PlaceHolder();
 		Job End = PlaceHolder();
@@ -142,5 +142,4 @@ namespace Fuko::Job
 
 		return std::make_pair(Begin, End);
 	}
-
 }
