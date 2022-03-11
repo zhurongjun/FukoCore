@@ -7,7 +7,7 @@
 
 namespace Fuko
 {
-	IAllocator* DefaultAllocator()
+	CORE_API IAllocator* DefaultAllocator()
 	{
 		static HeapAllocator s_HeapAllocator;
 		return &s_HeapAllocator;

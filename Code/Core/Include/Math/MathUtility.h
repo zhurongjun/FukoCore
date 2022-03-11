@@ -84,7 +84,7 @@ namespace Fuko::Math
 	FORCEINLINE float Acos(float Value) { return acosf((Value < -1.f) ? -1.f : ((Value < 1.f) ? Value : 1.f)); }
 	FORCEINLINE float Tan(float Value) { return tanf(Value); }
 	FORCEINLINE float Atan(float Value) { return atanf(Value); }
-	float CORE_API Atan2(float Y, float X);
+    CORE_API float Atan2(float Y, float X);
 
 	// 浮点求余 
 	FORCEINLINE float Fmod(float X, float Y);

@@ -36,3 +36,6 @@ bin/
 .xmake/
 build/
 vsxmake2017
+
+# CLion
+cmake-build-*

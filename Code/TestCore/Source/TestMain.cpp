@@ -20,17 +20,17 @@
 
 int main()
 {
-// 	TestArray();
-// 	TestBitArray();
-// 	TestSparseArray();
-// 	TestSet();
-// 	TestMap();
-// 	TestRingQueue();
-// 	
-// 	TestDelegate();
-// 	TestPool();
-// 	TestName();
-// 	TestString();
+    TestArray();
+    TestBitArray();
+    TestSparseArray();
+    TestSet();
+    TestMap();
+    TestRingQueue();
+
+    TestDelegate();
+    TestPool();
+    TestName();
+    TestString();
 
 	system("pause");
 	return 0;

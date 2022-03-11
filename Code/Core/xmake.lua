@@ -1,1 +1,0 @@
-dynamic_module("Core")

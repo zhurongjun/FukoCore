@@ -7,6 +7,12 @@
 // Name 
 
 
+#ifdef EXPORT_CORE
+#define CORE_API __declspec(dllexport)
+#else
+#define CORE_API __declspec(dllimport)
+#endif
+
 #define FORCEINLINE __forceinline
 #define FORCENOINLINE __declspec(noinline)
 #define RESTRICT __restrict	
