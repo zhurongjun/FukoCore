@@ -39,3 +39,7 @@ vsxmake2017
 
 # CLion
 cmake-build-*
+
+# vsc 
+.cache/
+build/
